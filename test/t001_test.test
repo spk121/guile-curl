@@ -1,0 +1,17 @@
+;; -*- Mode: scheme; -*- 
+;; t000_test.test -- 
+
+(use-modules (test lib)
+	     (test lib2)
+	     (curl curl))
+
+(with-test-prefix "curl"
+		  (pass-if "bad url"
+			   (begin
+			     (let ((h (curl-easy-init)))
+			       (curl-easy-setopt h 'url "http://error")
+			       (let ((str (curl-easy-perform h)))
+				 (display str) (newline)
+				 (display (curl-error-string)) (newline)
+				 (equal? (curl-error-code) 
+					 CURLE_COULDNT_RESOLVE_HOST))))))

@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# This contains skeletons of commands that might be useful when debugging
+
+TESTS=t001_test.test
+
+LIBGUILE_CURL_MAJOR=0
+
+libtool -dlopen ../src/libguile-curl-v-${LIBGUILE_CURL_MAJOR}.la \
+    --mode=execute gdb --args guile -L .. -L . -s ${TESTS}
