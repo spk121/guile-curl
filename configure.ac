@@ -50,7 +50,7 @@ AC_CHECK_LIB([curl],
 GUILE_PROGS
 GUILE_FLAGS
 GUILE_SITE_DIR
-GUILE_CFLAGS
+GUILE_FLAGS
 dnl AC_CHECK_LIB([guile-2.0], 
 dnl              [scm_boot_guile], ,
 dnl              [AC_MSG_ERROR([The guile library was not found])])
