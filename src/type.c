@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+#include <stdio.h>
 #include <libguile.h>
 #include <curl/curl.h>
 #include "type.h"
@@ -15,7 +17,15 @@ int print_handle (SCM x, SCM port, scm_print_state *pstate);
 int 
 _scm_is_handle (SCM x)
 {
-  return SCM_SMOB_PREDICATE (handle_tag, x);
+  if (SCM_SMOB_PREDICATE (handle_tag, x))
+    {
+      if ((CURL *) SCM_SMOB_DATA (x) != (CURL *) NULL)
+	return 1;
+      else 
+	return 0;
+    }
+  else
+    return 0;
 }
 
 CURL *
@@ -59,43 +69,54 @@ equalp_handle (SCM x1, SCM x2)
 }
 
 SCM
+#ifdef __GNUC__
+mark_handle (SCM x __attribute__ ((unused)))
+#else
 mark_handle (SCM x)
+#endif
 {
   // No SCMs in the handle type: nothing to do here.
   return (SCM_BOOL_F);
 }
 
-/* The name is free_handle.  The curses primitive that frees memory is
-   called del_handle. Note that del_handle doesn't free the underlying
-   window. */
 size_t
 gc_free_handle (SCM handle)
 {
-  SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "free-handle");
+  SCM_ASSERT (SCM_SMOB_PREDICATE (handle_tag, handle), handle, SCM_ARG1, "free-handle");
 
   CURL *m = _scm_to_handle (handle);
 
   // assert (m != NULL);
 
-  curl_easy_cleanup (m);
+  if (m != (CURL *) NULL)
+    curl_easy_cleanup (m);
 
   return 0;
 }
 
 int
+#ifdef __GNUC__
+print_handle (SCM x, SCM port, scm_print_state *pstate __attribute__ ((unused)))
+#else
 print_handle (SCM x, SCM port, scm_print_state *pstate)
+#endif
 {
   CURL *frm = (CURL *) SCM_SMOB_DATA (x);
   char *str;
 
-  // assert (frm != NULL);
-
   scm_puts ("#<handle ", port);
 
-  if (asprintf (&str, "%p", frm) < 0)
-    scm_puts ("???", port);
+  if (frm == (CURL *) NULL)
+    {
+      scm_puts ("(freed)", port);
+    }
   else
-    scm_puts (str, port);
+    {
+      if (asprintf (&str, "%p", frm) < 0)
+	scm_puts ("???", port);
+      else
+	scm_puts (str, port);
+    }
 
   scm_puts (">", port);
   
