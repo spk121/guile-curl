@@ -4,7 +4,5 @@
 
 TESTS=t001_test.test
 
-LIBGUILE_CURL_MAJOR=0
-
-libtool -dlopen ../src/libguile-curl-v-${LIBGUILE_CURL_MAJOR}.la \
+libtool -dlopen ../src/libguile-curl.la \
     --mode=execute gdb --args guile -L .. -L . -s ${TESTS}

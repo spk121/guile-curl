@@ -8,10 +8,22 @@
 (with-test-prefix "curl"
 		  (pass-if "bad url"
 			   (begin
-			     (let ((h (curl-easy-init)))
-			       (curl-easy-setopt h 'url "http://error")
+			     (let ((h (curl-easy-init))
+				   (pass1 
+				    (not (false-if-exception 
+					  (curl-easy-setopt h 'url "http://error")))))
 			       (let ((str (curl-easy-perform h)))
 				 (display str) (newline)
 				 (display (curl-error-string)) (newline)
 				 (equal? (curl-error-code) 
-					 CURLE_COULDNT_RESOLVE_HOST))))))
+					 CURLE_COULDNT_RESOLVE_HOST))))
+			   (pass-if "ok url"
+				    (begin
+				      (let ((h (curl-easy-init)))
+					(curl-easy-setopt h 'url "http://microsoft.com")
+					(let ((str (curl-easy-perform h)))
+					  (display str) (newline)
+					  (display (curl-error-string)) (newline)
+					  (equal? (curl-error-code) 
+						  CURLE_OK))))))
+		  )
