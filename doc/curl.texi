@@ -18,7 +18,7 @@ This manual is for Curl, a Guile net client library, (version
 underlying libcurl library, which provides functionality for accessing
 files via urls.
 
-Copyright @copyright{} 2007 Michael L. Gran
+Copyright @copyright{} 2007, 2011 Michael L. Gran
 
 @quotation
 Permission is hereby granted, free of charge, to any person obtaining a  
@@ -79,5 +79,15 @@ authorization.
 
 @node Introduction,  , Top, Top
 @chapter Introduction
+
+This library has procedures that allow Guile to do client-side URL
+transfers, like requesting documents from http or ftp servers.  It is
+based on the libcurl library.
+
+Before using these functions, you must first load the library.  If the
+library built and installed correctly, you should be able to load the
+library in the usual way by using @code{(use-modules (curl curl))}.
+
+To transfer a file, you start off by creating a handle using @code{curl-easy-init}.
 
 @bye
