@@ -6,6 +6,7 @@
 	    curl-easy-setopt
 	    curl-easy-perform
 	    curl-easy-cleanup
+	    curl-easy-reset
 	    curl-error-string
 	    curl-error-code
 	    CURLE_OK
@@ -89,7 +90,14 @@
 	    CURLE_REMOTE_FILE_NOT_FOUND
 	    CURLE_SSH
 	    CURLE_SSL_SHUTDOWN_FAILED
+
+	    CURLOPT_VERBOSE
+	    CURLOPT_HEADER
+	    CURLOPT_NOSIGNAL
+	    CURLOPT_WILDCARDMATCH
 	    ))
+
+(load-extension "XXlibnameXX" "cl_init")
 
 (define (c-bool x)
   (if x
@@ -97,14 +105,36 @@
       0))
 
 (define (curl-easy-init)
-  ""
+  "Returns a curl handle that you must use as input to other functions.
+This handle represents one connection to a server."
   (%curl-easy-init))
 
+(define (curl-easy-cleanup handle)
+  "This forcibly closes all connections that this hand has used
+and has possibly kept open until now.  Any use of the handle
+after it has been closed is invalid.
+
+Calling this procedure is optional: handles will automatically
+be freed when no longer in use."
+  (%curl-easy-cleanup handle))
+
+(define (curl-easy-reset handle)
+  "Re-initializes all options previously set on this CURL handle
+to its default values.
+
+It does not change live connections, the Session ID cache, the DNS
+cache, the cookies or the shared."
+  (%curl-easy-reset handle))
+
 (define symbol-options
-  `((verbose ,CURLOPT_VERBOSE boolean)
+  `(
+    ;; BEHAVIOR OPTIONS
+    (verbose ,CURLOPT_VERBOSE boolean)
     (header ,CURLOPT_HEADER boolean)
     (nosignal ,CURLOPT_NOSIGNAL boolean)
     (wildcardmatch ,CURLOPT_WILDCARDMATCH boolean)
+
+    ;; NETWORK OPTIONS
     (url ,CURLOPT_URL string)
     (protocols ,CURLOPT_PROTOCOLS integer)
     (redir-protocols ,CURLOPT_REDIR_PROTOCOLS integer)
@@ -114,7 +144,7 @@
     (noproxy ,CURLOPT_NOPROXY string)
     (httpproxytunner ,CURLOPT_HTTPPROXYTUNNEL boolean)
     (socks5-gssapi-service ,CURLOPT_SOCKS5_GSSAPI_SERVICE string)
-    (socks5-fssapi-nec ,CURLOPT_SOCKS5_GSSAPI_NEC boolean)
+    (socks5-gssapi-nec ,CURLOPT_SOCKS5_GSSAPI_NEC boolean)
     (interface ,CURLOPT_INTERFACE string)
     (localport ,CURLOPT_LOCALPORT integer)
     (localportrange ,CURLOPT_LOCALPORTRANGE integer)
@@ -123,6 +153,8 @@
     (port ,CURLOPT_PORT integer)
     (tcp-nodelay ,CURLOPT_TCP_NODELAY boolean)
     (address-scope ,CURLOPT_ADDRESS_SCOPE integer)
+
+    ;; NAMES AND PASSWORD OPTIONS
     (netrc ,CURLOPT_NETRC integer)
     (netrc-file ,CURLOPT_NETRC_FILE string)
     (userpwd ,CURLOPT_USERPWD string)
@@ -133,6 +165,8 @@
     (proxypassword ,CURLOPT_PROXYPASSWORD string)
     (httpauth ,CURLOPT_HTTPAUTH integer)
     (proxyauth ,CURLOPT_PROXYAUTH integer)
+
+    ;; HTTP OPTIONS
     (autoreferer ,CURLOPT_AUTOREFERER boolean)
     (encoding ,CURLOPT_ENCODING string)
     (followlocation ,CURLOPT_FOLLOWLOCATION boolean)
@@ -144,64 +178,65 @@
     (httppost ,CURLOPT_HTTPPOST httppost)
     (referer ,CURLOPT_REFERER string)
     (useragent ,CURLOPT_USERAGENT string)
-    (httpheader ,CURLOPT_HTTPHEADER headerlist)
-    (
+    (httpheader ,CURLOPT_HTTPHEADER slist)
+    (http200aliases ,CURLOPT_HTTP200ALIASES slist)
+    (cookie ,CURLOPT_COOKIE string)
+    (cookiefile  CURLOPT_COOKIEFILE string)
+    (cookiejar ,CURLOPT_COOKIEJAR string)
+    (cookiesession ,CURLOPT_COOKIESESSION boolean)
+    (cookielist ,CURLOPT_COOKIELIST string)
+    (httpget ,CURLOPT_HTTPGET integer)
+    (http-version ,CURLOPT_HTTP_VERSION integer)
+    (ignore-content-length ,CURLOPT_IGNORE_CONTENT_LENGTH boolean)
+    (http-content-decoding ,CURLOPT_HTTP_CONTENT_DECODING boolean)
+    (http-transfer-decoding ,CURLOPT_HTTP_TRANSFER_DECODING integer)
 
-(define* (curl-easy-setopt handle option #:optional arg)
-  ""
-  (cond
-   ((eq? option 'verbose) 
-    (%curl-easy-setopt CURLOPT_VERBOSE (c-bool arg)))
-   ((eq? option 'header)
-    (%curl-easy-setopt CURLOPT_HEADER (c-bool arg)))
-   ((eq? option 'nosignal)
-    (%curl-easy-setopt CURLOPT_NOSIGNAL (c-bool arg)))
-   ((eq? option 'wildcardmatch)
-    (%curl-easy-setopt CURLOPT_WILDCARDMATCH (c-bool arg)))
-   ((eq? option 'url CURLOPT_URL)
-    (if (not (string? arg))
-	(scm-error 'wrong-type-arg "String argument expected: ~A" (list arg) (list arg))
-	(%curl-easy-setopt CURL_URL arg)))
-   ((eq? option 'protocols)
-    (if (not (and (integer? arg) (exact? arg))
-	(scm-error 'wrong-type-arg "Integer nteger argument expected: ~A" (list arg) (list arg))
-	(%curl-easy-setopt CURLOPT_PROTOCOLS arg)))
-   ((eq? option 'redir-protocols)
-    (if (not (and (integer? arg) (exact? arg)))
-	(scm-error 'wrong-type-arg "Integer argument expected: ~A" (list arg) (list arg))
-	(%curl-easy-setopt CURLOPT_REDIR_PROTOCOLS arg)))
-   ((eq? option 'proxy)
-    (if (not (string? arg))
-	(scm-error 'wrong-type-arg "String argument expected: ~A" (list arg) (list arg))
-	(%curl-easy-setopt CURLOPT_PROXY arg)))
-   ((eq? option 'proxyport)
-    (if (not (and (integer? arg) (exact? arg)))
-	(scm-error 'wrong-type-arg "Integer argument expected: ~A" (list arg) (list arg))
-	(%curl-easy-setopt CURLOPT_PROXYPORT arg)))
-   ((eq? option 'proxytype)
-    (if (not (and (integer? arg) (exact? arg)))
-	(scm-error 'wrong-type-arg "Integer argument expected: ~A" (list arg) (list arg))
-	(%curl-easy-setopt CURLOPT_PROXYPORT arg)))
-   ((eq? option 'noproxy)
-    (if (not (string? arg))
-	(scm-error 'wrong-type-arg "String argument expected: ~A" (list arg) (list arg))
-	(%curl-easy-setopt CURLOPT_NOPROXY arg)))
-   ((eq? option 'httpproxytunnel)
-    (%curl-easy-setopt CURLOPT_HTTPPROXYTUNNEL (c-bool arg)))
-   ((eq? option 'socks5-gssapi-service)
-    (if (not (string? arg))
-	(scm-error 'wrong-type-arg "String argument expected: ~A" (list arg) (list arg))
-	(%curl-easy-setopt CURLOPT_SOCKS5_GSSAPI_NEC arg)))
-   ((eq? option 'socks5-gssapi-nec)
-    (%curl-easy-setopt CURLOPT_SOCKS5_GSSAPI_NEC (c-bool arg)))
-   ((eq? option 'interface)
-    (if (not (string? arg))
-	(scm-error 'wrong-type-arg "String argument expected: ~A" (list arg) (list arg))
-	(%curl-easy-setopt CURLOPT_INTERFACE arg)))
-  
-  (%curl-easy-setopt handle option arg))
+    ;; CONNECTION OPTIONS
+    (timeout ,CURLOPT_TIMEOUT integer)
+    (timeout-ms ,CURLOPT_TIMEOUT integer)
+    (low-speed-limit ,CURLOPT_LOW_SPEED_LIMIT integer)
+    (low-speed-time ,CURLOPT_LOW_SPEED_TIME integer)
+    (maxconnects ,CURLOPT_MAXCONNECTS integer)
+    (fresh-connect ,CURLOPT_FRESH_CONNECT boolean)
+    (forbid-reuse ,CURLOPT_FORBID_REUSE boolean)
+    (connecttimeout ,CURLOPT_CONNECTTIMEOUT integer)
+    (connecttimeout-ms ,CURLOPT_CONNECTTIMEOUT_MS integer)
+    (ipresolve ,CURLOPT_IPRESOLVE integer)
+    (connect-only ,CURLOPT_CONNECT_ONLY boolean)))
 
-;; Initialize the library
-(%curl-global-init)
+(define* (curl-easy-setopt handle option arg)
+  "Apply the option and argument to a given handle."
+  (let ((value (assq-ref symbol-options option)))
+    (if value
+	(let ((option (car value))
+	      (type (cadr value)))
+	  (cond
+	   ((and (eq? type 'integer) (integer? arg))
+	    (%curl-easy-setopt handle option arg))
+	   ((eq? type 'boolean)
+	    (%curl-easy-setopt handle option (c-bool arg)))
+	   ((and (eq? type 'string) (string? arg))
+	    (%curl-easy-setopt handle option arg))
 
-(load-extension "XXlibnameXX" "cl_init")
+	   ((not (member type '(integer boolean string)))
+	    (error (format #f "Unimplemented type: ~a" type)))
+
+	   (else
+	    (error (format #f "Wrong type arg: ~a" arg)))))
+	;; else
+	(error (format #f "Unknown option: ~a" option)))))
+
+(define (curl-easy-perform h)
+  "This function is called after the init and all the
+curl-easy-setopt calls are made, and will perform the transfer as
+described in the options.  It must be called with the same handle as
+input as the curl_easy_init call returned."
+  (%curl-easy-perform h))
+
+(define (curl-error-string)
+  "Returns information about the last error as a string."
+  (%curl-error-string))
+
+(define (curl-error-code)
+  "Returns the libcurl error ID of the last error."
+  (%curl-error-code))

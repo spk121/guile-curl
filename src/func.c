@@ -68,38 +68,40 @@ cl_easy_setopt (SCM handle, SCM option, SCM x)
 {
   CURL *c_handle;
   CURLcode code;
+  CURLoption opt;
+  long opt_l;
+  char *opt_s;
+  void *opt_v;
+  curl_off_t opt_off;
 
   SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "curl-easy-setopt");
-  SCM_ASSERT (scm_is_symbol (option), option, SCM_ARG2, "curl-easy-setopt");
+  SCM_ASSERT (scm_is_integer (option), option, SCM_ARG2, "curl-easy-setopt");
 
   c_handle = _scm_to_handle (handle);
-  if (is_equal_symbol (option, "verbose"))
+  opt = (CURLoption) scm_to_int (option);
+  if (scm_is_integer (x))
     {
-      SCM_ASSERT (scm_is_bool (x), x, SCM_ARG3, "curl-easy-setopt");
-      code = curl_easy_setopt (c_handle, 
-			       CURLOPT_VERBOSE, 
-			       scm_is_true(x) ? 1 : 0 );
+      opt_l = scm_to_long (x);
+      code = curl_easy_setopt (c_handle, opt, opt_l);
     }
-
-  /*******************/
-  /* Network Options */
-  /*******************/
-  STRING_OPT("url", CURLOPT_URL)
-    STRING_OPT("proxy", CURLOPT_PROXY)  
-    LONG_OPT("proxyport", CURLOPT_PROXYPORT)
-    LONG_OPT("proxytype", CURLOPT_PROXYTYPE)
-    BOOL_OPT("httpproxytunnel", CURLOPT_HTTPPROXYTUNNEL)
-    STRING_OPT("interface", CURLOPT_INTERFACE)
-    LONG_OPT("localport", CURLOPT_LOCALPORT)
-    LONG_OPT("localportrange", CURLOPT_LOCALPORTRANGE)
-    LONG_OPT("dns-cache-timeout", CURLOPT_DNS_CACHE_TIMEOUT)
-    LONG_OPT("port", CURLOPT_PORT)
-    LONG_OPT("tcp-nodelay", CURLOPT_TCP_NODELAY)
-    LONG_OPT("netrc", CURLOPT_NETRC)
-    STRING_OPT("netrc-file", CURLOPT_NETRC_FILE)
-  
+  else if (scm_is_string (x))
+    { 
+      opt_s = scm_to_locale_string (x);
+      code = curl_easy_setopt (c_handle, opt, opt_s);
+    }
   else
-    abort ();
+    scm_error (SCM_BOOL_F,
+	       "curl-easy-setopt",
+	       "unimplemented option",
+	       SCM_BOOL_F,
+	       SCM_BOOL_F);
+
+  if (code != CURLE_OK)
+    scm_error (SCM_BOOL_F,
+	       "curl-easy-setopt",
+	       curl_easy_strerror (code),
+	       SCM_BOOL_F,
+	       SCM_BOOL_F);
 
   return SCM_UNSPECIFIED;
 }
@@ -172,26 +174,48 @@ write_callback (void *ptr, size_t size, size_t nmemb, void *port)
 }
 
 SCM
+cl_easy_reset (SCM handle)
+{
+  CURL *c_handle;
+
+  SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "%curl-easy-reset");
+
+  c_handle = _scm_to_handle (handle);
+
+  curl_easy_reset (c_handle);
+
+  return SCM_UNSPECIFIED;
+}
+
+SCM
 cl_easy_cleanup (SCM handle)
 {
   CURL *c_handle;
 
-  SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "curl-easy-perform");
+  SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "%curl-easy-cleanup");
 
   c_handle = _scm_to_handle (handle);
 
   curl_easy_cleanup (c_handle);
+  
+  c_handle = (CURL *) NULL;
 
   return SCM_UNSPECIFIED;
 }  
 
+
+// We do global clean up in main.c's atexit
+#if 0
 SCM
 cl_global_cleanup ()
 {
   curl_global_cleanup ();
   return SCM_UNDEFINED;
 }
+#endif
 
+// We do global initialization in main.c's cl_init();
+#if 0
 SCM
 cl_global_init ()
 {
@@ -208,6 +232,7 @@ cl_global_init ()
   else
     return SCM_BOOL_F;
 }
+#endif
 
 SCM
 cl_error_string ()
@@ -225,16 +250,19 @@ void
 cl_init_func ()
 {
   static int first = 1;
-  CURLcode ret;
+
   if (first)
     {
       scm_c_define_gsubr ("%curl-easy-init", 0, 0, 0, cl_easy_init);
       scm_c_define_gsubr ("%curl-easy-setopt", 2, 1, 0, cl_easy_setopt);
       scm_c_define_gsubr ("%curl-easy-perform", 1, 0, 0, cl_easy_perform);
-      scm_c_define_gsubr ("%curl-easy-handle", 1, 0, 0, cl_easy_cleanup);
-      scm_c_define_gsubr ("%curl-global-cleanup", 0, 0, 0, cl_global_cleanup);
-      scm_c_define_gsubr ("%curl-global-init", 0, 0, 0, cl_global_init);
+      scm_c_define_gsubr ("%curl-easy-cleanup", 1, 0, 0, cl_easy_cleanup);
+      scm_c_define_gsubr ("%curl-easy-reset", 1, 0, 0, cl_easy_reset);
+      // scm_c_define_gsubr ("%curl-global-cleanup", 0, 0, 0, cl_global_cleanup);
+      //scm_c_define_gsubr ("%curl-global-init", 0, 0, 0, cl_global_init);
       scm_c_define_gsubr ("%curl-error-string", 0, 0, 0, cl_error_string);
       scm_c_define_gsubr ("%curl-error-code", 0, 0, 0, cl_error_code);
+      
+      first = 0;
     }
 }
