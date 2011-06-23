@@ -1,5 +1,7 @@
 ;; -*- Mode: scheme; -*-
 (define-module (XXpackageXX curl)
+  #:use-module (srfi srfi-1)
+  #:use-module (rnrs bytevectors)
   #:export ( 
 	    handle?
 	    curl-easy-init
@@ -9,6 +11,28 @@
 	    curl-easy-reset
 	    curl-error-string
 	    curl-error-code
+	    
+	    CURL_HTTP_VERSION_NONE
+	    CURL_HTTP_VERSION_1_0
+	    CURL_HTTP_VERSION_1_1
+
+	    CURL_NETRC_OPTIONAL
+	    CURL_NETRC_IGNORED
+	    CURL_NETRC_REQUIRED
+
+	    CURL_REDIR_POST_301
+	    CURL_REDIR_POST_302
+	    CURL_REDIR_POST_ALL
+
+	    CURLAUTH_BASIC
+	    CURLAUTH_DIGEST
+	    CURLAUTH_DIGEST_IE
+	    CURLAUTH_GSSNEGOTIATE
+	    CURLAUTH_NTLM
+	    CURLAUTH_ANY
+	    CURLAUTH_ANYSAFE
+	    CURLAUTH_ONLY
+
 	    CURLE_OK
 	    CURLE_UNSUPPORTED_PROTOCOL
 	    CURLE_FAILED_INIT
@@ -91,10 +115,39 @@
 	    CURLE_SSH
 	    CURLE_SSL_SHUTDOWN_FAILED
 
-	    CURLOPT_VERBOSE
-	    CURLOPT_HEADER
-	    CURLOPT_NOSIGNAL
-	    CURLOPT_WILDCARDMATCH
+	    CURLPROTO_HTTP
+	    CURLPROTO_HTTPS
+	    CURLPROTO_FTP
+	    CURLPROTO_FTPS
+	    CURLPROTO_SCP
+	    CURLPROTO_SFTP
+	    CURLPROTO_TELNET
+	    CURLPROTO_LDAP
+	    CURLPROTO_LDAPS
+	    CURLPROTO_DICT
+	    CURLPROTO_FILE
+	    CURLPROTO_TFTP
+	    CURLPROTO_IMAP
+	    CURLPROTO_IMAPS
+	    CURLPROTO_POP3
+	    CURLPROTO_POP3S
+	    CURLPROTO_SMTP
+	    CURLPROTO_SMTPS
+	    CURLPROTO_RTSP
+	    CURLPROTO_RTMP
+	    CURLPROTO_RTMPT
+	    CURLPROTO_RTMPE
+	    CURLPROTO_RTMPTE
+	    CURLPROTO_GOPHER
+	    CURLPROTO_ALL
+
+	    CURLPROXY_HTTP
+	    CURLPROXY_HTTP_1_0
+	    CURLPROXY_SOCKS4
+	    CURLPROXY_SOCKS5
+	    CURLPROXY_SOCKS4A
+	    CURLPROXY_SOCKS5_HOSTNAME
+
 	    ))
 
 (load-extension "XXlibnameXX" "cl_init")
@@ -103,6 +156,44 @@
   (if x
       1
       0))
+
+(define (num->ascii-hex-num x)
+  "Given a number between 0 and 15, it returns
+the ASCII character code of the hex digit 0123456789ABCDEF"
+  (cond
+   ((and (>= x 0) (<= x 9))
+    (+ x 48))				; 47 == #\0
+   ((and (>= x 10) (<= x 15))
+    (+ (- x 10) 65))			; 65 is #\A
+   (else
+    (error "out of range"))))
+
+(define (u8->encoded-u8-triplet x)
+  "Converts the u8 integer X into a list of three integers
+that are the ASCII character codes of PERCENT_SIGN +
+HEXADECIMAL + HEXADECIMAL"
+  (list 37				; PERCENT SIGN
+	(num->ascii-hex-num (quotient x 16))
+	(num->ascii-hex-num (remainder x 16))))
+
+(define (bv->url-encoded-bv bv)
+  "Creates a bytevector that contains a URL-encoded representation
+of the original bytevector"
+  (u8-list->bytevector
+   (fold 
+    (lambda (x prev)
+      (cond
+       ((or (= x 33)			; #\!
+	    (= x 36)			; #\$
+	    (and (>= x 39) (<= x 57))	; #\` to #\9
+	    (and (>= x 65) (<= x 90))	; #\A to #\Z
+	    (= x 95)			; #\_
+	    (and (>= x 97) (<= x 122))) ; #\a to #\z
+	(append prev (list x)))
+       (else
+	(append prev (u8->encoded-u8-triplet x)))))
+    '()
+    (bytevector->u8-list bv))))
 
 (define (curl-easy-init)
   "Returns a curl handle that you must use as input to other functions.
@@ -142,7 +233,7 @@ cache, the cookies or the shared."
     (proxyport ,CURLOPT_PROXYPORT integer)
     (proxytype ,CURLOPT_PROXYTYPE integer)
     (noproxy ,CURLOPT_NOPROXY string)
-    (httpproxytunner ,CURLOPT_HTTPPROXYTUNNEL boolean)
+    (httpproxytunnel ,CURLOPT_HTTPPROXYTUNNEL boolean)
     (socks5-gssapi-service ,CURLOPT_SOCKS5_GSSAPI_SERVICE string)
     (socks5-gssapi-nec ,CURLOPT_SOCKS5_GSSAPI_NEC boolean)
     (interface ,CURLOPT_INTERFACE string)
@@ -173,23 +264,23 @@ cache, the cookies or the shared."
     (unrestricted-auth ,CURLOPT_UNRESTRICTED_AUTH boolean)
     (maxredirs ,CURLOPT_MAXREDIRS integer)
     (postredir ,CURLOPT_POSTREDIR integer)
+    (put ,CURLOPT_PUT boolean)
     (post ,CURLOPT_POST boolean)
-    (postfields ,CURLOPT_POSTFIELDS u8vector)
     (httppost ,CURLOPT_HTTPPOST httppost)
     (referer ,CURLOPT_REFERER string)
     (useragent ,CURLOPT_USERAGENT string)
     (httpheader ,CURLOPT_HTTPHEADER slist)
     (http200aliases ,CURLOPT_HTTP200ALIASES slist)
     (cookie ,CURLOPT_COOKIE string)
-    (cookiefile  CURLOPT_COOKIEFILE string)
+    (cookiefile ,CURLOPT_COOKIEFILE string)
     (cookiejar ,CURLOPT_COOKIEJAR string)
     (cookiesession ,CURLOPT_COOKIESESSION boolean)
     (cookielist ,CURLOPT_COOKIELIST string)
-    (httpget ,CURLOPT_HTTPGET integer)
+    (httpget ,CURLOPT_HTTPGET boolean)
     (http-version ,CURLOPT_HTTP_VERSION integer)
     (ignore-content-length ,CURLOPT_IGNORE_CONTENT_LENGTH boolean)
     (http-content-decoding ,CURLOPT_HTTP_CONTENT_DECODING boolean)
-    (http-transfer-decoding ,CURLOPT_HTTP_TRANSFER_DECODING integer)
+    (http-transfer-decoding ,CURLOPT_HTTP_TRANSFER_DECODING boolean)
 
     ;; CONNECTION OPTIONS
     (timeout ,CURLOPT_TIMEOUT integer)
@@ -205,26 +296,35 @@ cache, the cookies or the shared."
     (connect-only ,CURLOPT_CONNECT_ONLY boolean)))
 
 (define* (curl-easy-setopt handle option arg)
-  "Apply the option and argument to a given handle."
-  (let ((value (assq-ref symbol-options option)))
-    (if value
-	(let ((option (car value))
-	      (type (cadr value)))
-	  (cond
-	   ((and (eq? type 'integer) (integer? arg))
-	    (%curl-easy-setopt handle option arg))
-	   ((eq? type 'boolean)
-	    (%curl-easy-setopt handle option (c-bool arg)))
-	   ((and (eq? type 'string) (string? arg))
-	    (%curl-easy-setopt handle option arg))
+  "Apply the option and argument to a given handle.
 
-	   ((not (member type '(integer boolean string)))
-	    (error (format #f "Unimplemented type: ~a" type)))
+Returns #t on success and #f on failure."
 
-	   (else
-	    (error (format #f "Wrong type arg: ~a" arg)))))
-	;; else
-	(error (format #f "Unknown option: ~a" option)))))
+  ;; First, check the special case options
+  (cond
+   ((and (eq? option 'postfields)
+	 (bytevector? arg))
+    (and (%curl-easy-setopt handle CURLOPT_POSTFIELDS arg)
+	 (%curl-easy-setopt handle CURLOPT_POSTFIELDSIZE 
+			    (bytevector-length arg))))
+   (else
+    ;; Now, try the more generic options
+    (let ((value (assq-ref symbol-options option)))
+      (if value
+	  (let ((option (car value))
+		(type (cadr value)))
+	    (cond
+	     ((or (and (eq? type 'integer) (integer? arg))
+		  (and (eq? type 'string) (string? arg)))
+	      (%curl-easy-setopt handle option arg))
+	     ((eq? type 'boolean)
+	      (%curl-easy-setopt handle option (c-bool arg)))
+	     ((not (member type '(integer boolean string)))
+	      (error (format #f "Unimplemented type: ~a" type)))
+	     (else
+	      (error (format #f "Wrong type arg: ~a" arg)))))
+	  ;; else
+	  (error (format #f "Unknown option: ~a" option)))))))
 
 (define (curl-easy-perform h)
   "This function is called after the init and all the

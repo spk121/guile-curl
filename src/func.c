@@ -35,43 +35,13 @@ is_equal_symbol (SCM sym, const char *str)
   return (scm_is_true (scm_eq_p (sym, scm_from_locale_symbol (str))));
 }
 
-#define STRING_OPT(CNAME,SNAME) \
-  else if (is_equal_symbol (option, CNAME)) \
-    { \
-      SCM_ASSERT (scm_is_string (x), x, SCM_ARG3, "curl-easy-setopt"); \
-      code = curl_easy_setopt (c_handle, \
-			       SNAME, \
-			       scm_to_locale_string (x)); \
-    }
-
-#define LONG_OPT(CNAME,SNAME) \
-  else if (is_equal_symbol (option, CNAME)) \
-    { \
-      SCM_ASSERT (scm_is_integer (x), x, SCM_ARG3, "curl-easy-setopt"); \
-      code = curl_easy_setopt (c_handle, \
-			       SNAME, \
-			       scm_to_long (x)); \
-    }
-
-#define BOOL_OPT(CNAME,SNAME) \
-  else if (is_equal_symbol (option, CNAME)) \
-    { \
-      SCM_ASSERT (scm_is_bool (x), x, SCM_ARG3, "curl-easy-setopt"); \
-      code = curl_easy_setopt (c_handle, \
-			       SNAME, \
-			       scm_to_bool (x)); \
-    }
-
-
 SCM
 cl_easy_setopt (SCM handle, SCM option, SCM x)
 {
   CURL *c_handle;
   CURLcode code;
   CURLoption opt;
-  long opt_l;
   char *opt_s;
-  void *opt_v;
   curl_off_t opt_off;
 
   SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "curl-easy-setopt");
@@ -80,15 +50,15 @@ cl_easy_setopt (SCM handle, SCM option, SCM x)
   c_handle = _scm_to_handle (handle);
   opt = (CURLoption) scm_to_int (option);
   if (scm_is_integer (x))
-    {
-      opt_l = scm_to_long (x);
-      code = curl_easy_setopt (c_handle, opt, opt_l);
-    }
+    code = curl_easy_setopt (c_handle, opt, scm_to_long (x));
   else if (scm_is_string (x))
     { 
       opt_s = scm_to_locale_string (x);
       code = curl_easy_setopt (c_handle, opt, opt_s);
+      free (opt_s);
     }
+  else if (scm_is_bytevector (x))
+    code = curl_easy_setopt (c_handle, opt, SCM_BYTEVECTOR_CONTENTS (x));
   else
     scm_error (SCM_BOOL_F,
 	       "curl-easy-setopt",
@@ -96,14 +66,7 @@ cl_easy_setopt (SCM handle, SCM option, SCM x)
 	       SCM_BOOL_F,
 	       SCM_BOOL_F);
 
-  if (code != CURLE_OK)
-    scm_error (SCM_BOOL_F,
-	       "curl-easy-setopt",
-	       curl_easy_strerror (code),
-	       SCM_BOOL_F,
-	       SCM_BOOL_F);
-
-  return SCM_UNSPECIFIED;
+  return (code == CURLE_OK) ? SCM_BOOL_T : SCM_BOOL_F;
 }
 
 SCM
