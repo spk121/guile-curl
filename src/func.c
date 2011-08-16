@@ -79,7 +79,7 @@ cl_easy_perform (SCM handle)
   SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "curl-easy-perform");
 
   c_handle = _scm_to_handle (handle);
-  data = scm_c_make_string (0, SCM_MAKE_CHAR (0));
+  data = scm_c_make_bytevector (0);
 
   curl_easy_setopt (c_handle, CURLOPT_WRITEFUNCTION, write_callback);
   curl_easy_setopt (c_handle, CURLOPT_WRITEDATA, &data);
@@ -103,37 +103,26 @@ cl_easy_perform (SCM handle)
 static size_t 
 write_callback (void *ptr, size_t size, size_t nmemb, void *port)
 {
-  size_t len;
-  SCM string1, string2;
+  size_t length1, length2;
+  SCM data1, data2;
 
-  string1 = *((SCM *)port);
+  data1 = *((SCM *)port);
+  length1 = scm_c_bytevector_length (data1);
 
-  len = size * nmemb;
+  length2 = size * nmemb;
 
   /* printf ("In write_callback\n"); */
 
+  data2 = scm_c_make_bytevector (length1 + length2);
+  memcpy (SCM_BYTEVECTOR_CONTENTS (data2),
+	  SCM_BYTEVECTOR_CONTENTS (data1),
+	  length1);
+  memcpy (SCM_BYTEVECTOR_CONTENTS (data2) + length1,
+	  ptr,
+	  length2);
+  *((SCM *)port) = data2;
 
-#if 0
-  if (size == 1)
-    data = scm_take_u8vector ((scm_t_uint8 *)ptr, nmemb);
-  else if (size == 2)
-    data = scm_take_u16vector ((scm_t_uint16 *)ptr, nmemb);
-  else if (size == 4)
-    data = scm_take_u32vector ((scm_t_uint32 *)ptr, nmemb);
-  else 
-    scm_error (SCM_BOOL_F,
-	       "curl-easy-perform",
-	       "libcurl returns unexpectedly-sized data",
-	       SCM_BOOL_F,
-	       SCM_BOOL_F);
-#else
-  string2 = scm_from_locale_stringn((char *)ptr, len);
-#endif    
-
-  string1 = scm_string_append (scm_list_2 (string1, string2));
-  *((SCM *)port) = string1;
-
-  return (len);
+  return (length2);
 }
 
 SCM
