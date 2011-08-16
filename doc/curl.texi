@@ -75,10 +75,21 @@ authorization.
 
 @menu
 * Introduction::                
+* Reference::                   
+* Index::                       
+
+@detailmenu
+ --- The Detailed Node Listing ---
+
+Tutorial
+
+* Fetching from an HTTP server::  
+
+@end detailmenu
 @end menu
 
-@node Introduction,  , Top, Top
-@chapter Introduction
+@node Introduction, Reference, Top, Top
+@chapter Tutorial
 
 This library has procedures that allow Guile to do client-side URL
 transfers, like requesting documents from http or ftp servers.  It is
@@ -88,6 +99,137 @@ Before using these functions, you must first load the library.  If the
 library built and installed correctly, you should be able to load the
 library in the usual way by using @code{(use-modules (curl curl))}.
 
-To transfer a file, you start off by creating a handle using @code{curl-easy-init}.
+To transfer a file, you start off by creating a handle using
+@code{curl-easy-init}.  @code{curl-easy-init} is a procecure that
+takes no arguments and returns a handle.  The handle represents a
+single connection between computers using some standard protocol.
 
+The handle holds opaque information used by the underlying
+@code{libcurl} library, so displaying it or writing it doesn't produce
+much useful information beyond the location of a pointer in memory.
+
+Before the handle can be used, it must first be given information
+about the connection and transfer that it will do.  The procedure
+@code{curl-easy-setopt} is used to tell this handle's connection how
+to behave.  There are many dozens of options that can be set, but,
+at a minimum, it just needs a URL.
+
+Then, to initiate the transfer, the procedure @code{curl-easy-perform}
+is called.  It returns the requested resource as a bytevector.  The
+bytevector will need to be converted to a string if it is fetching a
+text resource.
+
+@menu
+* Fetching from an HTTP server::  
+@end menu
+
+@node Fetching from an HTTP server,  , Introduction, Introduction
+@section Fetching from an HTTP server
+
+The following code will fetch a web page that has a simple URL.
+
+@lisp
+(use-modules (curl curl)
+             (rnrs bytevectors))
+(define handle (curl-easy-init))
+(curl-easy-setopt handle 'url "http://www.gnu.org")
+(display (utf8->string (curl-easy-perform handle)))
+@end lisp
+
+That's pretty much all there is to it.  Beyond that, there are dozens
+of options that can be set by @code{curl-easy-setopt} that change how
+the request is performed.
+
+@node Reference, Index, Introduction, Top
+@chapter Reference
+
+@deffn Procedure curl-easy-init
+Returns a curl handle that you must use as input to other functions.
+This handle represents one connection to a server.
+@end deffn
+
+@deffn Procedure curl-easy-cleanup handle
+This forcibly closes all connections that this handle has used
+and has possibly kept open until now.  Any use of the handle
+after it has been closed is invalid.
+
+Calling this procedure is optional: handles will automatically
+be freed when no longer in use.
+@end deffn
+
+@deffn Procedure curl-easy-reset handle
+Re-initializes all options previously set on this CURL handle
+to its default values.
+
+It does not change live connections, the Session ID cache, the DNS
+cache, the cookies or the shared.
+@end deffn
+
+@deffn Procedure curl-easy-perform handle
+This function is called after the init and all the curl-easy-setopt
+calls are made, and will perform the transfer as described in the
+options.  It must be called with the same handle as input as the
+curl_easy_init call returned.
+
+It returns either a bytevector containing the resource, or @code{#f}
+on failure.  For information about the failure, you can call
+@code{curl-error-string}.
+@end deffn
+
+@deffn Procedure curl-error-string
+If a call to @code{curl-easy-perform} fails, calling this function
+will return information about the last error as a string.
+@end deffn
+
+@deffn Procedure curl-error-code
+If a call to @code{curl-easy-perform} fails, calling this function
+will return information about the last error as an integer.  These
+integers come from the libcurl library and are defined in its header
+file <curl/curl.h>.
+@end deffn
+
+@deffn Procedure curl-easy-setopt handle option info
+This procedure sets the options for this handle that will describe
+what will happend when @code{curl-easy-perform} is called.
+@var{option} is a symbol, and @var{info} is additional information
+needed for the option.  See below for a table of options.
+@end deffn
+
+@section Options
+
+The options that can be set by @code{curl-easy-setopt} are as follows.
+
+@subsection Behavior Options
+@table @code
+@item verbose
+Takes @code{#t} or @code{#f}.  When @code{#t} it displays information
+about its operations.  It will be sent to the standard error port.
+
+@item header
+Takes @code{#t} or @code{#f}.  When @code{#t}, it includes the header
+in the body output for those protocols that have a header preceding
+the data.
+
+@item nosignal
+Takes @code{#t} or @code{#f}.  When @code{#t}, no signal handlers or
+any functions that cause signals to be sent will be used when
+performing an operation.
+
+@item wildcardmatch
+Takes @code{#t} or @code{#f}.  When @code{#t}, multiple files will be
+transfered when the URL has wildcards like @code{*} and @code{?}.
+Only works for FTP-like connections.
+
+@end table
+
+@subsection Network Options
+@table @code
+@item url
+Takes a string.  The actual URL to be used to perform the operation,
+such as ``http://www.gnu.org''.  The URL string should be url-encoded
+and only contain ASCII characters.
+
+@node Index,  , Reference, Top
+@unnumbered Index
+@printindex cp
 @bye

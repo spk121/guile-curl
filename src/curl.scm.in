@@ -201,7 +201,7 @@ This handle represents one connection to a server."
   (%curl-easy-init))
 
 (define (curl-easy-cleanup handle)
-  "This forcibly closes all connections that this hand has used
+  "This forcibly closes all connections that this handle has used
 and has possibly kept open until now.  Any use of the handle
 after it has been closed is invalid.
 
