@@ -197,7 +197,11 @@ needed for the option.  See below for a table of options.
 
 @section Options
 
-The options that can be set by @code{curl-easy-setopt} are as follows.
+The options that can be set by @code{curl-easy-setopt} are listed
+below.  For a much better explanation of what each of these options
+does, you can look at the manual page for @code{curl_easy_setopt}
+which comes with the libcurl library, which you should have since it
+is required to compile this package.  
 
 @subsection Behavior Options
 @table @code
@@ -228,6 +232,259 @@ Only works for FTP-like connections.
 Takes a string.  The actual URL to be used to perform the operation,
 such as ``http://www.gnu.org''.  The URL string should be url-encoded
 and only contain ASCII characters.
+
+@item protocols
+Takes an integers that is a bitmask created from the @code{CURLPROTO}
+constants.  If used, this bitmask limits what protocols may be used in
+the transfer.  By default, all supported protocols are allowed.  The
+constants are CURLPROTO_HTTP CURLPROTO_HTTPS CURLPROTO_FTP
+CURLPROTO_FTPS CURLPROTO_SCP CURLPROTO_SFTP CURLPROTO_TELNET
+CURLPROTO_LDAP CURLPROTO_LDAPS CURLPROTO_DICT CURLPROTO_FILE
+CURLPROTO_TFTP CURLPROTO_IMAP CURLPROTO_IMAPS CURLPROTO_POP3
+CURLPROTO_POP3S CURLPROTO_SMTP CURLPROTO_SMTPS CURLPROTO_RTSP
+CURLPROTO_RTMP CURLPROTO_RTMPT CURLPROTO_RTMPE CURLPROTO_RTMPTE
+CURLPROTO_GOPHER and CURLPROTO_ALL.
+
+@item redir-protocols
+Takes an integer that is a bitmask of @code{CURLPROTO} defines.  If
+used, it limits what protocols may b used in a transfer that is
+followed in a redirect.
+
+@item proxy
+Takes a string holding the host name or dotted IP address of the http
+proxy to use.
+
+@item proxyport
+Takes in integer to set the proxy port.
+
+@item proxytype
+Takes an integer that sets the type of proxy.  The integer should be
+one of the CURLPROXY constants: CURLPROXY_HTTP CURLPROXY_HTTP_1_0
+CURLPROXY_SOCKS4 CURLPROXY_SOCKS5 CURLPROXY_SOCKS4A or
+CURLPROXY_SOCKS5_HOSTNAME.
+
+@item noproxy
+Takes a string that is a comma-separated list of hosts that do not use
+a proxy.  '*' can be used as a wildcard.
+
+@item httpproxytunnel
+Takes a boolean.  When @code{#t} all opperations are tunnelled through
+a given proxy.
+
+@item socks5-gssapi-service
+Takes a string that holds the name of a service for a socks5 server.
+
+@item socks5-gssapi-nec
+Takes a boolean. When @code{#t}, this allows the unprotected exchange
+of the protection mode negotiation during gssapi negotiation.
+
+@item interface
+Takes a string.  This sets the interface name to use as outgoing
+network interface.  The name can be an interface name, and IP address,
+or a host name.
+
+@item localport
+Takes in integer.  Sets the local port number of the socket used for
+the connection.
+
+@item localportrange
+Takes in integer.  This is the number of attempts libcurl should make
+to find a working local port number.  It starts with the port given by
+the @code{localport} options and then adds one for each retry.
+
+@item dns-cache-timeout
+Takes an integer that sets a timeout in seconds for how long name
+resolves will be kept in memory.  Zero disable caching. -1 makes
+caching infinite.
+
+@item buffersize
+Takes an integer that sets the preferred size in bytes for the receive
+buffer.  While this scheme implementation only returns completed
+transfers, this option changes the sizes of the chunks used to
+assemble a resouce when it is being transfered.
+
+@item port
+Takes an integer that specifies the report port number to connect to,
+instead of the default or what was specified in the @code{url}.
+
+@item tcp-nodelay
+Takes a boolean.  @code{#t} indicates that the TCP's Nagle algorithm
+should be disabled.
+
+@item address-scope
+Takes a long that specified the scope id value to use when connecto to
+IPv6 link-local or site-local addresses.
+@end table
+
+@subsection Name and Password Options
+@table @code
+@item netrc
+Takes a long which is one of the CURL_NETRC constants.  It controls
+whether to look in your .netrc file for user names and passwords.  The
+allowed values are CURL_NETRC_OPTIONAL, CURL_NETRC_IGNORED and
+CURL_NETRC_REQUIRED.
+
+@item netrc-file
+Takes a string that defines the full file path to the netrc file, if
+it is not in the default location.
+
+@item userpwd
+Takes a string that should be ``[user name]:[password]'' for a
+connection.
+
+@item proxyuserpwd
+Takes a string ``[user name]:[password]'' that is the password for the
+HTTP proxy.
+
+@item username
+Takes a string that is the user name for a transfer.
+
+@item password
+Takes a string that is the password for a transfer.
+
+@item proxyusername
+Takes a string that is a user name to use for a transfer when
+connecting to a proxy.
+
+@item proxypassword
+Takes a string that is a password to use for a transfer when
+connecting to a proxy.
+
+@item httpauth
+Takes in integer which is a bitmask of CURLAUTH constants that
+describes the authentication methods that can be used.  The
+authentication method constants are CURLAUTH_BASIC CURLAUTH_DIGEST
+CURLAUTH_DIGEST_IE CURLAUTH_GSSNEGOTIATE CURLAUTH_NTLM CURLAUTH_ANY
+CURLAUTH_ANYSAFE and CURLAUTH_ONLY.
+
+@item proxyauth
+Takes in integer that is set to a bitmask of CURLAUTH constants that
+describes the authentication methods that can be used for proxy
+authentication. 
+
+@end table
+
+@subsection HTTP Options
+@table @code
+@item autoreferer
+Takes a boolean.  When @code{#t} it will automatically set the
+``Referer:'' field in requests where it follows a ``Location:''
+redirect.
+
+@item encoding
+Sets the contents of the ``Accept-Encoding:'' header sent in an HTTP
+request, and enables decoding of a response when a
+``Content-Encoding:'' header is received.  Takes a string that
+contains ``identity'', ``deflate'', and/or ``gzip''.
+
+@item followlocation
+Takes a boolean.  When @code{#t} it will follow any ``Location:''
+header that the server sends as part of the HTTP header.
+
+@item unrestricted-auth
+Takes a boolean.  When @code{#t} it tallows the sending of
+authentication data (user + password) when following locations, even
+when the hostname has changed.
+
+@item maxredirs
+Takes a number that will be the redirection limit.  Zero disallows
+redirections. -1 allows infinite numbers of redirections.
+
+@item postredir
+Takes an integer bitmask that controls how it acts on redirects after
+POSTs that get a 301 or 302 response back.  The CURL_REDIR_POST_301
+constant tells the library to not convert POST requests to GET
+requests when following a redirection.  The CURL_REDIR_POST_302
+maintains the request method after a 302 redirect. CURL_REDIR_POST_ALL
+does both.
+
+@item post
+Boolean
+
+@item httppost
+HTTPPost.
+
+@item referer
+String.
+
+@item useragent
+String.
+
+@item httpheader
+List.
+
+@item http200aliases
+List.
+
+@item cookie
+String.
+
+@item cookiefile
+String.
+
+@item cookiejar
+String.
+
+@item cookiesession
+Boolean.
+
+@item cookielist
+String.
+
+@item httpget
+Boolean.
+
+@item http-version
+Integer.
+
+@item ignore-content-length
+Boolean.
+
+@item http-content-decoding
+Boolean
+
+@item http-transfer-decoding
+Boolean.
+
+@end table
+
+@subsection Connection Options
+@table @code
+@item timeout
+Integer.
+
+@item timeout-ms
+Integer.
+
+@item low-speed-limit
+Integer.
+
+@item low-speed-time
+Integer.
+
+@item maxconnects
+Integer.
+
+@item fresh-connect
+Boolean.
+
+@item forbid-reuse
+Boolean.
+
+@item connecttimeout
+Integer.
+
+@item connecttimeout-ms
+Integer.
+
+@item ipresolve
+Integer.
+
+@item connect-only
+Boolean.
+
+@end table
+
 
 @node Index,  , Reference, Top
 @unnumbered Index
