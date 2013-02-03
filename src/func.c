@@ -3,7 +3,6 @@
 #include "type.h"
 #include "func.h"
 
-
 static size_t write_callback (void *ptr, size_t size, size_t nmemb, 
 			      void *port);
 static int is_equal_symbol (SCM sym, const char *str);

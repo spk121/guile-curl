@@ -18,9 +18,7 @@ libguile_curl_la_SOURCES = \
 	func.c func.h \
 	main.c
 
-curl_sitedir = ${datadir}/guile/site
-pkgcurl_sitedir = ${curl_sitedir}/$(PACKAGE)
-pkgcurl_site_DATA = curl.scm
+guilemodule_DATA = curl.scm
 ETAGS_ARGS = curl.scm
 
 EXTRA_DIST = \
@@ -31,5 +29,4 @@ CLEANFILES = curl.scm
 
 curl.scm: curl.scm.in
 	cat $< | \
-	sed 's|XXlibnameXX|libguile-curl|' | \
-	sed 's|XXpackageXX|$(PACKAGE)|' > $@
+	sed 's|XXlibnameXX|libguile-curl|' > $@

@@ -3,7 +3,7 @@
 
 (use-modules (test lib)
 	     (test lib2)
-	     (curl curl))
+	     (curl))
 
 (with-test-prefix 
  "curl-easy-init"

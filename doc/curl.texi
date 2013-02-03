@@ -97,7 +97,7 @@ based on the libcurl library.
 
 Before using these functions, you must first load the library.  If the
 library built and installed correctly, you should be able to load the
-library in the usual way by using @code{(use-modules (curl curl))}.
+library in the usual way by using @code{(use-modules (curl))}.
 
 To transfer a file, you start off by creating a handle using
 @code{curl-easy-init}.  @code{curl-easy-init} is a procecure that
@@ -129,7 +129,7 @@ text resource.
 The following code will fetch a web page that has a simple URL.
 
 @lisp
-(use-modules (curl curl)
+(use-modules (curl)
              (rnrs bytevectors))
 (define handle (curl-easy-init))
 (curl-easy-setopt handle 'url "http://www.gnu.org")

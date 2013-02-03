@@ -3,7 +3,7 @@
 ##################
 # Package info
 AC_PREREQ([2.66])
-AC_INIT([curl],[0.0],[spk121@yahoo.com])
+AC_INIT([guile-curl],[0.1],[spk121@yahoo.com])
 AC_CONFIG_AUX_DIR([build_aux])
 AM_INIT_AUTOMAKE([gnu std-options -Wall])
 AC_CONFIG_SRCDIR([config.h.in])
@@ -13,7 +13,7 @@ AC_CONFIG_MACRO_DIR([m4])
 ##################
 # Set some version constants
 LIBGUILE_CURL_MAJOR=0
-LIBGUILE_CURL_INTERFACE="0:0:0"
+LIBGUILE_CURL_INTERFACE="0:1:0"
 AC_SUBST(LIBGUILE_CURL_MAJOR)
 AC_SUBST(LIBGUILE_CURL_INTERFACE)
 
@@ -47,10 +47,27 @@ AM_CONDITIONAL([ETEX_FIX], [test "$enable_etex_fix" = yes])
 AC_CHECK_LIB([curl], 
              [curl_global_init], ,
              [AC_MSG_ERROR([The curl library was not found])])
+
+AC_ARG_WITH([guilemoduledir],
+  [use the specified installation path for Guile modules],
+  [case "x$withval" in
+    xyes|xno) guilemoduledir="";;
+    *)        guilemoduledir="$withval";;
+   esac],
+  [guilemoduledir=""])
+
 GUILE_PROGS
 GUILE_FLAGS
 GUILE_SITE_DIR
 GUILE_FLAGS
+
+pkgdatadir="$datadir/$PACKAGE_NAME"
+if test "x$guilemoduledir" = "x"; then
+  guilemoduledir="$pkgdatadir"
+fi
+AC_SUBST([guilemoduledir])
+
+
 dnl AC_CHECK_LIB([guile-2.0], 
 dnl              [scm_boot_guile], ,
 dnl              [AC_MSG_ERROR([The guile library was not found])])
@@ -87,3 +104,13 @@ AC_CONFIG_FILES([Makefile
                 build_aux/Makefile])
 
 AC_OUTPUT
+
+if test "$guilemoduledir" != "$GUILE_SITE"; then
+   # Guile has a different prefix than this module
+   AC_MSG_WARN([]
+   [The Guile modules will be installed in '${guilemoduledir}'.]
+   [You should probably re-run `configure' with]
+   [`--with-guilemoduledir=$GUILE_SITE']
+   [Otherwise, you will have to adjust the `GUILE_LOAD_PATH' environment]
+   [variable.])
+fi

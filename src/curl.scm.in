@@ -1,5 +1,5 @@
 ;; -*- Mode: scheme; -*-
-(define-module (XXpackageXX curl)
+(define-module (curl)
   #:use-module (srfi srfi-1)
   #:use-module (rnrs bytevectors)
   #:export ( 
