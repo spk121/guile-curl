@@ -18,4 +18,11 @@ SCM _scm_from_handle (CURL *x);
 
 SCM cl_is_handle_p (SCM x) API;
 
+int _scm_is_slist (SCM x);
+struct curl_slist *_scm_to_slist (SCM x);
+SCM _scm_from_slist (struct curl_slist *x);
+
+SCM cl_is_handle_p (SCM x) API;
+
+
 #endif

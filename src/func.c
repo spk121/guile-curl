@@ -35,7 +35,7 @@ is_equal_symbol (SCM sym, const char *str)
 }
 
 SCM
-cl_easy_setopt (SCM handle, SCM option, SCM x)
+cl_easy_setopt (SCM handle, SCM option, SCM x, SCM big)
 {
   CURL *c_handle;
   CURLcode code;
@@ -49,7 +49,12 @@ cl_easy_setopt (SCM handle, SCM option, SCM x)
   c_handle = _scm_to_handle (handle);
   opt = (CURLoption) scm_to_int (option);
   if (scm_is_integer (x))
-    code = curl_easy_setopt (c_handle, opt, scm_to_long (x));
+    {
+      if (scm_is_true (big))
+	code = curl_easy_setopt (c_handle, opt, scm_to_int64 (x));
+      else
+	code = curl_easy_setopt (c_handle, opt, scm_to_long (x));
+    }
   else if (scm_is_string (x))
     { 
       opt_s = scm_to_locale_string (x);
@@ -58,6 +63,8 @@ cl_easy_setopt (SCM handle, SCM option, SCM x)
     }
   else if (scm_is_bytevector (x))
     code = curl_easy_setopt (c_handle, opt, SCM_BYTEVECTOR_CONTENTS (x));
+  else if (_scm_is_slist (x))
+    code = curl_easy_setopt (c_handle, opt, _scm_to_slist (x));
   else
     scm_error (SCM_BOOL_F,
 	       "curl-easy-setopt",
@@ -78,6 +85,11 @@ cl_easy_perform (SCM handle)
   SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "curl-easy-perform");
 
   c_handle = _scm_to_handle (handle);
+  if (c_handle == NULL)
+    {
+      error_code = CURLE_FAILED_INIT;
+      return SCM_BOOL_F;
+    }
   data = scm_c_make_bytevector (0);
 
   curl_easy_setopt (c_handle, CURLOPT_WRITEFUNCTION, write_callback);
@@ -154,37 +166,6 @@ cl_easy_cleanup (SCM handle)
   return SCM_UNSPECIFIED;
 }  
 
-
-// We do global clean up in main.c's atexit
-#if 0
-SCM
-cl_global_cleanup ()
-{
-  curl_global_cleanup ();
-  return SCM_UNDEFINED;
-}
-#endif
-
-// We do global initialization in main.c's cl_init();
-#if 0
-SCM
-cl_global_init ()
-{
-  static int first = 1;
-  static CURLcode ret;
-
-  if (first)
-    {
-      first = 0;
-      ret = curl_global_init (CURL_GLOBAL_ALL);
-    }
-  if (ret == 0)
-    return SCM_BOOL_T;
-  else
-    return SCM_BOOL_F;
-}
-#endif
-
 SCM
 cl_error_string ()
 {
@@ -205,12 +186,10 @@ cl_init_func ()
   if (first)
     {
       scm_c_define_gsubr ("%curl-easy-init", 0, 0, 0, cl_easy_init);
-      scm_c_define_gsubr ("%curl-easy-setopt", 2, 1, 0, cl_easy_setopt);
+      scm_c_define_gsubr ("%curl-easy-setopt", 4, 0, 0, cl_easy_setopt);
       scm_c_define_gsubr ("%curl-easy-perform", 1, 0, 0, cl_easy_perform);
       scm_c_define_gsubr ("%curl-easy-cleanup", 1, 0, 0, cl_easy_cleanup);
       scm_c_define_gsubr ("%curl-easy-reset", 1, 0, 0, cl_easy_reset);
-      // scm_c_define_gsubr ("%curl-global-cleanup", 0, 0, 0, cl_global_cleanup);
-      //scm_c_define_gsubr ("%curl-global-init", 0, 0, 0, cl_global_init);
       scm_c_define_gsubr ("%curl-error-string", 0, 0, 0, cl_error_string);
       scm_c_define_gsubr ("%curl-error-code", 0, 0, 0, cl_error_code);
       

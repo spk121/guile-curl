@@ -240,6 +240,7 @@ cache, the cookies or the shared."
     (localport ,CURLOPT_LOCALPORT integer)
     (localportrange ,CURLOPT_LOCALPORTRANGE integer)
     (dns-cache-timeout ,CURLOPT_DNS_CACHE_TIMEOUT integer)
+    (dns-use-global-cache ,CURLOPT_DNS_USE_GLOBAL_CACHE boolean)
     (buffersize ,CURLOPT_BUFFERSIZE integer)
     (port ,CURLOPT_PORT integer)
     (tcp-nodelay ,CURLOPT_TCP_NODELAY boolean)
@@ -255,18 +256,26 @@ cache, the cookies or the shared."
     (proxyusername ,CURLOPT_PROXYUSERNAME string)
     (proxypassword ,CURLOPT_PROXYPASSWORD string)
     (httpauth ,CURLOPT_HTTPAUTH integer)
+    (tlsauth-type ,CURLOPT_TLSAUTH_TYPE integer)
+    (tlsauth-username ,CURLOPT_TLSAUTH_USERNAME string)
+    (tlsauth-password ,CURLOPT_TLSAUTH_PASSWORD string)
     (proxyauth ,CURLOPT_PROXYAUTH integer)
 
     ;; HTTP OPTIONS
     (autoreferer ,CURLOPT_AUTOREFERER boolean)
-    (encoding ,CURLOPT_ENCODING string)
+    (accept-encoding ,CURLOPT_ACCEPT_ENCODING string)
+    (transfer-encoding, CURLOPT_TRANSFER_ENCODING string)
     (followlocation ,CURLOPT_FOLLOWLOCATION boolean)
     (unrestricted-auth ,CURLOPT_UNRESTRICTED_AUTH boolean)
     (maxredirs ,CURLOPT_MAXREDIRS integer)
     (postredir ,CURLOPT_POSTREDIR integer)
     (put ,CURLOPT_PUT boolean)
     (post ,CURLOPT_POST boolean)
-    (httppost ,CURLOPT_HTTPPOST httppost)
+    (postfields ,CURLOPT_POSTFIELDS bytevector)
+    (postfieldsize ,CURLOPT_POSTFIELDSIZE integer)
+    (postfieldsize ,CURLOPT_POSTFIELDSIZE_LARGE biginteger)
+    (copypostfields ,CURLOPT_COPYPOSTFIELDS string)
+    (httppost ,CURLOPT_HTTPPOST bytevector)
     (referer ,CURLOPT_REFERER string)
     (useragent ,CURLOPT_USERAGENT string)
     (httpheader ,CURLOPT_HTTPHEADER slist)
@@ -282,49 +291,123 @@ cache, the cookies or the shared."
     (http-content-decoding ,CURLOPT_HTTP_CONTENT_DECODING boolean)
     (http-transfer-decoding ,CURLOPT_HTTP_TRANSFER_DECODING boolean)
 
+    ;; SMTP OPTIONS
+    (mail-from ,CURLOPT_MAIL_FROM string)
+    (mail-rcpt ,CURLOPT_MAIL_RCPT slist)
+
+    ;; TFTP OPTIONS
+    (tftp-blksize ,CURLOPT_TFTP_BLKSIZE integer)
+    
+    ;; FTP OPTIONS
+    (ftpport ,CURLOPT_FTPPORT string)
+    (quote ,CURLOPT_QUOTE slist)
+    (postquote ,CURLOPT_POSTQUOTE slist)
+    (prequote ,CURLOPT_PREQUOTE slist)
+    (dirlistonly, ,CURLOPT_DIRLISTONLY boolean)
+    (append, CURLOPT_APPEND boolean)
+    (ftp-use-eprt ,CURLOPT_FTP_USE_EPRT boolean)
+    (ftp-use-epsv ,CURLOPT_FTP_USE_EPSV boolean)
+    (ftp-use-pret ,CURLOPT_FTP_USE_PRET boolean)
+    (ftp-create-missing-dirs ,CURLOPT_FTP_CREATE_MISSING_DIRS boolean)
+    (ftp-response-timeout ,CURLOPT_FTP_RESPONSE_TIMEOUT integer)
+    (ftp-alternative-to-user ,CURLOPT_FTP_ALTERNATIVE_TO_USER string)
+    (ftp-skip-pasv-ip ,CURLOPT_FTP_SKIP_PASV_IP boolean)
+    (ftpsslauth ,CURLOPT_FTPSSLAUTH integer)
+    (ftp-ssl-ccc ,CURLOPT_FTP_SSL_CCC integer)
+    (ftp-account ,CURLOPT_FTP_ACCOUNT string)
+    (ftp-filemethod ,CURLOPT_FTP_FILEMETHOD integer)
+    
+    ;; RTSP OPTIONS
+    (rtsp-request ,CURLOPT_RTSP_REQUEST integer)
+    (rtsp-session-id ,CURLOPT_RTSP_SESSION_ID string)
+    (rtsp-stream-uri ,CURLOPT_RTSP_STREAM_URI string)
+    (rtsp-transport ,CURLOPT_RTSP_TRANSPORT string)
+    (rtsp-client-cseq ,CURLOPT_RTSP_CLIENT_CSEQ integer)
+
+    ;; PROTOCOL OPTIONS
+    (transfertext ,CURLOPT_TRANSFERTEXT boolean)
+    (proxy-transfer-mode ,CURLOPT_PROXY_TRANSFER_MODE boolean)
+    (crlf ,CURLOPT_CRLF boolean)
+    (range ,CURLOPT_RANGE string)
+    (resume-from ,CURLOPT_RESUME_FROM integer)
+    (resume-from-large ,CURLOPT_RESUME_FROM_LARGE biginteger)
+    (customrequest ,CURLOPT_CUSTOMREQUEST string)
+    (filetime ,CURLOPT_FILETIME boolean)
+    (nobody ,CURLOPT_NOBODY boolean)
+    (infilesize ,CURLOPT_INFILESIZE integer)
+    (infilesize-large ,CURLOPT_INFILESIZE_LARGE biginteger)
+    (upload ,CURLOPT_UPLOAD boolean)
+    (maxfilesize ,CURLOPT_MAXFILESIZE integer)
+    (maxfilesize-large ,CURLOPT_MAXFILESIZE_LARGE biginteger)
+    (timecondition ,CURLOPT_TIMECONDITION integer)
+    (timevalue ,CURLOPT_TIMEVALUE integer)
+
     ;; CONNECTION OPTIONS
     (timeout ,CURLOPT_TIMEOUT integer)
     (timeout-ms ,CURLOPT_TIMEOUT integer)
     (low-speed-limit ,CURLOPT_LOW_SPEED_LIMIT integer)
     (low-speed-time ,CURLOPT_LOW_SPEED_TIME integer)
+    (max-send-speed-large ,CURLOPT_MAX_SEND_SPEED_LARGE biginteger)
+    (max-recv-speed-large ,CURLOPT_MAX_RECV_SPEED_LARGE biginteger)
     (maxconnects ,CURLOPT_MAXCONNECTS integer)
     (fresh-connect ,CURLOPT_FRESH_CONNECT boolean)
     (forbid-reuse ,CURLOPT_FORBID_REUSE boolean)
     (connecttimeout ,CURLOPT_CONNECTTIMEOUT integer)
     (connecttimeout-ms ,CURLOPT_CONNECTTIMEOUT_MS integer)
     (ipresolve ,CURLOPT_IPRESOLVE integer)
-    (connect-only ,CURLOPT_CONNECT_ONLY boolean)))
+    (connect-only ,CURLOPT_CONNECT_ONLY boolean)
+    (use-ssl ,CURLOPT_USE_SSL integer)
+    (resolve ,CURLOPT_RESOLVE slist)
+    (dns-servers ,CURLOPT_DNS_SERVERS string)
+    (accepttimeout-ms ,CURLOPT_ACCEPTTIMEOUT_MS integer)
+    
+    ;; SSL and SECURITY OPTIONS
+    (sslcert ,CURLOPT_SSLCERT string)
+    (sslcerttype ,CURLOPT_SSLCERTTYPE string)
+    (sslkey ,CURLOPT_SSLKEY string)
+    (sslkeytype ,CURLOPT_SSLKEYTYPE string)
+    (keypasswd ,CURLOPT_KEYPASSWD string)
+    (sslengine ,CURLOPT_SSLENGINE string)
+    (sslengine-default ,CURLOPT_SSLENGINE_DEFAULT boolean)
+    (sslversion ,CURLOPT_SSLVERSION integer)
+    (ssl-verifypeer ,CURLOPT_SSL_VERIFYPEER integer)
+    (cainfo ,CURLOPT_CAINFO string)
+    (issuercert ,CURLOPT_ISSUERCERT string)
+    (capath ,CURLOPT_CAPATH string)
+    (crlfile ,CURLOPT_CRLFILE string)
+    (ssl-verifyhost ,CURLOPT_SSL_VERIFYHOST integer)
+    (certinfo ,CURLOPT_CERTINFO integer)
+    (random-file ,CURLOPT_RANDOM_FILE string)
+    (egdsocket ,CURLOPT_EGDSOCKET string)
+    (ssl-cipher-list ,CURLOPT_SSL_CIPHER_LIST string)
+    (ssl-sessionid-cache ,CURLOPT_SSL_SESSIONID_CACHE boolean)
+    (krblevel ,CURLOPT_KRBLEVEL string)
+    (gssapi-delegation ,CURLOPT_GSSAPI_DELEGATION integer)))
 
 (define* (curl-easy-setopt handle option arg)
   "Apply the option and argument to a given handle.
-
 Returns #t on success and #f on failure."
 
-  ;; First, check the special case options
-  (cond
-   ((and (eq? option 'postfields)
-	 (bytevector? arg))
-    (and (%curl-easy-setopt handle CURLOPT_POSTFIELDS arg)
-	 (%curl-easy-setopt handle CURLOPT_POSTFIELDSIZE 
-			    (bytevector-length arg))))
-   (else
-    ;; Now, try the more generic options
-    (let ((value (assq-ref symbol-options option)))
-      (if value
-	  (let ((option (car value))
-		(type (cadr value)))
-	    (cond
-	     ((or (and (eq? type 'integer) (integer? arg))
-		  (and (eq? type 'string) (string? arg)))
-	      (%curl-easy-setopt handle option arg))
-	     ((eq? type 'boolean)
-	      (%curl-easy-setopt handle option (c-bool arg)))
-	     ((not (member type '(integer boolean string)))
+  (let ((value (assq-ref symbol-options option)))
+    (if value
+	(let ((option (car value))
+	      (type (cadr value)))
+	  (cond
+	   ((or (and (eq? type 'integer) (integer? arg))
+		(and (eq? type 'string) (string? arg)))
+	    (%curl-easy-setopt handle option arg #f))
+	   ((eq? type 'biginteger)
+	    (%curl-easy-setopt handle option arg #t))
+	   ((eq? type 'boolean)
+	    (%curl-easy-setopt handle option (c-bool arg) #f))
+	   ((eq? type 'slist)
+	    (%curl-easy-setopt handle option (list->curl-list arg) #f))
+	   ((not (member type '(integer boolean string biginteger)))
 	      (error (format #f "Unimplemented type: ~a" type)))
 	     (else
 	      (error (format #f "Wrong type arg: ~a" arg)))))
-	  ;; else
-	  (error (format #f "Unknown option: ~a" option)))))))
+	;; else
+	(error (format #f "Unknown option: ~a" option)))))
 
 (define (curl-easy-perform h)
   "This function is called after the init and all the
