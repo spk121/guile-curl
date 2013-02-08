@@ -403,11 +403,11 @@ Returns #t on success and #f on failure."
 	   ((eq? type 'slist)
 	    (%curl-easy-setopt handle option (list->curl-list arg) #f))
 	   ((not (member type '(integer boolean string biginteger)))
-	      (error (format #f "Unimplemented type: ~a" type)))
+	      (error (format #f "unimplemented type: ~a" type)))
 	     (else
-	      (error (format #f "Wrong type arg: ~a" arg)))))
+	      (error (format #f "wrong type arg: ~a" arg)))))
 	;; else
-	(error (format #f "Unknown option: ~a" option)))))
+	(error (format #f "unknown option: ~a" option)))))
 
 (define (curl-easy-perform h)
   "This function is called after the init and all the
