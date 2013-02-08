@@ -4,7 +4,7 @@
 # Package info
 AC_PREREQ([2.66])
 AC_INIT([guile-curl],[0.1],[spk121@yahoo.com])
-AC_CONFIG_AUX_DIR([build_aux])
+AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([gnu std-options -Wall])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
