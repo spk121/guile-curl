@@ -10,7 +10,7 @@ libguile_curl_la_CPPFLAGS = $(COMPILE_FLAGS) $(GUILE_CFLAGS)
 libguile_curl_la_LDFLAGS = \
 	-no-undefined \
 	-export-dynamic \
-	-version-info @LIBGUILE_CURL_INTERFACE@
+	-version-info $(LIBGUILE_CURL_INTERFACE)
 
 libguile_curl_la_SOURCES = \
 	const.c const.h \
