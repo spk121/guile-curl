@@ -20,5 +20,4 @@
 # MA 02111-1301, USA.
 
 # Set format of NEWS
-old_NEWS_hash := 
-
+old_NEWS_hash :=
