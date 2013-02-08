@@ -5,7 +5,7 @@ SUBDIRS = \
 	m4 \
 	doc \
 	test \
-	build_aux
+	build-aux
 
 ACLOCAL_AMFLAGS = -I m4 --install
 

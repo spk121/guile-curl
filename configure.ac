@@ -101,7 +101,7 @@ AC_CONFIG_FILES([Makefile
                 doc/Makefile 
                 test/Makefile 
                 m4/Makefile 
-                build_aux/Makefile])
+                build-aux/Makefile])
 
 AC_OUTPUT
 
