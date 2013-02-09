@@ -11,27 +11,110 @@
 	    curl-easy-reset
 	    curl-error-string
 	    curl-error-code
-	    
-	    CURL_HTTP_VERSION_NONE
-	    CURL_HTTP_VERSION_1_0
-	    CURL_HTTP_VERSION_1_1
+
+	    CURLPROTO_HTTP
+	    CURLPROTO_HTTPS
+	    CURLPROTO_FTP
+	    CURLPROTO_FTPS
+	    CURLPROTO_SCP
+	    CURLPROTO_SFTP
+	    CURLPROTO_TELNET
+	    CURLPROTO_LDAP
+	    CURLPROTO_LDAPS
+	    CURLPROTO_DICT
+	    CURLPROTO_FILE
+	    CURLPROTO_TFTP
+	    CURLPROTO_IMAP
+	    CURLPROTO_IMAPS
+	    CURLPROTO_POP3
+	    CURLPROTO_POP3S
+	    CURLPROTO_SMTP
+	    CURLPROTO_SMTPS
+	    CURLPROTO_RTSP
+	    CURLPROTO_RTMP
+	    CURLPROTO_RTMPT
+	    CURLPROTO_RTMPE
+	    CURLPROTO_RTMPTE
+	    CURLPROTO_GOPHER
+	    CURLPROTO_ALL
+
+	    CURLPROXY_HTTP
+	    CURLPROXY_HTTP_1_0
+	    CURLPROXY_SOCKS4
+	    CURLPROXY_SOCKS5
+	    CURLPROXY_SOCKS4A
+	    CURLPROXY_SOCKS5_HOSTNAME
 
 	    CURL_NETRC_OPTIONAL
 	    CURL_NETRC_IGNORED
 	    CURL_NETRC_REQUIRED
-
-	    CURL_REDIR_POST_301
-	    CURL_REDIR_POST_302
-	    CURL_REDIR_POST_ALL
 
 	    CURLAUTH_BASIC
 	    CURLAUTH_DIGEST
 	    CURLAUTH_DIGEST_IE
 	    CURLAUTH_GSSNEGOTIATE
 	    CURLAUTH_NTLM
+	    CURLAUTH_NTLM_WB
 	    CURLAUTH_ANY
 	    CURLAUTH_ANYSAFE
 	    CURLAUTH_ONLY
+
+	    CURL_TLSAUTH_SRP
+
+	    CURL_REDIR_POST_301
+	    CURL_REDIR_POST_302
+	    CURL_REDIR_POST_ALL
+
+	    CURL_HTTP_VERSION_NONE
+	    CURL_HTTP_VERSION_1_0
+	    CURL_HTTP_VERSION_1_1
+
+	    CURLFTPAUTH_DEFAULT
+	    CURLFTPAUTH_SSL
+	    CURLFTPAUTH_TLS
+
+	    CURLFTPSSL_CCC_NONE
+	    CURLFTPSSL_CCC_PASSIVE
+	    CURLFTPSSL_CCC_ACTIVE
+
+	    CURLFTPMETHOD_MULTICWD
+	    CURLFTPMETHOD_NOCWD
+	    CURLFTPMETHOD_SINGLECWD
+
+	    CURL_RTSPREQ_OPTIONS
+	    CURL_RTSPREQ_DESCRIBE
+	    CURL_RTSPREQ_ANNOUNCE
+	    CURL_RTSPREQ_SETUP
+	    CURL_RTSPREQ_PLAY
+	    CURL_RTSPREQ_PAUSE
+	    CURL_RTSPREQ_TEARDOWN
+	    CURL_RTSPREQ_GET_PARAMETER
+	    CURL_RTSPREQ_SET_PARAMETER
+	    CURL_RTSPREQ_RECORD
+	    CURL_RTSPREQ_RECEIVE
+
+	    CURL_IPRESOLVE_WHATEVER
+	    CURL_IPRESOLVE_V4
+	    CURL_IPRESOLVE_V6
+
+	    CURLUSESSL_NONE
+	    CURLUSESSL_TRY
+	    CURLUSESSL_CONTROL
+	    CURLUSESSL_ALL
+
+	    CURL_SSLVERSION_DEFAULT
+	    CURL_SSLVERSION_TLSv1
+	    CURL_SSLVERSION_SSLv2
+	    CURL_SSLVERSION_SSLv3
+
+	    CURLGSSAPI_DELEGATION_FLAG
+	    CURLGSSAPI_DELEGATION_POLICY_FLAG
+
+	    CURLSSH_AUTH_PUBLICKEY
+	    CURLSSH_AUTH_PASSWORD
+	    CURLSSH_AUTH_HOST
+	    CURLSSH_AUTH_KEYBOARD
+	    CURLSSH_AUTH_ANY
 
 	    CURLE_OK
 	    CURLE_UNSUPPORTED_PROTOCOL
@@ -115,38 +198,7 @@
 	    CURLE_SSH
 	    CURLE_SSL_SHUTDOWN_FAILED
 
-	    CURLPROTO_HTTP
-	    CURLPROTO_HTTPS
-	    CURLPROTO_FTP
-	    CURLPROTO_FTPS
-	    CURLPROTO_SCP
-	    CURLPROTO_SFTP
-	    CURLPROTO_TELNET
-	    CURLPROTO_LDAP
-	    CURLPROTO_LDAPS
-	    CURLPROTO_DICT
-	    CURLPROTO_FILE
-	    CURLPROTO_TFTP
-	    CURLPROTO_IMAP
-	    CURLPROTO_IMAPS
-	    CURLPROTO_POP3
-	    CURLPROTO_POP3S
-	    CURLPROTO_SMTP
-	    CURLPROTO_SMTPS
-	    CURLPROTO_RTSP
-	    CURLPROTO_RTMP
-	    CURLPROTO_RTMPT
-	    CURLPROTO_RTMPE
-	    CURLPROTO_RTMPTE
-	    CURLPROTO_GOPHER
-	    CURLPROTO_ALL
 
-	    CURLPROXY_HTTP
-	    CURLPROXY_HTTP_1_0
-	    CURLPROXY_SOCKS4
-	    CURLPROXY_SOCKS5
-	    CURLPROXY_SOCKS4A
-	    CURLPROXY_SOCKS5_HOSTNAME
 
 	    ))
 
@@ -222,6 +274,7 @@ cache, the cookies or the shared."
     ;; BEHAVIOR OPTIONS
     (verbose ,CURLOPT_VERBOSE boolean)
     (header ,CURLOPT_HEADER boolean)
+    ;; CURLOPT_NOPROGRESS is deprecated
     (nosignal ,CURLOPT_NOSIGNAL boolean)
     (wildcardmatch ,CURLOPT_WILDCARDMATCH boolean)
 
@@ -240,7 +293,7 @@ cache, the cookies or the shared."
     (localport ,CURLOPT_LOCALPORT integer)
     (localportrange ,CURLOPT_LOCALPORTRANGE integer)
     (dns-cache-timeout ,CURLOPT_DNS_CACHE_TIMEOUT integer)
-    (dns-use-global-cache ,CURLOPT_DNS_USE_GLOBAL_CACHE boolean)
+    ;; dns-use-global-cache is deprecated
     (buffersize ,CURLOPT_BUFFERSIZE integer)
     (port ,CURLOPT_PORT integer)
     (tcp-nodelay ,CURLOPT_TCP_NODELAY boolean)
@@ -264,7 +317,7 @@ cache, the cookies or the shared."
     ;; HTTP OPTIONS
     (autoreferer ,CURLOPT_AUTOREFERER boolean)
     (accept-encoding ,CURLOPT_ACCEPT_ENCODING string)
-    (transfer-encoding, CURLOPT_TRANSFER_ENCODING string)
+    (transfer-encoding ,CURLOPT_TRANSFER_ENCODING string)
     (followlocation ,CURLOPT_FOLLOWLOCATION boolean)
     (unrestricted-auth ,CURLOPT_UNRESTRICTED_AUTH boolean)
     (maxredirs ,CURLOPT_MAXREDIRS integer)
@@ -273,9 +326,9 @@ cache, the cookies or the shared."
     (post ,CURLOPT_POST boolean)
     (postfields ,CURLOPT_POSTFIELDS bytevector)
     (postfieldsize ,CURLOPT_POSTFIELDSIZE integer)
-    (postfieldsize ,CURLOPT_POSTFIELDSIZE_LARGE biginteger)
-    (copypostfields ,CURLOPT_COPYPOSTFIELDS string)
-    (httppost ,CURLOPT_HTTPPOST bytevector)
+    (postfieldsize-large ,CURLOPT_POSTFIELDSIZE_LARGE biginteger)
+    (copypostfields ,CURLOPT_COPYPOSTFIELDS bytevector)
+    (httppost ,CURLOPT_HTTPPOST httppost)
     (referer ,CURLOPT_REFERER string)
     (useragent ,CURLOPT_USERAGENT string)
     (httpheader ,CURLOPT_HTTPHEADER slist)
@@ -297,14 +350,14 @@ cache, the cookies or the shared."
 
     ;; TFTP OPTIONS
     (tftp-blksize ,CURLOPT_TFTP_BLKSIZE integer)
-    
+
     ;; FTP OPTIONS
     (ftpport ,CURLOPT_FTPPORT string)
     (quote ,CURLOPT_QUOTE slist)
     (postquote ,CURLOPT_POSTQUOTE slist)
     (prequote ,CURLOPT_PREQUOTE slist)
-    (dirlistonly, ,CURLOPT_DIRLISTONLY boolean)
-    (append, CURLOPT_APPEND boolean)
+    (dirlistonly ,CURLOPT_DIRLISTONLY boolean)
+    (append ,CURLOPT_APPEND boolean)
     (ftp-use-eprt ,CURLOPT_FTP_USE_EPRT boolean)
     (ftp-use-epsv ,CURLOPT_FTP_USE_EPSV boolean)
     (ftp-use-pret ,CURLOPT_FTP_USE_PRET boolean)
@@ -316,13 +369,15 @@ cache, the cookies or the shared."
     (ftp-ssl-ccc ,CURLOPT_FTP_SSL_CCC integer)
     (ftp-account ,CURLOPT_FTP_ACCOUNT string)
     (ftp-filemethod ,CURLOPT_FTP_FILEMETHOD integer)
-    
+
     ;; RTSP OPTIONS
     (rtsp-request ,CURLOPT_RTSP_REQUEST integer)
     (rtsp-session-id ,CURLOPT_RTSP_SESSION_ID string)
     (rtsp-stream-uri ,CURLOPT_RTSP_STREAM_URI string)
     (rtsp-transport ,CURLOPT_RTSP_TRANSPORT string)
+    ;; rtsp-header is unimplmented
     (rtsp-client-cseq ,CURLOPT_RTSP_CLIENT_CSEQ integer)
+    ;; rtsp-server-cseq is unimplemented
 
     ;; PROTOCOL OPTIONS
     (transfertext ,CURLOPT_TRANSFERTEXT boolean)
@@ -344,12 +399,13 @@ cache, the cookies or the shared."
 
     ;; CONNECTION OPTIONS
     (timeout ,CURLOPT_TIMEOUT integer)
-    (timeout-ms ,CURLOPT_TIMEOUT integer)
+    (timeout-ms ,CURLOPT_TIMEOUT_MS integer)
     (low-speed-limit ,CURLOPT_LOW_SPEED_LIMIT integer)
     (low-speed-time ,CURLOPT_LOW_SPEED_TIME integer)
     (max-send-speed-large ,CURLOPT_MAX_SEND_SPEED_LARGE biginteger)
     (max-recv-speed-large ,CURLOPT_MAX_RECV_SPEED_LARGE biginteger)
     (maxconnects ,CURLOPT_MAXCONNECTS integer)
+    ;; closepolicy is obsolete
     (fresh-connect ,CURLOPT_FRESH_CONNECT boolean)
     (forbid-reuse ,CURLOPT_FORBID_REUSE boolean)
     (connecttimeout ,CURLOPT_CONNECTTIMEOUT integer)
@@ -360,7 +416,7 @@ cache, the cookies or the shared."
     (resolve ,CURLOPT_RESOLVE slist)
     (dns-servers ,CURLOPT_DNS_SERVERS string)
     (accepttimeout-ms ,CURLOPT_ACCEPTTIMEOUT_MS integer)
-    
+
     ;; SSL and SECURITY OPTIONS
     (sslcert ,CURLOPT_SSLCERT string)
     (sslcerttype ,CURLOPT_SSLCERTTYPE string)
@@ -370,21 +426,34 @@ cache, the cookies or the shared."
     (sslengine ,CURLOPT_SSLENGINE string)
     (sslengine-default ,CURLOPT_SSLENGINE_DEFAULT boolean)
     (sslversion ,CURLOPT_SSLVERSION integer)
-    (ssl-verifypeer ,CURLOPT_SSL_VERIFYPEER integer)
+    (ssl-verifypeer ,CURLOPT_SSL_VERIFYPEER boolean)
     (cainfo ,CURLOPT_CAINFO string)
     (issuercert ,CURLOPT_ISSUERCERT string)
     (capath ,CURLOPT_CAPATH string)
     (crlfile ,CURLOPT_CRLFILE string)
     (ssl-verifyhost ,CURLOPT_SSL_VERIFYHOST integer)
-    (certinfo ,CURLOPT_CERTINFO integer)
+    (certinfo ,CURLOPT_CERTINFO boolean)
     (random-file ,CURLOPT_RANDOM_FILE string)
     (egdsocket ,CURLOPT_EGDSOCKET string)
     (ssl-cipher-list ,CURLOPT_SSL_CIPHER_LIST string)
     (ssl-sessionid-cache ,CURLOPT_SSL_SESSIONID_CACHE boolean)
     (krblevel ,CURLOPT_KRBLEVEL string)
-    (gssapi-delegation ,CURLOPT_GSSAPI_DELEGATION integer)))
+    (gssapi-delegation ,CURLOPT_GSSAPI_DELEGATION integer)
+    (ssh-auth-types ,CURLOPT_SSH_AUTH_TYPES integer)
+    (ssh-host-public-key-md5 ,CURLOPT_SSH_HOST_PUBLIC_KEY_MD5 string)
+    (ssh-public-keyfile ,CURLOPT_SSH_PUBLIC_KEYFILE string)
+    (ssh-private-keyfile ,CURLOPT_SSH_PRIVATE_KEYFILE string)
+    (ssh-known-hosts ,CURLOPT_SSH_KNOWNHOSTS string)
+    ;; ssh-keyfunction is unimplemented because it is complicated
+    ;; ssh-keydata
+    ;; private
+    ;; share
+    (new-file-perms ,CURLOPT_NEW_FILE_PERMS integer)
+    (new-directory-perms ,CURLOPT_NEW_DIRECTORY_PERMS integer)
+    (telnetoptions ,CURLOPT_TELNETOPTIONS slist)
+    ))
 
-(define* (curl-easy-setopt handle option arg)
+(define (curl-easy-setopt handle option arg)
   "Apply the option and argument to a given handle.
 Returns #t on success and #f on failure."
 

@@ -195,298 +195,462 @@ what will happend when @code{curl-easy-perform} is called.
 needed for the option.  See below for a table of options.
 @end deffn
 
+@node Options, Error Codes, Procedures, Reference
 @section Options
 
 The options that can be set by @code{curl-easy-setopt} are listed
-below.  For a much better explanation of what each of these options
-does, you can look at the manual page for @code{curl_easy_setopt}
-which comes with the libcurl library, which you should have since it
-is required to compile this package.  
+below.  For a much better an explanation of what each of these options
+does, you can look at the manual page for C library function
+@code{curl_easy_setopt} which comes with the libcurl library, which
+you should have since it is required to compile this package.
 
-@subsection Behavior Options
+@menu
+* Option Table::
+* Option Data Types::
+@end menu
+
+@node Option Table, Option Data Types, Options, Options
+@subsection Option Table
+
+The table describes the options and the type of info expected for each
+option.
+
+@itemize @bullet
+
+@item
+The first column is the symbol that you would pass as the
+@code{option} argument to @code{curl-easy-setopt}.
+
+@item
+The second column is the name of the option as it is listed in the
+manual page for the C library function @code{curl_easy_setopt}.
+
+@item
+The third column is the type of data that you would pass as the
+@code{info} argument to @code{curl-easy-setopt}.  These may differ
+from those in the manual page for C library function
+@code{curl_easy_setopt}.  For example, this scheme library will use
+@code{#t} and @code{#f} where the C function uses 1 and 0.
+@end itemize
+
+@multitable @columnfractions .25 .55 .25
+@headitem Option Symbol @tab C Library Name @tab Info Type
+
+@item BEHAVIOR OPTIONS
+@item verbose @tab CURLOPT_VERBOSE @tab boolean
+@item header @tab CURLOPT_HEADER @tab boolean
+@c CURLOPT_NOPROGRESS is deprecated
+@item nosignal @tab CURLOPT_NOSIGNAL @tab boolean
+@item wildcardmatch @tab CURLOPT_WILDCARDMATCH @tab boolean
+
+@item NETWORK OPTIONS
+@item url @tab CURLOPT_URL @tab string
+@item protocols @tab CURLOPT_PROTOCOLS @tab integer*
+@item redir-protocols @tab CURLOPT_REDIR_PROTOCOLS @tab integer*
+@item proxy @tab CURLOPT_PROXY @tab string
+@item proxyport @tab CURLOPT_PROXYPORT @tab integer
+@item proxytype @tab CURLOPT_PROXYTYPE @tab integer*
+@item noproxy @tab CURLOPT_NOPROXY @tab string
+@item httpproxytunnel @tab CURLOPT_HTTPPROXYTUNNEL @tab boolean
+@item socks5-gssapi-service @tab CURLOPT_SOCKS5_GSSAPI_SERVICE @tab string
+@item socks5-gssapi-nec @tab CURLOPT_SOCKS5_GSSAPI_NEC @tab boolean
+@item interface @tab CURLOPT_INTERFACE @tab string
+@item localport @tab CURLOPT_LOCALPORT @tab integer
+@item localportrange @tab CURLOPT_LOCALPORTRANGE @tab integer
+@item dns-cache-timeout @tab CURLOPT_DNS_CACHE_TIMEOUT @tab integer
+@item buffersize @tab CURLOPT_BUFFERSIZE @tab integer
+@item port @tab CURLOPT_PORT @tab integer
+@item tcp-nodelay @tab CURLOPT_TCP_NODELAY @tab boolean
+@item address-scope @tab CURLOPT_ADDRESS_SCOPE @tab integer
+
+@item NAMES AND PASSWORD OPTIONS
+@item netrc @tab CURLOPT_NETRC @tab integer*
+@item netrc-file @tab CURLOPT_NETRC_FILE @tab string
+@item userpwd @tab CURLOPT_USERPWD @tab string
+@item proxyuserpwd @tab CURLOPT_PROXYUSERPWD @tab string
+@item username @tab CURLOPT_USERNAME @tab string
+@item password @tab CURLOPT_PASSWORD @tab string
+@item proxyusername @tab CURLOPT_PROXYUSERNAME @tab string
+@item proxypassword @tab CURLOPT_PROXYPASSWORD @tab string
+@item httpauth @tab CURLOPT_HTTPAUTH @tab integer*
+@item tlsauth-type @tab CURLOPT_TLSAUTH_TYPE @tab integer*
+@item tlsauth-username @tab CURLOPT_TLSAUTH_USERNAME @tab string
+@item tlsauth-password @tab CURLOPT_TLSAUTH_PASSWORD @tab string
+@item proxyauth @tab CURLOPT_PROXYAUTH @tab integer
+
+@item HTTP OPTIONS
+@item autoreferer @tab CURLOPT_AUTOREFERER @tab boolean
+@item accept-encoding @tab CURLOPT_ACCEPT_ENCODING @tab string
+@item transfer-encoding @tab CURLOPT_TRANSFER_ENCODING @tab string
+@item followlocation @tab CURLOPT_FOLLOWLOCATION @tab boolean
+@item unrestricted-auth @tab CURLOPT_UNRESTRICTED_AUTH @tab boolean
+@item maxredirs @tab CURLOPT_MAXREDIRS @tab integer
+@item postredir @tab CURLOPT_POSTREDIR @tab integer*
+@item put @tab CURLOPT_PUT @tab boolean
+@item post @tab CURLOPT_POST @tab boolean
+@item postfields @tab CURLOPT_POSTFIELDS @tab bytevector
+@item postfieldsize @tab CURLOPT_POSTFIELDSIZE @tab integer
+@item postfieldsize-large @tab CURLOPT_POSTFIELDSIZE_LARGE @tab biginteger
+@item copypostfields @tab CURLOPT_COPYPOSTFIELDS @tab bytevector
+@item httppost @tab CURLOPT_HTTPPOST @tab httppost
+@item referer @tab CURLOPT_REFERER @tab string
+@item useragent @tab CURLOPT_USERAGENT @tab string
+@item httpheader @tab CURLOPT_HTTPHEADER @tab slist
+@item http200aliases @tab CURLOPT_HTTP200ALIASES @tab slist
+@item cookie @tab CURLOPT_COOKIE @tab string
+@item cookiefile @tab CURLOPT_COOKIEFILE @tab string
+@item cookiejar @tab CURLOPT_COOKIEJAR @tab string
+@item cookiesession @tab CURLOPT_COOKIESESSION @tab boolean
+@item cookielist @tab CURLOPT_COOKIELIST @tab string
+@item httpget @tab CURLOPT_HTTPGET @tab boolean
+@item http-version @tab CURLOPT_HTTP_VERSION @tab integer*
+@item ignore-content-length @tab CURLOPT_IGNORE_CONTENT_LENGTH @tab boolean
+@item http-content-decoding @tab CURLOPT_HTTP_CONTENT_DECODING @tab boolean
+@item http-transfer-decoding @tab CURLOPT_HTTP_TRANSFER_DECODING @tab boolean
+
+@item SMTP OPTIONS
+@item mail-from @tab CURLOPT_MAIL_FROM @tab string
+@item mail-rcpt @tab CURLOPT_MAIL_RCPT @tab slist
+
+@item TFTP OPTIONS
+@item tftp-blksize @tab CURLOPT_TFTP_BLKSIZE @tab integer
+
+@item FTP OPTIONS
+@item ftpport @tab CURLOPT_FTPPORT @tab string
+@item quote @tab CURLOPT_QUOTE @tab slist
+@item postquote @tab CURLOPT_POSTQUOTE @tab slist
+@item prequote @tab CURLOPT_PREQUOTE @tab slist
+@item dirlistonly, @tab CURLOPT_DIRLISTONLY @tab boolean
+@item append @tab CURLOPT_APPEND @tab boolean
+@item ftp-use-eprt @tab CURLOPT_FTP_USE_EPRT @tab boolean
+@item ftp-use-epsv @tab CURLOPT_FTP_USE_EPSV @tab boolean
+@item ftp-use-pret @tab CURLOPT_FTP_USE_PRET @tab boolean
+@item ftp-create-missing-dirs @tab CURLOPT_FTP_CREATE_MISSING_DIRS @tab boolean
+@item ftp-response-timeout @tab CURLOPT_FTP_RESPONSE_TIMEOUT @tab integer
+@item ftp-alternative-to-user @tab CURLOPT_FTP_ALTERNATIVE_TO_USER @tab string
+@item ftp-skip-pasv-ip @tab CURLOPT_FTP_SKIP_PASV_IP @tab boolean
+@item ftpsslauth @tab CURLOPT_FTPSSLAUTH @tab integer*
+@item ftp-ssl-ccc @tab CURLOPT_FTP_SSL_CCC @tab integer*
+@item ftp-account @tab CURLOPT_FTP_ACCOUNT @tab string
+@item ftp-filemethod @tab CURLOPT_FTP_FILEMETHOD @tab integer*
+
+@item RTSP OPTIONS
+@item rtsp-request @tab CURLOPT_RTSP_REQUEST @tab integer*
+@item rtsp-session-id @tab CURLOPT_RTSP_SESSION_ID @tab string
+@item rtsp-stream-uri @tab CURLOPT_RTSP_STREAM_URI @tab string
+@item rtsp-transport @tab CURLOPT_RTSP_TRANSPORT @tab string
+@c rtsp-header is unimplemented
+@item rtsp-client-cseq @tab CURLOPT_RTSP_CLIENT_CSEQ @tab integer
+@c rtsp-server-cseq is unimplemented
+
+@item PROTOCOL OPTIONS
+@item transfertext @tab CURLOPT_TRANSFERTEXT @tab boolean
+@item proxy-transfer-mode @tab CURLOPT_PROXY_TRANSFER_MODE @tab boolean
+@item crlf @tab CURLOPT_CRLF @tab boolean
+@item range @tab CURLOPT_RANGE @tab string
+@item resume-from @tab CURLOPT_RESUME_FROM @tab integer
+@item resume-from-large @tab CURLOPT_RESUME_FROM_LARGE @tab biginteger
+@item customrequest @tab CURLOPT_CUSTOMREQUEST @tab string
+@item filetime @tab CURLOPT_FILETIME @tab boolean
+@item nobody @tab CURLOPT_NOBODY @tab boolean
+@item infilesize @tab CURLOPT_INFILESIZE @tab integer
+@item infilesize-large @tab CURLOPT_INFILESIZE_LARGE @tab biginteger
+@item upload @tab CURLOPT_UPLOAD @tab boolean
+@item maxfilesize @tab CURLOPT_MAXFILESIZE @tab integer
+@item maxfilesize-large @tab CURLOPT_MAXFILESIZE_LARGE @tab biginteger
+@item timecondition @tab CURLOPT_TIMECONDITION @tab integer
+@item timevalue @tab CURLOPT_TIMEVALUE @tab integer
+
+@item CONNECTION OPTIONS
+@item timeout @tab CURLOPT_TIMEOUT @tab integer
+@item timeout-ms @tab CURLOPT_TIMEOUT_MS @tab integer
+@item low-speed-limit @tab CURLOPT_LOW_SPEED_LIMIT @tab integer
+@item low-speed-time @tab CURLOPT_LOW_SPEED_TIME @tab integer
+@item max-send-speed-large @tab CURLOPT_MAX_SEND_SPEED_LARGE @tab biginteger
+@item max-recv-speed-large @tab CURLOPT_MAX_RECV_SPEED_LARGE @tab biginteger
+@item maxconnects @tab CURLOPT_MAXCONNECTS @tab integer
+@c closepolicy is obsolete
+@item fresh-connect @tab CURLOPT_FRESH_CONNECT @tab boolean
+@item forbid-reuse @tab CURLOPT_FORBID_REUSE @tab boolean
+@item connecttimeout @tab CURLOPT_CONNECTTIMEOUT @tab integer
+@item connecttimeout-ms @tab CURLOPT_CONNECTTIMEOUT_MS @tab integer
+@item ipresolve @tab CURLOPT_IPRESOLVE @tab integer*
+@item connect-only @tab CURLOPT_CONNECT_ONLY @tab boolean
+@item use-ssl @tab CURLOPT_USE_SSL @tab integer*
+@item resolve @tab CURLOPT_RESOLVE @tab slist
+@item dns-servers @tab CURLOPT_DNS_SERVERS @tab string
+@item accepttimeout-ms @tab CURLOPT_ACCEPTTIMEOUT_MS @tab integer
+
+@item SSL AND SECURITY OPTIONS
+@item sslcert @tab CURLOPT_SSLCERT @tab string
+@item sslcerttype @tab CURLOPT_SSLCERTTYPE @tab string
+@item sslkey @tab CURLOPT_SSLKEY @tab string
+@item sslkeytype @tab CURLOPT_SSLKEYTYPE @tab string
+@item keypasswd @tab CURLOPT_KEYPASSWD @tab string
+@item sslengine @tab CURLOPT_SSLENGINE @tab string
+@item sslengine-default @tab CURLOPT_SSLENGINE_DEFAULT @tab boolean
+@item sslversion @tab CURLOPT_SSLVERSION @tab integer*
+@item ssl-verifypeer @tab CURLOPT_SSL_VERIFYPEER @tab boolean
+@item cainfo @tab CURLOPT_CAINFO @tab string
+@item issuercert @tab CURLOPT_ISSUERCERT @tab string
+@item capath @tab CURLOPT_CAPATH @tab string
+@item crlfile @tab CURLOPT_CRLFILE @tab string
+@item ssl-verifyhost @tab CURLOPT_SSL_VERIFYHOST @tab integer
+@item certinfo @tab CURLOPT_CERTINFO @tab boolean
+@item random-file @tab CURLOPT_RANDOM_FILE @tab string
+@item egdsocket @tab CURLOPT_EGDSOCKET @tab string
+@item ssl-cipher-list @tab CURLOPT_SSL_CIPHER_LIST @tab string
+@item ssl-sessionid-cache @tab CURLOPT_SSL_SESSIONID_CACHE @tab boolean
+@item krblevel @tab CURLOPT_KRBLEVEL @tab string
+@item gssapi-delegation @tab CURLOPT_GSSAPI_DELEGATION @tab integer*
+
+@item SSH OPTIONS
+@item ssh-auth-types @tab CURLOPT_SSH_AUTH_TYPES @tab integer*
+@item ssh-host-public-key-md5 @tab
+CURLOPT_SSH_HOST_PUBLIC_KEY_MD5 @tab string
+@item ssh-public-keyfile @tab CURLOPT_SSH_PUBLIC_KEYFILE @tab string
+@item ssh-private-keyfile @tab CURLOPT_SSH_PRIVATE_KEYFILE @tab string
+@item ssh-known-hosts @tab CURLOPT_SSH_KNOWN_HOSTS @tab string
+@c ssh-keyfunction is unimplemented
+@c ssh-keydata is unimplemented
+@c private is unimplemented
+@c share is unimplemented
+@item new-file-perms @tab CURLOPT_NEW_FILE_PERMS @tab integer
+@item new-directory-perms @tab CURLOPT_NEW_DIRECTORY_PERMS @tab integer
+@item telnetoptions @tab CURLOPT_TELNETOPTIONS @ tab slist
+@end multitable
+
+@node Option Data Types,  , Option Table, Options
+@subsection Option Data Types
+In the options table there are several possible types listed for the
+option info argument:
 @table @code
-@item verbose
-Takes @code{#t} or @code{#f}.  When @code{#t} it displays information
-about its operations.  It will be sent to the standard error port.
-
-@item header
-Takes @code{#t} or @code{#f}.  When @code{#t}, it includes the header
-in the body output for those protocols that have a header preceding
-the data.
-
-@item nosignal
-Takes @code{#t} or @code{#f}.  When @code{#t}, no signal handlers or
-any functions that cause signals to be sent will be used when
-performing an operation.
-
-@item wildcardmatch
-Takes @code{#t} or @code{#f}.  When @code{#t}, multiple files will be
-transfered when the URL has wildcards like @code{*} and @code{?}.
-Only works for FTP-like connections.
-
+@item boolean
+@code{#t} or @code{#f}
+@item integer
+a 32-bit integer
+@item integer*
+named integer-valued constants (see table below)
+@item biginteger
+a 64-bit integer
+@item string
+string
+@item bytevector
+bytevector
+@item slist
+a list of strings
 @end table
 
-@subsection Network Options
+There are several named integer-valued constants used for certain options.
+
 @table @code
-@item url
-Takes a string.  The actual URL to be used to perform the operation,
-such as ``http://www.gnu.org''.  The URL string should be url-encoded
-and only contain ASCII characters.
-
-@item protocols
-Takes an integers that is a bitmask created from the @code{CURLPROTO}
-constants.  If used, this bitmask limits what protocols may be used in
-the transfer.  By default, all supported protocols are allowed.  The
-constants are CURLPROTO_HTTP CURLPROTO_HTTPS CURLPROTO_FTP
-CURLPROTO_FTPS CURLPROTO_SCP CURLPROTO_SFTP CURLPROTO_TELNET
-CURLPROTO_LDAP CURLPROTO_LDAPS CURLPROTO_DICT CURLPROTO_FILE
-CURLPROTO_TFTP CURLPROTO_IMAP CURLPROTO_IMAPS CURLPROTO_POP3
-CURLPROTO_POP3S CURLPROTO_SMTP CURLPROTO_SMTPS CURLPROTO_RTSP
-CURLPROTO_RTMP CURLPROTO_RTMPT CURLPROTO_RTMPE CURLPROTO_RTMPTE
-CURLPROTO_GOPHER and CURLPROTO_ALL.
-
-@item redir-protocols
-Takes an integer that is a bitmask of @code{CURLPROTO} defines.  If
-used, it limits what protocols may b used in a transfer that is
-followed in a redirect.
-
-@item proxy
-Takes a string holding the host name or dotted IP address of the http
-proxy to use.
-
-@item proxyport
-Takes in integer to set the proxy port.
-
+@item protocols, redir-protocols
+  CURLPROTO_HTTP,
+  CURLPROTO_HTTPS,
+  CURLPROTO_FTP,
+  CURLPROTO_FTPS,
+  CURLPROTO_SCP,
+  CURLPROTO_SFTP,
+  CURLPROTO_TELNET,
+  CURLPROTO_LDAP,
+  CURLPROTO_LDAPS,
+  CURLPROTO_DICT,
+  CURLPROTO_FILE,
+  CURLPROTO_TFTP,
+  CURLPROTO_IMAP,
+  CURLPROTO_IMAPS,
+  CURLPROTO_POP3,
+  CURLPROTO_POP3S,
+  CURLPROTO_SMTP,
+  CURLPROTO_SMTPS,
+  CURLPROTO_RTSP,
+  CURLPROTO_RTMP,
+  CURLPROTO_RTMPT,
+  CURLPROTO_RTMPE,
+  CURLPROTO_RTMPTE,
+  CURLPROTO_RTMPS,
+  CURLPROTO_RTMPTS,
+  CURLPROTO_GOPHER,
+  CURLPROTO_ALL
 @item proxytype
-Takes an integer that sets the type of proxy.  The integer should be
-one of the CURLPROXY constants: CURLPROXY_HTTP CURLPROXY_HTTP_1_0
-CURLPROXY_SOCKS4 CURLPROXY_SOCKS5 CURLPROXY_SOCKS4A or
-CURLPROXY_SOCKS5_HOSTNAME.
-
-@item noproxy
-Takes a string that is a comma-separated list of hosts that do not use
-a proxy.  '*' can be used as a wildcard.
-
-@item httpproxytunnel
-Takes a boolean.  When @code{#t} all opperations are tunnelled through
-a given proxy.
-
-@item socks5-gssapi-service
-Takes a string that holds the name of a service for a socks5 server.
-
-@item socks5-gssapi-nec
-Takes a boolean. When @code{#t}, this allows the unprotected exchange
-of the protection mode negotiation during gssapi negotiation.
-
-@item interface
-Takes a string.  This sets the interface name to use as outgoing
-network interface.  The name can be an interface name, and IP address,
-or a host name.
-
-@item localport
-Takes in integer.  Sets the local port number of the socket used for
-the connection.
-
-@item localportrange
-Takes in integer.  This is the number of attempts libcurl should make
-to find a working local port number.  It starts with the port given by
-the @code{localport} options and then adds one for each retry.
-
-@item dns-cache-timeout
-Takes an integer that sets a timeout in seconds for how long name
-resolves will be kept in memory.  Zero disable caching. -1 makes
-caching infinite.
-
-@item buffersize
-Takes an integer that sets the preferred size in bytes for the receive
-buffer.  While this scheme implementation only returns completed
-transfers, this option changes the sizes of the chunks used to
-assemble a resouce when it is being transfered.
-
-@item port
-Takes an integer that specifies the report port number to connect to,
-instead of the default or what was specified in the @code{url}.
-
-@item tcp-nodelay
-Takes a boolean.  @code{#t} indicates that the TCP's Nagle algorithm
-should be disabled.
-
-@item address-scope
-Takes a long that specified the scope id value to use when connecto to
-IPv6 link-local or site-local addresses.
-@end table
-
-@subsection Name and Password Options
-@table @code
+CURLPROXY_HTTP,
+CURLPROXY_HTTP_1_0,
+CURLPROXY_SOCKS4,
+CURLPROXY_SOCKS5,
+CURLPROXY_SOCKS4A,
+CURLPROXY_SOCKS5_HOSTNAME
 @item netrc
-Takes a long which is one of the CURL_NETRC constants.  It controls
-whether to look in your .netrc file for user names and passwords.  The
-allowed values are CURL_NETRC_OPTIONAL, CURL_NETRC_IGNORED and
-CURL_NETRC_REQUIRED.
-
-@item netrc-file
-Takes a string that defines the full file path to the netrc file, if
-it is not in the default location.
-
-@item userpwd
-Takes a string that should be ``[user name]:[password]'' for a
-connection.
-
-@item proxyuserpwd
-Takes a string ``[user name]:[password]'' that is the password for the
-HTTP proxy.
-
-@item username
-Takes a string that is the user name for a transfer.
-
-@item password
-Takes a string that is the password for a transfer.
-
-@item proxyusername
-Takes a string that is a user name to use for a transfer when
-connecting to a proxy.
-
-@item proxypassword
-Takes a string that is a password to use for a transfer when
-connecting to a proxy.
-
-@item httpauth
-Takes in integer which is a bitmask of CURLAUTH constants that
-describes the authentication methods that can be used.  The
-authentication method constants are CURLAUTH_BASIC CURLAUTH_DIGEST
-CURLAUTH_DIGEST_IE CURLAUTH_GSSNEGOTIATE CURLAUTH_NTLM CURLAUTH_ANY
-CURLAUTH_ANYSAFE and CURLAUTH_ONLY.
-
-@item proxyauth
-Takes in integer that is set to a bitmask of CURLAUTH constants that
-describes the authentication methods that can be used for proxy
-authentication. 
-
-@end table
-
-@subsection HTTP Options
-@table @code
-@item autoreferer
-Takes a boolean.  When @code{#t} it will automatically set the
-``Referer:'' field in requests where it follows a ``Location:''
-redirect.
-
-@item encoding
-Sets the contents of the ``Accept-Encoding:'' header sent in an HTTP
-request, and enables decoding of a response when a
-``Content-Encoding:'' header is received.  Takes a string that
-contains ``identity'', ``deflate'', and/or ``gzip''.
-
-@item followlocation
-Takes a boolean.  When @code{#t} it will follow any ``Location:''
-header that the server sends as part of the HTTP header.
-
-@item unrestricted-auth
-Takes a boolean.  When @code{#t} it tallows the sending of
-authentication data (user + password) when following locations, even
-when the hostname has changed.
-
-@item maxredirs
-Takes a number that will be the redirection limit.  Zero disallows
-redirections. -1 allows infinite numbers of redirections.
-
+CURL_NETRC_OPTIONAL,
+CURL_NETRC_IGNORED,
+CURL_NETRC_REQUIRED
+@item httpauth, proxyauth
+CURLAUTH_BASIC,
+CURLAUTH_DIGEST,
+CURLAUTH_DIGEST_IE,
+CURLAUTH_GSSNEGOTIATE,
+CURLAUTH_NTLM,
+CURLAUTH_NTLM_WB,
+CURLAUTH_ANY,
+CURLAUTH_ANYSAFE,
+CURLAUTH_ONLY
+@item tlsauth-type
+CURL_TLSAUTH_SRP
 @item postredir
-Takes an integer bitmask that controls how it acts on redirects after
-POSTs that get a 301 or 302 response back.  The CURL_REDIR_POST_301
-constant tells the library to not convert POST requests to GET
-requests when following a redirection.  The CURL_REDIR_POST_302
-maintains the request method after a 302 redirect. CURL_REDIR_POST_ALL
-does both.
-
-@item post
-Boolean
-
-@item httppost
-HTTPPost.
-
-@item referer
-String.
-
-@item useragent
-String.
-
-@item httpheader
-List.
-
-@item http200aliases
-List.
-
-@item cookie
-String.
-
-@item cookiefile
-String.
-
-@item cookiejar
-String.
-
-@item cookiesession
-Boolean.
-
-@item cookielist
-String.
-
-@item httpget
-Boolean.
-
+CURL_REDIR_POST_301,
+CURL_REDIR_POST_302,
+CURL_REDIR_POST_ALL
 @item http-version
-Integer.
-
-@item ignore-content-length
-Boolean.
-
-@item http-content-decoding
-Boolean
-
-@item http-transfer-decoding
-Boolean.
-
-@end table
-
-@subsection Connection Options
-@table @code
-@item timeout
-Integer.
-
-@item timeout-ms
-Integer.
-
-@item low-speed-limit
-Integer.
-
-@item low-speed-time
-Integer.
-
-@item maxconnects
-Integer.
-
-@item fresh-connect
-Boolean.
-
-@item forbid-reuse
-Boolean.
-
-@item connecttimeout
-Integer.
-
-@item connecttimeout-ms
-Integer.
-
+CURL_HTTP_VERSION_NONE,
+CURL_HTTP_VERSION_1_0,
+CURL_HTTP_VERSION_1_1
+@item ftpsslauth
+CURLFTPAUTH_DEFAULT,
+CURLFTPAUTH_SSL,
+CURLFTPAUTH_TLS
+@item ftp-ssl-ccc
+CURLFTPSSL_CCC_NONE,
+CURLFTPSSL_CCC_PASSIVE,
+CURLFTPSSL_CCC_ACTIVE
+@item ftp-filemethod
+CURLFTPMETHOD_MULTICWD,
+CURLFTPMETHOD_NOCWD,
+CURLFTPMETHOD_SINGLECWD
+@item rtsp-request
+  CURL_RTSPREQ_OPTIONS,
+  CURL_RTSPREQ_DESCRIBE,
+  CURL_RTSPREQ_ANNOUNCE,
+  CURL_RTSPREQ_SETUP,
+  CURL_RTSPREQ_PLAY,
+  CURL_RTSPREQ_PAUSE,
+  CURL_RTSPREQ_TEARDOWN,
+  CURL_RTSPREQ_GET_PARAMETER,
+  CURL_RTSPREQ_SET_PARAMETER,
+  CURL_RTSPREQ_RECORD,
+  CURL_RTSPREQ_RECEIVE
+@item sslversion
+CURL_SSLVERSION_DEFAULT,
+CURL_SSLVERSION_TLSv1,
+CURL_SSLVERSION_SSLv2,
+CURL_SSLVERSION_SSLv3,
 @item ipresolve
-Integer.
-
-@item connect-only
-Boolean.
+CURL_IPRESOLVE_WHATEVER,
+CURL_IPRESOLVE_V4,
+CURL_IPRESOLVE_V6
+@item use-ssl
+CURLUSESSL_NONE,
+CURLUSESSL_TRY,
+CURLUSESSL_CONTROL,
+CURLUSESSL_ALL
+@item gssapi-delegation
+CURLGSSAPI_DELEGATION_FLAG,
+CURLGSSAPI_DELEGATION_POLICY_FLAG
+@item ssh-auth-types
+CURLSSH_AUTH_PUBLICKEY,
+CURLSSH_AUTH_PASSWORD,
+CURLSSH_AUTH_HOST,
+CURLSSH_AUTH_KEYBOARD,
+CURHSSH_AUTH_ANY
 
 @end table
 
+@node Error Codes,  , Options, Reference
+@section Error Codes
+There is a set of named integer-value constants for the error codes.
+@table @code
+@item CURLE_OK
+@item CURLE_UNSUPPORTED_PROTOCOL
+@item CURLE_FAILED_INIT
+@item CURLE_URL_MALFORMAT
+@item CURLE_COULDNT_RESOLVE_PROXY
+@item CURLE_COULDNT_RESOLVE_HOST
+@item CURLE_COULDNT_CONNECT
+@item CURLE_FTP_WEIRD_SERVER_REPLY
+@item CURLE_REMOTE_ACCESS_DENIED
+@item CURLE_FTP_ACCEPT_FAILED
+@item CURLE_FTP_WEIRD_PASS_REPLY
+@item CURLE_FTP_ACCEPT_TIMEOUT
+@item CURLE_FTP_WEIRD_PASV_REPLY
+@item CURLE_FTP_WEIRD_227_FORMAT
+@item CURLE_FTP_CANT_GET_HOST
+@item CURLE_FTP_COULDNT_SET_TYPE
+@item CURLE_PARTIAL_FILE
+@item CURLE_FTP_COULDNT_RETR_FILE
+@item CURLE_FTP_QUOTE_ERROR
+@item CURLE_HTTP_RETURNED_ERROR
+@item CURLE_WRITE_ERROR
+@item CURLE_UPLOAD_FAILED
+@item CURLE_READ_ERROR
+@item CURLE_OUT_OF_MEMORY
+@item CURLE_OPERATION_TIMEDOUT
+@item CURLE_FTP_PORT_FAILED
+@item CURLE_FTP_COULDNT_USE_REST
+@end table
 
-@node Index,  , Reference, Top
+.
+
+@table @code
+@item CURLE_RANGE_ERROR
+@item CURLE_HTTP_POST_ERROR
+@item CURLE_SSL_CONNECT_ERROR
+@item CURLE_BAD_DOWNLOAD_RESUME
+@item CURLE_FILE_COULDNT_READ_FILE
+@item CURLE_LDAP_CANNOT_BIND
+@item CURLE_LDAP_SEARCH_FAILED
+@item CURLE_FUNCTION_NOT_FOUND
+@item CURLE_ABORTED_BY_CALLBACK
+@item CURLE_BAD_FUNCTION_ARGUMENT
+@item CURLE_INTERFACE_FAILED
+@item CURLE_TOO_MANY_REDIRECTS
+@item CURLE_UNKNOWN_TELNET_OPTION
+@item CURLE_TELNET_OPTION_SYNTAX
+@item CURLE_PEER_FAILED_VERIFICATION
+@item CURLE_GOT_NOTHING
+@item CURLE_SSL_ENGINE_NOTFOUND
+@item CURLE_SSL_ENGINE_SETFAILED
+@item CURLE_SEND_ERROR
+@item CURLE_RECV_ERROR
+@item CURLE_SSL_CERTPROBLEM
+@item CURLE_SSL_CIPHER
+@item CURLE_SSL_CACERT
+@item CURLE_BAD_CONTENT_ENCODING
+@end table
+
+.
+
+@table @code
+@item CURLE_LDAP_INVALID_URL
+@item CURLE_FILESIZE_EXCEEDED
+@item CURLE_USE_SSL_FAILED
+@item CURLE_SEND_FAIL_REWIND
+@item CURLE_SSL_ENGINE_INITFAILED
+@item CURLE_LOGIN_DENIED
+@item CURLE_TFTP_NOTFOUND
+@item CURLE_TFTP_PERM
+@item CURLE_REMOTE_DISK_FULL
+@item CURLE_TFTP_ILLEGAL
+@item CURLE_TFTP_UNKNOWNID
+@item CURLE_REMOTE_FILE_EXISTS
+@item CURLE_TFTP_NOSUCHUSER
+@item CURLE_CONV_FAILED
+@item CURLE_CONV_REQD
+@item CURLE_SSL_CACERT_BADFILE
+@item CURLE_REMOTE_FILE_NOT_FOUND
+@item CURLE_SSH
+@item CURLE_SSL_SHUTDOWN_FAILED
+@item CURLE_AGAIN
+@item CURLE_SSL_CRL_BADFILE
+@item CURLE_SSL_ISSUER_ERROR
+@item CURLE_FTP_PRET_FAILED
+@item CURLE_RTSP_CSEQ_ERROR
+@item CURLE_FTP_BAD_FILE_LIST
+@item CURLE_CHUNK_FAILED
+@end table
+
+@node  GNU Free Documentation License, Index, Reference, Top
+@chapter GNU Free Documentation License
+@include fdl-1.3.texi
+
+@node Index,  , GNU Free Documentation License, Top
 @unnumbered Index
 @printindex cp
 @bye
