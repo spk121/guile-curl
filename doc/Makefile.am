@@ -11,8 +11,8 @@
 # TEXI2DVI = TEX=${TEX} texi2dvi
 # endif
 
-info_TEXINFOS = curl.texi
+info_TEXINFOS = guile-curl.texi
 
-CLEANFILES = curl.dvi
+CLEANFILES = guile-curl.dvi
 
 
