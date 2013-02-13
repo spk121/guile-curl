@@ -1,11 +1,11 @@
-;; -*- Mode: scheme; -*- 
-;; t000_test.test -- 
+;; -*- Mode: scheme; -*-
+;; t000_test.test --
 
 (use-modules (test lib)
 	     (test lib2)
 	     (curl))
 
-(with-test-prefix 
+(with-test-prefix
  "curl-easy-init"
  (pass-if "returns a handle"
 	  (handle? (curl-easy-init))))
@@ -28,9 +28,9 @@
  ;; NETWORK OPTIONS
  (pass-if "'url \"http://localhost\"" (check-setopt 'url "http://localhost"))
  (pass-if "'protocols CURLPROTO_HTTP" (check-setopt 'protocols CURLPROTO_HTTP))
- (pass-if "'redir-protocols CURLPROTO_HTTP" 
+ (pass-if "'redir-protocols CURLPROTO_HTTP"
 	  (check-setopt 'redir-protocols CURLPROTO_HTTP))
- (pass-if "'proxy \"http://localhost\"" 
+ (pass-if "'proxy \"http://localhost\""
 	  (check-setopt 'proxy "http://localhost"))
  (pass-if "'proxyport 8080" (check-setopt 'proxyport 8080))
  (pass-if "'proxytype CURLPROXY_HTTP" (check-setopt 'proxytype CURLPROXY_HTTP))
@@ -49,7 +49,7 @@
  (pass-if "'address-scope 0" (check-setopt 'address-scope 0))
 
  ;; AUTHENTICATION
- (pass-if "'netrc CURL_NETRC_OPTIONAL" 
+ (pass-if "'netrc CURL_NETRC_OPTIONAL"
 	  (check-setopt 'netrc CURL_NETRC_OPTIONAL))
  (pass-if "'netrc-file \"net.rc\"" (check-setopt 'netrc-file "net.rc"))
  (pass-if "'userpwd \"1234\"" (check-setopt 'userpwd "1234"))
@@ -67,7 +67,7 @@
  (pass-if "'followlocation #t" (check-setopt 'followlocation #t))
  (pass-if "'unrestricted-auth #t" (check-setopt 'unrestricted-auth #t))
  (pass-if "'maxredirs 100" (check-setopt 'maxredirs 100))
- (pass-if "'postredir CURL_REDIR_POST_301" 
+ (pass-if "'postredir CURL_REDIR_POST_301"
 	  (check-setopt 'postredir CURL_REDIR_POST_301))
  (pass-if "'put #t" (check-setopt 'put #t))
  (pass-if "'post #t" (check-setopt 'post #t))
@@ -78,30 +78,8 @@
  (pass-if "'cookiesession #t" (check-setopt 'cookiesession #t))
  (pass-if "'cookielist \"ALL\"" (check-setopt 'cookielist "ALL"))
  (pass-if "'httpget #t" (check-setopt 'httpget #t))
- (pass-if "'http-version CURL_HTTP_VERSION_1_1" 
+ (pass-if "'http-version CURL_HTTP_VERSION_1_1"
 	  (check-setopt 'http-version CURL_HTTP_VERSION_1_1))
  (pass-if "'ignore-content-length #t" (check-setopt 'ignore-content-length #t))
  (pass-if "'http-content-decoding #t" (check-setopt 'http-content-decoding #t))
  (pass-if "'http-transfer-decoding #t" (check-setopt 'http-transfer-decoding #t)))
-
-		  ;; (pass-if "bad url"
-		  ;; 	   (begin
-		  ;; 	     (let ((h (curl-easy-init))
-		  ;; 		   (pass1 
-		  ;; 		    (not (false-if-exception 
-		  ;; 			  (curl-easy-setopt h 'url "http://error")))))
-		  ;; 	       (let ((str (curl-easy-perform h)))
-		  ;; 		 (display str) (newline)
-		  ;; 		 (display (curl-error-string)) (newline)
-		  ;; 		 (equal? (curl-error-code) 
-		  ;; 			 CURLE_COULDNT_RESOLVE_HOST))))
-		  ;; 	   (pass-if "ok url"
-		  ;; 		    (begin
-		  ;; 		      (let ((h (curl-easy-init)))
-		  ;; 			(curl-easy-setopt h 'url "http://microsoft.com")
-		  ;; 			(let ((str (curl-easy-perform h)))
-		  ;; 			  (display str) (newline)
-		  ;; 			  (display (curl-error-string)) (newline)
-		  ;; 			  (equal? (curl-error-code) 
-		  ;; 				  CURLE_OK))))))
-		  ;; )

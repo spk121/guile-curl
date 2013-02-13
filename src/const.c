@@ -1,3 +1,4 @@
+#include <config.h>
 #include <libguile.h>
 #include <curl/curl.h>
 #include "const.h"
