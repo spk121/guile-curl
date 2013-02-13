@@ -14,5 +14,3 @@
 info_TEXINFOS = guile-curl.texi
 
 CLEANFILES = guile-curl.dvi
-
-

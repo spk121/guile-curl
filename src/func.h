@@ -12,7 +12,7 @@
 
 SCM cl_easy_init (void) API;
 SCM cl_easy_getopt (SCM handle, SCM label, SCM val) API;
-SCM cl_easy_perform (SCM handle) API;
+SCM cl_easy_perform (SCM handle, SCM bvflag) API;
 SCM cl_easy_cleanup (SCM handle) API;
 SCM cl_easy_reset (SCM handle) API;
 // SCM cl_global_cleanup (void) API;
