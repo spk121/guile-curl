@@ -74,16 +74,48 @@ authorization.
 @end ifnottex
 
 @menu
-* Introduction::                
-* Reference::                   
-* Index::                       
+* Introduction::
+* Reference::
+* GNU Free Documentation License::
+* Index::
 
 @detailmenu
  --- The Detailed Node Listing ---
 
 Tutorial
 
-* Fetching from an HTTP server::  
+* Fetching from an HTTP server::
+
+Reference
+
+* Procedures::
+* Options::
+* Error Codes::
+
+Options
+
+* Option Table::
+* Option Data Types::
+
+Option Data Types
+
+* Postfields::
+* Integer Constants for protocols::
+* Integer Constants for proxytype::
+* Integer Constants for netrc::
+* Integer Constants for httpauth::
+* Integer Constants for tlsauth-type::
+* Integer Constants for postredir::
+* Integer Constants for http-version::
+* Integer Constants for ftpsslauth::
+* Integer Constants for ftp-ssl-ccc::
+* Integer Constants for ftp-filemethod::
+* Integer Constants for rtsp-request::
+* Integer Constants for sslversion::
+* Integer Constants for ipresolve::
+* Integer Constants for use-ssl::
+* Integer Constants for gssapi-delegation::
+* Integer Constants for ssh-auth-types::
 
 @end detailmenu
 @end menu
@@ -115,12 +147,14 @@ to behave.  There are many dozens of options that can be set, but,
 at a minimum, it just needs a URL.
 
 Then, to initiate the transfer, the procedure @code{curl-easy-perform}
-is called.  It returns the requested resource as a bytevector.  The
-bytevector will need to be converted to a string if it is fetching a
-text resource.
+is called.  For Guile-2.0, it can return the requested resource as
+either a bytevector or a string.  If the data is returned as a string,
+no coding conversions will be performed, e.g., the program will
+presume that the data is in the Latin-1 encoding.  For Guile-1.8 it
+returns the resource as a 8-bit string.
 
 @menu
-* Fetching from an HTTP server::  
+* Fetching from an HTTP server::
 @end menu
 
 @node Fetching from an HTTP server,  , Introduction, Introduction
@@ -129,51 +163,90 @@ text resource.
 The following code will fetch a web page that has a simple URL.
 
 @lisp
-(use-modules (curl)
+(use-modules (curl))
+(define handle (curl-easy-init))
+(curl-easy-setopt handle 'url "http://www.gnu.org")
+(display (curl-easy-perform handle))
+@end lisp
+
+In Guile-2.0, you can also fetch the resource as a bytevector by
+adding the optional argument @code{#t} to the call to
+@code{curl-easy-perform}.
+
+@lisp
+(use-modules (curl))
              (rnrs bytevectors))
 (define handle (curl-easy-init))
 (curl-easy-setopt handle 'url "http://www.gnu.org")
-(display (utf8->string (curl-easy-perform handle)))
+(display (utf8->string (curl-easy-perform handle #t)))
 @end lisp
 
 That's pretty much all there is to it.  Beyond that, there are dozens
 of options that can be set by @code{curl-easy-setopt} that change how
 the request is performed.
 
-@node Reference, Index, Introduction, Top
+@node Reference, GNU Free Documentation License, Introduction, Top
 @chapter Reference
+
+@menu
+* Procedures::
+* Options::
+* Error Codes::
+@end menu
+
+
+@node Procedures, Options, Reference, Reference
+@section Procedures
+
+These are the procedures provided by the library.
 
 @deffn Procedure curl-easy-init
 Returns a curl handle that you must use as input to other functions.
-This handle represents one connection to a server.
+This handle represents one connection to a server.  If it fails, it
+will throw an error.
+@end deffn
+
+@deffn Procedure curl-easy-handle? x
+Returns @code{#t} if @var{x} is a curl handle such as would be
+created by @code{curl-easy-handle}.  @code{#f} otherwise.
 @end deffn
 
 @deffn Procedure curl-easy-cleanup handle
-This forcibly closes all connections that this handle has used
-and has possibly kept open until now.  Any use of the handle
-after it has been closed is invalid.
+This forcibly closes all connections that this handle has used and
+have possibly kept open until now.  Any use of the handle after it has
+been closed is invalid.  The return value is unspecified.
 
 Calling this procedure is optional: handles will automatically
 be freed when no longer in use.
 @end deffn
 
 @deffn Procedure curl-easy-reset handle
-Re-initializes all options previously set on this CURL handle
-to its default values.
-
-It does not change live connections, the Session ID cache, the DNS
-cache, the cookies or the shared.
+Re-initializes all options previously set on this curl handle to its
+default values. It does not change live connections, the Session ID
+cache, the DNS cache, the cookies or the shares.  The return value is
+unspecified.
 @end deffn
 
-@deffn Procedure curl-easy-perform handle
-This function is called after the init and all the curl-easy-setopt
-calls are made, and will perform the transfer as described in the
-options.  It must be called with the same handle as input as the
-curl_easy_init call returned.
+@deffn Procedure curl-easy-perform handle #:optional bytevector?
+Given a @var{handle} created with @code{curl-easy-init} which has been
+given a URL and possibly other options with @code{curl-easy-setopt},
+it will perform the transfer.
 
-It returns either a bytevector containing the resource, or @code{#f}
-on failure.  For information about the failure, you can call
-@code{curl-error-string}.
+With Guile-1.8, it returns a string containing the resource.
+The optional argument @var{bytevector?} is ignored.
+
+With Guile-2.0, its default behavior is to return a string containing
+the resource.  There is no way to handle the encoding of the string:
+the binary data will mapped byte-by-byte to a string containing
+codepoints U+0000 through U+00FF. If the optional @var{bytevector?}
+parameter is given and is set to @code{#t}, the resource will be
+returned as a bytevector.
+
+It returns either a string containing the resource, a bytevector
+containing the resource, or @code{#f} on failure.  For information
+about the failure, you can call @code{curl-error-string}.  If you
+want the resource as a bytevector, call with the optional
+@code{bytevector?} argument as @code{#t}.
 @end deffn
 
 @deffn Procedure curl-error-string
@@ -189,18 +262,30 @@ file <curl/curl.h>.
 @end deffn
 
 @deffn Procedure curl-easy-setopt handle option info
-This procedure sets the options for this handle that will describe
-what will happend when @code{curl-easy-perform} is called.
-@var{option} is a symbol, and @var{info} is additional information
-needed for the option.  See below for a table of options.
+This procedure sets the options for this @var{handle} that will
+describe what will happen when @code{curl-easy-perform} is called.  At
+a minimum, @code{curl-easy-setopt} must be called at least once per
+handle to set the @code{url} option.  @var{option} is a symbol name of
+an option, and @var{info} is additional information needed for the
+option.  @xref{Options} for a table of options and their associated
+required types of info.
+
+@quotation important
+Options for a handle are not cleared after @code{curl-easy-perform} is
+called.  Make sure to call @code{curl-easy-reset} when you want the
+options for this handle to be reset.
+@end quotation
+
+This may throw an error if @var{handle} is already closed or if
+@var{option} is not the correct type.
 @end deffn
 
 @node Options, Error Codes, Procedures, Reference
 @section Options
 
-The options that can be set by @code{curl-easy-setopt} are listed
-below.  For a much better an explanation of what each of these options
-does, you can look at the manual page for C library function
+The options that can be set by @code{curl-easy-setopt} are listed in
+this section.  For a much better an explanation of what each of these
+options does, you can look at the manual page for C library function
 @code{curl_easy_setopt} which comes with the libcurl library, which
 you should have since it is required to compile this package.
 
@@ -229,8 +314,8 @@ manual page for the C library function @code{curl_easy_setopt}.
 The third column is the type of data that you would pass as the
 @code{info} argument to @code{curl-easy-setopt}.  These may differ
 from those in the manual page for C library function
-@code{curl_easy_setopt}.  For example, this scheme library will use
-@code{#t} and @code{#f} where the C function uses 1 and 0.
+@code{curl_easy_setopt}.  @xref{Option Data Types} for more
+about these types.
 @end itemize
 
 @multitable @columnfractions .25 .55 .25
@@ -245,11 +330,13 @@ from those in the manual page for C library function
 
 @item NETWORK OPTIONS
 @item url @tab CURLOPT_URL @tab string
-@item protocols @tab CURLOPT_PROTOCOLS @tab integer*
-@item redir-protocols @tab CURLOPT_REDIR_PROTOCOLS @tab integer*
+@item protocols @tab CURLOPT_PROTOCOLS @tab
+integer@footnote{@xref{Integer Constants for protocols}}
+@item redir-protocols @tab CURLOPT_REDIR_PROTOCOLS @tab integer@footnote{@xref{Integer Constants for protocols}}
 @item proxy @tab CURLOPT_PROXY @tab string
 @item proxyport @tab CURLOPT_PROXYPORT @tab integer
-@item proxytype @tab CURLOPT_PROXYTYPE @tab integer*
+@item proxytype @tab CURLOPT_PROXYTYPE @tab
+integer@footnote{@xref{Integer Constants for proxytype}}
 @item noproxy @tab CURLOPT_NOPROXY @tab string
 @item httpproxytunnel @tab CURLOPT_HTTPPROXYTUNNEL @tab boolean
 @item socks5-gssapi-service @tab CURLOPT_SOCKS5_GSSAPI_SERVICE @tab string
@@ -264,7 +351,8 @@ from those in the manual page for C library function
 @item address-scope @tab CURLOPT_ADDRESS_SCOPE @tab integer
 
 @item NAMES AND PASSWORD OPTIONS
-@item netrc @tab CURLOPT_NETRC @tab integer*
+@item netrc @tab CURLOPT_NETRC @tab integer@footnote{@xref{Integer
+Constants for netrc}}
 @item netrc-file @tab CURLOPT_NETRC_FILE @tab string
 @item userpwd @tab CURLOPT_USERPWD @tab string
 @item proxyuserpwd @tab CURLOPT_PROXYUSERPWD @tab string
@@ -272,11 +360,13 @@ from those in the manual page for C library function
 @item password @tab CURLOPT_PASSWORD @tab string
 @item proxyusername @tab CURLOPT_PROXYUSERNAME @tab string
 @item proxypassword @tab CURLOPT_PROXYPASSWORD @tab string
-@item httpauth @tab CURLOPT_HTTPAUTH @tab integer*
-@item tlsauth-type @tab CURLOPT_TLSAUTH_TYPE @tab integer*
+@item httpauth @tab CURLOPT_HTTPAUTH @tab
+integer@footnote{@xref{Integer Constants for httpauth}}
+@item tlsauth-type @tab CURLOPT_TLSAUTH_TYPE @tab
+integer@footnote{@xref{Integer Constants for tlsauth-type}}
 @item tlsauth-username @tab CURLOPT_TLSAUTH_USERNAME @tab string
 @item tlsauth-password @tab CURLOPT_TLSAUTH_PASSWORD @tab string
-@item proxyauth @tab CURLOPT_PROXYAUTH @tab integer
+@item proxyauth @tab CURLOPT_PROXYAUTH @tab integer@footnote{@xref{Integer Constants for httpauth}}
 
 @item HTTP OPTIONS
 @item autoreferer @tab CURLOPT_AUTOREFERER @tab boolean
@@ -285,13 +375,14 @@ from those in the manual page for C library function
 @item followlocation @tab CURLOPT_FOLLOWLOCATION @tab boolean
 @item unrestricted-auth @tab CURLOPT_UNRESTRICTED_AUTH @tab boolean
 @item maxredirs @tab CURLOPT_MAXREDIRS @tab integer
-@item postredir @tab CURLOPT_POSTREDIR @tab integer*
+@item postredir @tab CURLOPT_POSTREDIR @tab
+integer@footnote{@xref{Integer Constants for postredir}}
 @item put @tab CURLOPT_PUT @tab boolean
 @item post @tab CURLOPT_POST @tab boolean
-@item postfields @tab CURLOPT_POSTFIELDS @tab bytevector
-@item postfieldsize @tab CURLOPT_POSTFIELDSIZE @tab integer
-@item postfieldsize-large @tab CURLOPT_POSTFIELDSIZE_LARGE @tab biginteger
-@item copypostfields @tab CURLOPT_COPYPOSTFIELDS @tab bytevector
+@item postfields@footnote{@xref{Postfields}} @tab CURLOPT_POSTFIELDS @tab bytevector
+@c @item postfieldsize @tab CURLOPT_POSTFIELDSIZE @tab integer
+@c @item postfieldsize-large @tab CURLOPT_POSTFIELDSIZE_LARGE @tab biginteger
+@c @item copypostfields @tab CURLOPT_COPYPOSTFIELDS @tab bytevector
 @item httppost @tab CURLOPT_HTTPPOST @tab httppost
 @item referer @tab CURLOPT_REFERER @tab string
 @item useragent @tab CURLOPT_USERAGENT @tab string
@@ -303,7 +394,8 @@ from those in the manual page for C library function
 @item cookiesession @tab CURLOPT_COOKIESESSION @tab boolean
 @item cookielist @tab CURLOPT_COOKIELIST @tab string
 @item httpget @tab CURLOPT_HTTPGET @tab boolean
-@item http-version @tab CURLOPT_HTTP_VERSION @tab integer*
+@item http-version @tab CURLOPT_HTTP_VERSION @tab
+integer@footnote{@xref{Integer Constants for http-version}}
 @item ignore-content-length @tab CURLOPT_IGNORE_CONTENT_LENGTH @tab boolean
 @item http-content-decoding @tab CURLOPT_HTTP_CONTENT_DECODING @tab boolean
 @item http-transfer-decoding @tab CURLOPT_HTTP_TRANSFER_DECODING @tab boolean
@@ -329,13 +421,14 @@ from those in the manual page for C library function
 @item ftp-response-timeout @tab CURLOPT_FTP_RESPONSE_TIMEOUT @tab integer
 @item ftp-alternative-to-user @tab CURLOPT_FTP_ALTERNATIVE_TO_USER @tab string
 @item ftp-skip-pasv-ip @tab CURLOPT_FTP_SKIP_PASV_IP @tab boolean
-@item ftpsslauth @tab CURLOPT_FTPSSLAUTH @tab integer*
-@item ftp-ssl-ccc @tab CURLOPT_FTP_SSL_CCC @tab integer*
+@item ftpsslauth @tab CURLOPT_FTPSSLAUTH @tab
+integer@footnote{@xref{Integer Constants for ftpsslauth}}
+@item ftp-ssl-ccc @tab CURLOPT_FTP_SSL_CCC @tab integer@footnote{@xref{Integer Constants for ftp-ssl-ccc}}
 @item ftp-account @tab CURLOPT_FTP_ACCOUNT @tab string
-@item ftp-filemethod @tab CURLOPT_FTP_FILEMETHOD @tab integer*
+@item ftp-filemethod @tab CURLOPT_FTP_FILEMETHOD @tab integer@footnote{@xref{Integer Constants for ftp-filemethod}}
 
 @item RTSP OPTIONS
-@item rtsp-request @tab CURLOPT_RTSP_REQUEST @tab integer*
+@item rtsp-request @tab CURLOPT_RTSP_REQUEST @tab integer@footnote{@xref{Integer Constants for rtsp-request}}
 @item rtsp-session-id @tab CURLOPT_RTSP_SESSION_ID @tab string
 @item rtsp-stream-uri @tab CURLOPT_RTSP_STREAM_URI @tab string
 @item rtsp-transport @tab CURLOPT_RTSP_TRANSPORT @tab string
@@ -374,9 +467,9 @@ from those in the manual page for C library function
 @item forbid-reuse @tab CURLOPT_FORBID_REUSE @tab boolean
 @item connecttimeout @tab CURLOPT_CONNECTTIMEOUT @tab integer
 @item connecttimeout-ms @tab CURLOPT_CONNECTTIMEOUT_MS @tab integer
-@item ipresolve @tab CURLOPT_IPRESOLVE @tab integer*
+@item ipresolve @tab CURLOPT_IPRESOLVE @tab integer@footnote{@xref{Integer Constants for ipresolve}}
 @item connect-only @tab CURLOPT_CONNECT_ONLY @tab boolean
-@item use-ssl @tab CURLOPT_USE_SSL @tab integer*
+@item use-ssl @tab CURLOPT_USE_SSL @tab integer@footnote{@xref{Integer Constants for use-ssl}}
 @item resolve @tab CURLOPT_RESOLVE @tab slist
 @item dns-servers @tab CURLOPT_DNS_SERVERS @tab string
 @item accepttimeout-ms @tab CURLOPT_ACCEPTTIMEOUT_MS @tab integer
@@ -389,7 +482,7 @@ from those in the manual page for C library function
 @item keypasswd @tab CURLOPT_KEYPASSWD @tab string
 @item sslengine @tab CURLOPT_SSLENGINE @tab string
 @item sslengine-default @tab CURLOPT_SSLENGINE_DEFAULT @tab boolean
-@item sslversion @tab CURLOPT_SSLVERSION @tab integer*
+@item sslversion @tab CURLOPT_SSLVERSION @tab integer@footnote{@xref{Integer Constants for sslversion}}
 @item ssl-verifypeer @tab CURLOPT_SSL_VERIFYPEER @tab boolean
 @item cainfo @tab CURLOPT_CAINFO @tab string
 @item issuercert @tab CURLOPT_ISSUERCERT @tab string
@@ -402,10 +495,10 @@ from those in the manual page for C library function
 @item ssl-cipher-list @tab CURLOPT_SSL_CIPHER_LIST @tab string
 @item ssl-sessionid-cache @tab CURLOPT_SSL_SESSIONID_CACHE @tab boolean
 @item krblevel @tab CURLOPT_KRBLEVEL @tab string
-@item gssapi-delegation @tab CURLOPT_GSSAPI_DELEGATION @tab integer*
+@item gssapi-delegation @tab CURLOPT_GSSAPI_DELEGATION @tab integer@footnote{@xref{Integer Constants for gssapi-delegation}}
 
 @item SSH OPTIONS
-@item ssh-auth-types @tab CURLOPT_SSH_AUTH_TYPES @tab integer*
+@item ssh-auth-types @tab CURLOPT_SSH_AUTH_TYPES @tab integer@footnote{@xref{Integer Constants for ssh-auth-types}}
 @item ssh-host-public-key-md5 @tab
 CURLOPT_SSH_HOST_PUBLIC_KEY_MD5 @tab string
 @item ssh-public-keyfile @tab CURLOPT_SSH_PUBLIC_KEYFILE @tab string
@@ -428,23 +521,95 @@ option info argument:
 @item boolean
 @code{#t} or @code{#f}
 @item integer
-a 32-bit integer
-@item integer*
-named integer-valued constants (see table below)
+A @code{long} integer.  Note that many options have named
+integer-valued constants defined.
+
 @item biginteger
-a 64-bit integer
+An integer that is possibly longer than a @code{long} integer.
+
 @item string
-string
+A string.  In Guile-1.8, the string is transmitted as 8-bit data with
+no encoding specified.  In Guile-2.0, the scheme string is converted
+to a C string encoded in the current locale.
+
 @item bytevector
-bytevector
+On Guile-1.8, a string that contains 8-bit data.  It may contain NULL
+characters.  In Guile-2.0, either a bytevector or a string that only
+contains the Unicode code points U+0000 through U+00FF.
+
 @item slist
-a list of strings
+A list containing zero or more strings.  In Guile-1.8, the string is
+transmitted as 8-bit data with no encoding specified.  In Guile-2.0,
+the scheme string is converted to a C string encoded in the current
+locale.
+
+@item httppost
+A list containing data that will be used for an HTTP Post operation.
+Obviously, this is only for handles for which the @code{url} option is
+set to an HTTP URL that will accept a Post operation.
+
+The @var{httppost} data is a list of one or more HTTP Post elements.
+The HTTP Post elements will be passed to the server in the order in
+which they appear in the list.
+
+Each HTTP Post element it itself a list.  The list has two required
+and two optional arguments.
+
+@enumerate
+@item Name of the element [required @code{string}]
+@item Contents of the element [required @code{bytevector}]
+@item The mime type for this element [optional @code{string}]
+@item The filename of this element [optional @code{string}]
+@end enumerate
+
+The @code{string} and @code{bytevector} types are as described above.
+
+@quotation important
+The format of this data structure will change in the next version
+@end quotation
+
 @end table
 
-There are several named integer-valued constants used for certain options.
+@menu
+* Postfields::
+* Integer Constants for protocols::
+* Integer Constants for proxytype::
+* Integer Constants for netrc::
+* Integer Constants for httpauth::
+* Integer Constants for tlsauth-type::
+* Integer Constants for postredir::
+* Integer Constants for http-version::
+* Integer Constants for ftpsslauth::
+* Integer Constants for ftp-ssl-ccc::
+* Integer Constants for ftp-filemethod::
+* Integer Constants for rtsp-request::
+* Integer Constants for sslversion::
+* Integer Constants for ipresolve::
+* Integer Constants for use-ssl::
+* Integer Constants for gssapi-delegation::
+* Integer Constants for ssh-auth-types::
+@end menu
 
-@table @code
-@item protocols, redir-protocols
+@node Postfields, Integer Constants for protocols, Option Data Types, Option Data Types
+@subsubsection Postfields
+
+The @code{postfields} option is treated somewhat different than with
+the C API.  In the C API, to make postfields, one must pass a
+@code{CURLOPT_POSTFIELDSIZE} option along with the
+@code{CURLOPT_POSTFIELDS}.  In this Scheme API, the
+@code{CURLOPT_POSTFIELDSIZE} is calculated automatically from the bytevector
+used the @code{postfields} option.
+
+Also, in this API, the postfields data is always copied from the
+source.  There is no need to hold on to the bytevector passed to the
+@code{postfields} option.
+
+@node Integer Constants for protocols, Integer Constants for proxytype, Postfields, Option Data Types
+@subsubsection Integer Constants for protocols
+The following list of integer constants can be used for the
+@code{protocols} and @code{redir-protocols} options.
+
+@flushleft
   CURLPROTO_HTTP,
   CURLPROTO_HTTPS,
   CURLPROTO_FTP,
@@ -472,18 +637,39 @@ There are several named integer-valued constants used for certain options.
   CURLPROTO_RTMPTS,
   CURLPROTO_GOPHER,
   CURLPROTO_ALL
-@item proxytype
+@end flushleft
+
+@node Integer Constants for proxytype, Integer Constants for netrc, Integer Constants for protocols, Option Data Types
+@subsubsection Integer Constants for proxytype
+The following list of integer constants can be used for the
+@code{proxytype} option.
+
+@flushleft
 CURLPROXY_HTTP,
 CURLPROXY_HTTP_1_0,
 CURLPROXY_SOCKS4,
 CURLPROXY_SOCKS5,
 CURLPROXY_SOCKS4A,
 CURLPROXY_SOCKS5_HOSTNAME
-@item netrc
+@end flushleft
+
+@node Integer Constants for netrc, Integer Constants for httpauth, Integer Constants for proxytype, Option Data Types
+@subsubsection Integer Constants for netrc
+The following list of integer constants can be used for the
+@code{netrc} option.
+
+@flushleft
 CURL_NETRC_OPTIONAL,
 CURL_NETRC_IGNORED,
 CURL_NETRC_REQUIRED
-@item httpauth, proxyauth
+@end flushleft
+
+@node Integer Constants for httpauth, Integer Constants for tlsauth-type, Integer Constants for netrc, Option Data Types
+@subsubsection Integer Constants for httpauth
+The following list of integer constants can be used with the
+@code{httpauth} and @code{proxyauth} options.
+
+@flushleft
 CURLAUTH_BASIC,
 CURLAUTH_DIGEST,
 CURLAUTH_DIGEST_IE,
@@ -493,29 +679,78 @@ CURLAUTH_NTLM_WB,
 CURLAUTH_ANY,
 CURLAUTH_ANYSAFE,
 CURLAUTH_ONLY
-@item tlsauth-type
+@end flushleft
+
+@node Integer Constants for tlsauth-type, Integer Constants for postredir, Integer Constants for httpauth, Option Data Types
+@subsubsection Integer Constants for tlsauth-type
+The following integer constant can be used with the
+@code{tlsauth-type} option.
+
+@flushleft
 CURL_TLSAUTH_SRP
-@item postredir
+@end flushleft
+
+@node Integer Constants for postredir, Integer Constants for http-version, Integer Constants for tlsauth-type, Option Data Types
+@subsubsection Integer Constants for postredir
+The following list integer constants can be used with the
+@code{postredir} option.
+
+@flushleft
 CURL_REDIR_POST_301,
 CURL_REDIR_POST_302,
 CURL_REDIR_POST_ALL
-@item http-version
+@end flushleft
+
+@node Integer Constants for http-version, Integer Constants for ftpsslauth, Integer Constants for postredir, Option Data Types
+@subsubsection Integer Constants for http-version
+The following list integer constants can be used with the
+@code{http-version} option.
+
+@flushleft
 CURL_HTTP_VERSION_NONE,
 CURL_HTTP_VERSION_1_0,
 CURL_HTTP_VERSION_1_1
-@item ftpsslauth
+@end flushleft
+
+@node Integer Constants for ftpsslauth, Integer Constants for ftp-ssl-ccc, Integer Constants for http-version, Option Data Types
+@subsubsection Integer Constants for ftpsslauth
+The following list integer constants can be used with the
+@code{ftpsslauth} option.
+
+@flushleft
 CURLFTPAUTH_DEFAULT,
 CURLFTPAUTH_SSL,
 CURLFTPAUTH_TLS
-@item ftp-ssl-ccc
+@end flushleft
+
+@node Integer Constants for ftp-ssl-ccc, Integer Constants for ftp-filemethod, Integer Constants for ftpsslauth, Option Data Types
+@subsubsection Integer Constants for ftp-ssl-ccc
+The following list integer constants can be used with the
+@code{ftp-ssl-ccc} option.
+
+@flushleft
 CURLFTPSSL_CCC_NONE,
 CURLFTPSSL_CCC_PASSIVE,
 CURLFTPSSL_CCC_ACTIVE
-@item ftp-filemethod
+@end flushleft
+
+@node Integer Constants for ftp-filemethod, Integer Constants for rtsp-request, Integer Constants for ftp-ssl-ccc, Option Data Types
+@subsubsection Integer Constants for ftp-filemethod
+The following list integer constants can be used with the
+@code{ftp-filemethod} option.
+
+@flushleft
 CURLFTPMETHOD_MULTICWD,
 CURLFTPMETHOD_NOCWD,
 CURLFTPMETHOD_SINGLECWD
-@item rtsp-request
+@end flushleft
+
+@node Integer Constants for rtsp-request, Integer Constants for sslversion, Integer Constants for ftp-filemethod, Option Data Types
+@subsubsection Integer Constants for rtsp-request
+The following list integer constants can be used with the
+@code{rtsp-request} option.
+
+@flushleft
   CURL_RTSPREQ_OPTIONS,
   CURL_RTSPREQ_DESCRIBE,
   CURL_RTSPREQ_ANNOUNCE,
@@ -527,31 +762,66 @@ CURLFTPMETHOD_SINGLECWD
   CURL_RTSPREQ_SET_PARAMETER,
   CURL_RTSPREQ_RECORD,
   CURL_RTSPREQ_RECEIVE
-@item sslversion
+@end flushleft
+
+@node Integer Constants for sslversion, Integer Constants for ipresolve, Integer Constants for rtsp-request, Option Data Types
+@subsubsection Integer Constants for sslversion
+The following list integer constants can be used with the
+@code{sslversion} option.
+
+@flushleft
 CURL_SSLVERSION_DEFAULT,
 CURL_SSLVERSION_TLSv1,
 CURL_SSLVERSION_SSLv2,
 CURL_SSLVERSION_SSLv3,
-@item ipresolve
+@end flushleft
+
+@node Integer Constants for ipresolve, Integer Constants for use-ssl, Integer Constants for sslversion, Option Data Types
+@subsubsection Integer Constants for ipresolve
+The following list integer constants can be used with the
+@code{ipresolve} option.
+
+@flushleft
 CURL_IPRESOLVE_WHATEVER,
 CURL_IPRESOLVE_V4,
 CURL_IPRESOLVE_V6
-@item use-ssl
+@end flushleft
+
+@node Integer Constants for use-ssl, Integer Constants for gssapi-delegation, Integer Constants for ipresolve, Option Data Types
+@subsubsection Integer Constants for use-ssl
+The following list integer constants can be used with the
+@code{use-ssl} option.
+
+@flushleft
 CURLUSESSL_NONE,
 CURLUSESSL_TRY,
 CURLUSESSL_CONTROL,
 CURLUSESSL_ALL
-@item gssapi-delegation
+@end flushleft
+
+@node Integer Constants for gssapi-delegation, Integer Constants for ssh-auth-types, Integer Constants for use-ssl, Option Data Types
+@subsubsection Integer Constants for gssapi-delegation
+The following list integer constants can be used with the
+@code{gssapi-delegation} option.
+
+@flushleft
 CURLGSSAPI_DELEGATION_FLAG,
 CURLGSSAPI_DELEGATION_POLICY_FLAG
-@item ssh-auth-types
+@end flushleft
+
+@node Integer Constants for ssh-auth-types,  , Integer Constants for gssapi-delegation, Option Data Types
+@subsubsection Integer Constants for ssh-auth-types
+The following list integer constants can be used with the
+@code{ssh-auth-types} option.
+
+@flushleft
 CURLSSH_AUTH_PUBLICKEY,
 CURLSSH_AUTH_PASSWORD,
 CURLSSH_AUTH_HOST,
 CURLSSH_AUTH_KEYBOARD,
 CURHSSH_AUTH_ANY
+@end flushleft
 
-@end table
 
 @node Error Codes,  , Options, Reference
 @section Error Codes
