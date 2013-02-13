@@ -1,11 +1,16 @@
 ## Process this file with automake to produce Makefile.in
 
-COMPILE_FLAGS = -Wall -Wextra
+### MAIN TARGETS ###
 
-lib_LTLIBRARIES = \
+guileextension_LTLIBRARIES = \
 	libguile-curl.la
 
-libguile_curl_la_CPPFLAGS = $(COMPILE_FLAGS) $(GUILE_CFLAGS)
+dist_guilesite_DATA = \
+	curl.scm
+
+####################
+
+libguile_curl_la_CPPFLAGS = $(GUILE_CFLAGS) -pthread
 
 libguile_curl_la_LDFLAGS = \
 	-no-undefined \
@@ -18,7 +23,6 @@ libguile_curl_la_SOURCES = \
 	func.c func.h \
 	main.c
 
-guilemodule_DATA = curl.scm
 ETAGS_ARGS = curl.scm
 
 EXTRA_DIST = \
