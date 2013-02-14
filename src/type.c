@@ -55,9 +55,21 @@ _scm_from_handle (handle_post_t *x)
 
   if (0)
     {
-      fprintf (stderr, "Making <#handle> smob from CURL * %p\n", x);
+      fprintf (stderr, "Making <#handle %p>\n", x);
+      fprintf (stderr, "\t        handle %p\n", x->handle);
+      fprintf (stderr, "\t      httppost %p\n", x->httppost);
+      fprintf (stderr, "\t    httpheader %p\n", x->httpheader);
+      fprintf (stderr, "\thttp200aliases %p\n", x->http200aliases);
+      fprintf (stderr, "\t     mail_rcpt %p\n", x->mail_rcpt);
+      fprintf (stderr, "\t         quote %p\n", x->quote);
+      fprintf (stderr, "\t     postquote %p\n", x->postquote);
+      fprintf (stderr, "\t      prequote %p\n", x->prequote);
+      fprintf (stderr, "\t       resolve %p\n", x->resolve);
+      fprintf (stderr, "\t telnetoptions %p\n", x->telnetoptions);
+      fflush (stderr);
     }
   SCM_CRITICAL_SECTION_END;
+
   return (s_handle);
 }
 
@@ -86,71 +98,85 @@ equalp_handle (SCM x1, SCM x2)
 size_t
 gc_free_handle (SCM handle)
 {
-  SCM_ASSERT (SCM_SMOB_PREDICATE (handle_tag, handle), handle, SCM_ARG1, "free-handle");
-
   SCM_CRITICAL_SECTION_START;
 
-  handle_post_t *m = _scm_to_handle (handle);
+  SCM_ASSERT (SCM_SMOB_PREDICATE (handle_tag, handle), handle, SCM_ARG1, "free-handle");
 
-  assert (m != NULL);
+  handle_post_t *x = _scm_to_handle (handle);
 
-  if (m->handle != NULL)
+  if (0)
     {
-      curl_easy_cleanup (m->handle);
-      m->handle = NULL;
+      fprintf (stderr, "Freeing <#handle %p>\n", x);
+      fprintf (stderr, "\t        handle %p\n", x->handle);
+      fprintf (stderr, "\t      httppost %p\n", x->httppost);
+      fprintf (stderr, "\t    httpheader %p\n", x->httpheader);
+      fprintf (stderr, "\thttp200aliases %p\n", x->http200aliases);
+      fprintf (stderr, "\t     mail_rcpt %p\n", x->mail_rcpt);
+      fprintf (stderr, "\t         quote %p\n", x->quote);
+      fprintf (stderr, "\t     postquote %p\n", x->postquote);
+      fprintf (stderr, "\t      prequote %p\n", x->prequote);
+      fprintf (stderr, "\t       resolve %p\n", x->resolve);
+      fprintf (stderr, "\t telnetoptions %p\n", x->telnetoptions);
+      fflush (stderr);
     }
-  if (m->postfields != NULL)
+
+  if (x->handle != NULL)
     {
-      free (m->postfields);
-      m->postfields = NULL;
+      curl_easy_cleanup (x->handle);
+      x->handle = NULL;
     }
-  if (m->httppost != NULL)
+  if (x->postfields != NULL)
     {
-      curl_formfree (m->httppost);
-      m->httppost = NULL;
+      free (x->postfields);
+      x->postfields = NULL;
     }
-  if (m->httpheader != NULL)
+  if (x->httppost != NULL)
     {
-      curl_slist_free_all (m->httpheader);
-      m->httpheader = NULL;
+      curl_formfree (x->httppost);
+      x->httppost = NULL;
     }
-  if (m->http200aliases != NULL)
+  if (x->httpheader != NULL)
     {
-      curl_slist_free_all (m->http200aliases);
-      m->http200aliases = NULL;
+      curl_slist_free_all (x->httpheader);
+      x->httpheader = NULL;
     }
-  if (m->mail_rcpt != NULL)
+  if (x->http200aliases != NULL)
     {
-      curl_slist_free_all (m->mail_rcpt);
-      m->mail_rcpt = NULL;
+      curl_slist_free_all (x->http200aliases);
+      x->http200aliases = NULL;
     }
-  if (m->quote != NULL)
+  if (x->mail_rcpt != NULL)
     {
-      curl_slist_free_all (m->quote);
-      m->quote = NULL;
+      curl_slist_free_all (x->mail_rcpt);
+      x->mail_rcpt = NULL;
     }
-  if (m->postquote != NULL)
+  if (x->quote != NULL)
     {
-      curl_slist_free_all (m->postquote);
-      m->postquote = NULL;
+      curl_slist_free_all (x->quote);
+      x->quote = NULL;
     }
-  if (m->prequote != NULL)
+  if (x->postquote != NULL)
     {
-      curl_slist_free_all (m->prequote);
-      m->prequote = NULL;
+      curl_slist_free_all (x->postquote);
+      x->postquote = NULL;
     }
-  if (m->resolve != NULL)
+  if (x->prequote != NULL)
     {
-      curl_slist_free_all (m->resolve);
-      m->resolve = NULL;
+      curl_slist_free_all (x->prequote);
+      x->prequote = NULL;
     }
-  if (m->telnetoptions != NULL)
+  if (x->resolve != NULL)
     {
-      curl_slist_free_all (m->telnetoptions);
-      m->telnetoptions = NULL;
+      curl_slist_free_all (x->resolve);
+      x->resolve = NULL;
     }
-  free (m);
-  m = NULL;
+  if (x->telnetoptions != NULL)
+    {
+      curl_slist_free_all (x->telnetoptions);
+      x->telnetoptions = NULL;
+    }
+  free (x);
+  x = NULL;
   SCM_CRITICAL_SECTION_END;
 
   return 0;
@@ -246,7 +272,7 @@ _scm_convert_to_slist (SCM x)
 int
 _scm_can_convert_to_byte_data (SCM x)
 {
-#if GUILE_MAJOR_VERSION == 1
+#if SCM_MAJOR_VERSION == 1
   if (scm_is_string (x))
     return 1;
   else
@@ -283,7 +309,7 @@ _scm_can_convert_to_byte_data (SCM x)
 uint8_t *
 _scm_convert_to_byte_data (SCM x, size_t *len)
 {
-#if GUILE_MAJOR_VERSION == 1
+#if SCM_MAJOR_VERSION == 1
   return (uint8_t *) scm_to_locale_stringn (x, len);
 #else
   if (scm_is_string (x))
@@ -422,7 +448,7 @@ _scm_convert_to_httppost (SCM x)
 void
 cl_init_type ()
 {
-  handle_tag = scm_make_smob_type ("handle", sizeof (CURL *));
+  handle_tag = scm_make_smob_type ("handle", sizeof (handle_post_t));
   scm_set_smob_free (handle_tag, gc_free_handle);
   scm_set_smob_print (handle_tag, print_handle);
   scm_set_smob_equalp (handle_tag, equalp_handle);

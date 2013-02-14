@@ -1,13 +1,13 @@
 #include <config.h>
 #include <libguile.h>
 #include <curl/curl.h>
+#include <string.h>
 #include "type.h"
 #include "func.h"
 
 static size_t write_callback (void *ptr, size_t size, size_t nmemb,
 			      void *port);
 
-#define SCM_FROM_CHAR(c) scm_integer_to_char(scm_from_char(c))
 CURLcode error_code = CURLE_OK;
 char error_string[CURL_ERROR_SIZE+1] = "";
 
@@ -148,7 +148,7 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
 	  if (c_handle->postfields)
 	    free (c_handle->postfields);
 	  c_handle->postfields = m;
-	  curl_easy_setopt (c_handle->handle, CURLOPT_POSTFIELDS, len);
+	  curl_easy_setopt (c_handle->handle, CURLOPT_POSTFIELDSIZE, len);
 	  code = curl_easy_setopt (c_handle->handle, CURLOPT_POSTFIELDS, m);
 	}
     }
@@ -183,7 +183,7 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
 SCM
 cl_easy_perform (SCM handle, SCM bvflag)
 {
-  CURL *c_handle;
+  handle_post_t *c_handle;
   SCM data;
   CURLcode status;
   struct scm_flag sf;
@@ -191,41 +191,45 @@ cl_easy_perform (SCM handle, SCM bvflag)
   SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "%curl-easy-perform");
 
   c_handle = _scm_to_handle (handle);
-  data = scm_c_make_bytevector (0);
-  sf.scm = data;
   sf.flag = scm_is_true (bvflag);
+#if SCM_MAJOR_VERSION == 2
+  if (sf.flag)
+    data = scm_c_make_bytevector (0);
+  else
+    data = scm_c_make_string (0, SCM_MAKE_CHAR('\n'));
+#else
+  data = scm_c_make_string (0, SCM_MAKE_CHAR('\n'));
+#endif
+  sf.scm = data;
 
-  curl_easy_setopt (c_handle, CURLOPT_WRITEFUNCTION, write_callback);
-  curl_easy_setopt (c_handle, CURLOPT_WRITEDATA, &sf);
-  curl_easy_setopt (c_handle, CURLOPT_ERRORBUFFER, error_string);
+  curl_easy_setopt (c_handle->handle, CURLOPT_WRITEFUNCTION, write_callback);
+  curl_easy_setopt (c_handle->handle, CURLOPT_WRITEDATA, &sf);
+  curl_easy_setopt (c_handle->handle, CURLOPT_ERRORBUFFER, error_string);
 
   /* Do the transfer, and fill c_str with the result */
-  status = curl_easy_perform (c_handle);
+  status = curl_easy_perform (c_handle->handle);
   if (status != CURLE_OK)
     {
       error_code = status;
       return (SCM_BOOL_F);
     }
-  else
-    {
-      return (data);
-    }
+
+  return (sf.scm);
 }
 
 /* This callback function catches the data passed by libcurl and sends
    it back as a scheme string */
 static size_t
-write_callback (void *ptr, size_t size, size_t nmemb, void *port)
+write_callback (void *ptr, size_t size, size_t nmemb, void *userdata)
 {
   size_t length1, length2;
   SCM data1, data2;
   struct scm_flag *sf;
-  size_t i;
 
-  sf = (struct scm_flag *) port;
+  sf = (struct scm_flag *) userdata;
   data1 = sf->scm;
-#if GUILE_MAJOR_VERSION > 1
-  if (sv->flag)
+#if SCM_MAJOR_VERSION == 2
+  if (sf->flag)
     length1 = scm_c_bytevector_length (data1);
   else
     length1 = scm_c_string_length (data1);
@@ -249,16 +253,16 @@ write_callback (void *ptr, size_t size, size_t nmemb, void *port)
     }
   else
     {
-      data2 = scm_c_make_string (length1 + length2, SCM_FROM_CHAR('\0'));
-      for (i = 0; i < length1; i ++)
+      data2 = scm_c_make_string (length1 + length2, SCM_MAKE_CHAR('\0'));
+      for (size_t i = 0; i < length1; i ++)
 	{
 	  scm_c_string_set_x (data2, i, scm_c_string_ref (data1, i));
 	}
-      for (i = length1; i < length1 + length2; i ++);
-      {
-	scm_c_string_set_x (data2, i,
-			    SCM_FROM_CHAR (((unsigned char *)ptr)[i - length1]));
-      }
+      for (size_t i = 0; i < length2; i ++)
+	{
+	  scm_c_string_set_x (data2, i + length1,
+			      SCM_MAKE_CHAR (((char *)ptr)[i]));
+	}
     }
 #else
   data2 = scm_c_make_string (length1 + length2, SCM_FROM_CHAR('\0'));
@@ -271,7 +275,7 @@ write_callback (void *ptr, size_t size, size_t nmemb, void *port)
 #endif
   sf->scm = data2;
 
-  return (length2);
+  return length2;
 }
 
 SCM
