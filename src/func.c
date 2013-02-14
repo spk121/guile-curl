@@ -34,8 +34,25 @@ SCM cl_easy_init ()
     }
 
   hp = scm_malloc (sizeof (handle_post_t));
-  memset (hp, sizeof (handle_post_t), 0);
+  memset (hp, 0, sizeof (handle_post_t));
   hp->handle = handle;
+
+
+  if (0)
+    {
+      fprintf (stderr, "Allocating <#handle %p>\n", hp);
+      fprintf (stderr, "\t        handle %p\n", hp->handle);
+      fprintf (stderr, "\t      httppost %p\n", hp->httppost);
+      fprintf (stderr, "\t    httpheader %p\n", hp->httpheader);
+      fprintf (stderr, "\thttp200aliases %p\n", hp->http200aliases);
+      fprintf (stderr, "\t     mail_rcpt %p\n", hp->mail_rcpt);
+      fprintf (stderr, "\t         quote %p\n", hp->quote);
+      fprintf (stderr, "\t     postquote %p\n", hp->postquote);
+      fprintf (stderr, "\t      prequote %p\n", hp->prequote);
+      fprintf (stderr, "\t       resolve %p\n", hp->resolve);
+      fprintf (stderr, "\t telnetoptions %p\n", hp->telnetoptions);
+      fflush (stderr);
+    }
 
   return _scm_from_handle (hp);
 }
