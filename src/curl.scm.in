@@ -500,7 +500,7 @@ Returns #t on success and #f on failure."
 calls are made, and will perform the transfer as described in the
 options.  It must be called with the same handle as input as the
 curl_easy_init call returned."
-  (%curl-easy-perform h bytevector?))
+  (%curl-easy-perform handle bytevector?))
 
 (define (curl-error-string)
   "Returns information about the last error as a string."
