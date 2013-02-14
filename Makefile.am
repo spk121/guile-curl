@@ -20,6 +20,7 @@ EXTRA_DIST = \
 	NEWS \
 	README \
 	COPYING \
+	TODO \
 	ChangeLog \
 	m4/gnulib-cache.m4 \
 	build-aux/texinfo.tex \
