@@ -2,7 +2,6 @@
 ;; t000_test.test --
 
 (use-modules (test lib)
-	     (test lib2)
 	     (curl))
 
 (with-test-prefix
@@ -10,9 +9,9 @@
  (pass-if "returns a handle"
 	  (handle? (curl-easy-init))))
 
- (define (check-setopt opt val)
-   (let ((h (curl-easy-init)))
-     (curl-easy-setopt h opt val)))
+(define (check-setopt opt val)
+  (let ((h (curl-easy-init)))
+    (curl-easy-setopt h opt val)))
 
 (define (true-if-exception x)
   (not (false-if-exception x)))

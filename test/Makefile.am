@@ -6,7 +6,7 @@ all-local:
 TESTS_ENVIRONMENT = LIBGUILE_CURL_MAJOR=$(LIBGUILE_CURL_MAJOR)
 TESTS_ENVIRONMENT += ../libtool -dlopen ../src/libguile-curl.la \
 	--mode=execute \
-	guile -L $(top_srcdir) -L . -s
+	guile -L $(top_srcdir)/src -L $(top_srcdir) -s
 
 TESTS = t001_test.test
 

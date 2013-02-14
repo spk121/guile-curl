@@ -1,8 +1,4 @@
 #!/bin/sh
 
-# This contains skeletons of commands that might be useful when debugging
-
-TESTS=t001_test.test
-
 libtool -dlopen ../src/libguile-curl.la \
-    --mode=execute gdb --args guile -L .. -L . -s ${TESTS}
+    --mode=execute gdb --args guile -L .. -L ../src -s $1
