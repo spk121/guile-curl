@@ -2,7 +2,9 @@
 (define-module (curl)
   #:use-module (srfi srfi-1)
   #:use-module (ice-9 optargs)
-  #:use-module (rnrs bytevectors) ;; GUILE_20_ONLY
+  ;; RNRS_BYTEVECTORS_BEGIN
+  #:use-module (rnrs bytevectors)
+  ;; RNRS_BYTEVECTORS_END
   #:export (
 	    handle?
 	    curl-easy-init
@@ -12,6 +14,10 @@
 	    curl-easy-reset
 	    curl-error-string
 	    curl-error-code
+
+	    ;; RNRS_BYTEVECTORS_BEGIN
+	    bv->url-encoded-bv 
+	    ;; RNRS_BYTEVECTORS_END
 
 	    CURLPROTO_HTTP
 	    CURLPROTO_HTTPS
@@ -229,6 +235,7 @@ HEXADECIMAL + HEXADECIMAL"
 	(num->ascii-hex-num (quotient x 16))
 	(num->ascii-hex-num (remainder x 16))))
 
+;; RNRS_BYTEVECTORS_BEGIN
 (define (bv->url-encoded-bv bv)
   "Creates a bytevector that contains a URL-encoded representation
 of the original bytevector"
@@ -247,6 +254,7 @@ of the original bytevector"
 	(append prev (u8->encoded-u8-triplet x)))))
     '()
     (bytevector->u8-list bv))))
+;; RNRS_BYTEVECTORS_END
 
 (define (curl-easy-init)
   "Returns a curl handle that you must use as input to other functions.

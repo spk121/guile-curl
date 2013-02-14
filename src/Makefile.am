@@ -32,5 +32,8 @@ BUILT_SOURCES = curl.scm
 CLEANFILES = curl.scm
 
 curl.scm: curl.scm.in
-	cat $< | \
-	sed 's|XXlibnameXX|libguile-curl|' > $@
+	if test "x$(RNRS_BYTEVECTORS)" = "xyes" ; then \
+	  cat $< | sed -e 's|XXlibnameXX|libguile-curl|' -e 's|;; RNRS_BYTEVECTORS_BEGIN|#!|' -e 's|;; RNRS_BYTEVECTORS_END|!#|' > $@ ; \
+	else \
+	  cat $< | sed -e 's|XXlibnameXX|libguile-curl|' > $@ ; \
+	fi

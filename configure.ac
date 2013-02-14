@@ -79,7 +79,8 @@ AC_ARG_WITH([guilesitedir],
 GUILE_PROGS
 GUILE_FLAGS
 GUILE_SITE_DIR
-GUILE_FLAGS
+GUILE_MODULE_AVAILABLE(RNRS_BYTEVECTORS, [(rnrs bytevectors)])
+AC_SUBST([RNRS_BYTEVECTORS])
 
 pkgdatadir="$datadir/$PACKAGE_NAME"
 if test "x$guilesitedir" = "x"; then
