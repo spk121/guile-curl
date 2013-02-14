@@ -220,16 +220,41 @@ be freed when no longer in use.
 @end deffn
 
 @deffn Procedure curl-easy-reset handle
-Re-initializes all options previously set on this curl handle to its
-default values. It does not change live connections, the Session ID
-cache, the DNS cache, the cookies or the shares.  The return value is
-unspecified.
+@quotation
+Re-initializes all options previously set on a specified CURL handle
+to its default values. This puts back the handle to the same state as
+it was in when it was just created with [@code{curl-easy-init}].
+
+It does not change the following information kept in the handle: live
+connections, the Session ID cache, the DNS cache, the cookies and
+shares.@footnote{from the libcurl 7.12.1 curl_easy_reset man page}
+@end quotation
+The return value is unspecified.
 @end deffn
 
 @deffn Procedure curl-easy-perform handle #:optional bytevector?
-Given a @var{handle} created with @code{curl-easy-init} which has been
-given a URL and possibly other options with @code{curl-easy-setopt},
-it will perform the transfer.
+From the C documentation
+@quotation
+This function is called after the init and all the
+[@code{curl-easy-setopt}] calls are made, and will perform the
+transfer as described in the options.  It must be called with the same
+handle as input as the [@code{curl-easy-init}] call returned.
+
+You can do any amount of calls to [@code{curl-easy-perform}] while
+using the same handle. If you intend to transfer more than one file,
+you are even encouraged to do so. libcurl will then attempt to re-use
+the same connection for the following transfers, thus making the
+operations faster, less CPU intense and using less network
+resources. Just note that you will have to use
+[@code{curl-easy-setopt}] between the invokes to set options for the
+following [@code{curl-easy-perform}]
+
+You must never call this function simultaneously from two places using
+the same handle.  Let the function return first before invoking it
+another time. If you want parallel transfers, you must use several
+curl handles.@footnote{from the libcurl 7.7 curl_easy_perform man
+page}
+@end quotation
 
 With Guile-1.8, it returns a string containing the resource.
 The optional argument @var{bytevector?} is ignored.
@@ -243,9 +268,7 @@ returned as a bytevector.
 
 It returns either a string containing the resource, a bytevector
 containing the resource, or @code{#f} on failure.  For information
-about the failure, you can call @code{curl-error-string}.  If you
-want the resource as a bytevector, call with the optional
-@code{bytevector?} argument as @code{#t}.
+about the failure, you can call @code{curl-error-string}.
 @end deffn
 
 @deffn Procedure curl-error-string
@@ -509,7 +532,7 @@ CURLOPT_SSH_HOST_PUBLIC_KEY_MD5 @tab string
 @c share is unimplemented
 @item new-file-perms @tab CURLOPT_NEW_FILE_PERMS @tab integer
 @item new-directory-perms @tab CURLOPT_NEW_DIRECTORY_PERMS @tab integer
-@item telnetoptions @tab CURLOPT_TELNETOPTIONS @ tab slist
+@item telnetoptions @tab CURLOPT_TELNETOPTIONS @tab slist
 @end multitable
 
 @node Option Data Types,  , Option Table, Options
