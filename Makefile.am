@@ -23,4 +23,6 @@ EXTRA_DIST = \
 	ChangeLog \
 	m4/gnulib-cache.m4 \
 	build-aux/texinfo.tex \
+	GNUmakefile \
+	maint.mk \
 	cfg.mk
