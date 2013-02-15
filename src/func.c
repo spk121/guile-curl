@@ -2,6 +2,7 @@
 #include <libguile.h>
 #include <curl/curl.h>
 #include <string.h>
+#include <ctype.h>
 #include "type.h"
 #include "func.h"
 
@@ -320,6 +321,112 @@ cl_error_code ()
   return scm_from_int ((int) error_code);
 }
 
+static void
+print_slist (struct curl_slist *sl)
+{
+  struct curl_slist *p = sl;
+  int i = 0;
+  while (p != NULL)
+    {
+      fprintf (stderr, "\t\t%d: \"%s\"\n", i, p->data);
+      i++;
+      p = p->next;
+    }
+}
+
+static void
+print_mem (char *data, long len)
+{
+  long print_len = len;
+  if (print_len > 40)
+    print_len = 40;
+  if (data == NULL || len == 0)
+    {
+      fprintf (stderr, "(nil)");
+      return;
+    }
+  for (long i = 0; i < print_len; i ++)
+    {
+      if (isprint (data[i]))
+	fprintf (stderr, "%c", data[i]);
+      else if (data[i] + 32 < 256)
+	fprintf (stderr, "^%c", data[i] + 32);
+      else
+	fprintf (stderr, "?");
+    }
+  if (print_len != len)
+    fprintf (stderr, "...");
+}
+
+static size_t
+xstrlen (const char *s)
+{
+  if (s == NULL)
+    return 0;
+  return strlen (s);
+}
+
+static void
+print_httppost (struct curl_httppost *hp)
+{
+  struct curl_httppost *p = hp;
+  int i = 0;
+  while (p != NULL)
+    {
+      fprintf (stderr, "\t\t%d: name: ", i);
+      print_mem (p->name, p->namelength);
+      fprintf (stderr, "\n\t\t   contents: ");
+      print_mem (p->contents, p->contentslength);
+      fprintf (stderr, "\n\t\t   buffer: ");
+      print_mem (p->buffer, p->bufferlength);
+      fprintf (stderr, "\n\t\t   contenttype: ");
+      print_mem (p->contenttype, xstrlen (p->contenttype));
+      fprintf (stderr, "\n\t\t   contentheader: ");
+      print_slist (p->contentheader);
+      fprintf (stderr, "\n\t\t   showfilename: ");
+      print_mem (p->showfilename, xstrlen (p->showfilename));
+      fprintf (stderr, "\n\t\t   flags: 0x%x", p->flags);
+      fprintf (stderr, "\n");
+      i++;
+      p = p->next;
+    }
+}
+
+
+SCM
+cl_dump_handle (SCM handle)
+{
+  handle_post_t *hp;
+  struct curl_httppost *post;
+
+  SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "%curl-dump-handle");
+
+  hp = _scm_to_handle (handle);
+  fprintf (stderr, "<#handle %p>\n", hp);
+  fprintf (stderr, "\t        handle %p\n", hp->handle);
+  fprintf (stderr, "\t      httppost %p\n", hp->httppost);
+  print_httppost (hp->httppost);
+  fprintf (stderr, "\t    httpheader %p\n", hp->httpheader);
+  print_slist (hp->httpheader);
+  fprintf (stderr, "\thttp200aliases %p\n", hp->http200aliases);
+  print_slist (hp->http200aliases);
+  fprintf (stderr, "\t     mail_rcpt %p\n", hp->mail_rcpt);
+  print_slist (hp->mail_rcpt);
+  fprintf (stderr, "\t         quote %p\n", hp->quote);
+  print_slist (hp->quote);
+  fprintf (stderr, "\t     postquote %p\n", hp->postquote);
+  print_slist (hp->postquote);
+  fprintf (stderr, "\t      prequote %p\n", hp->prequote);
+  print_slist (hp->prequote);
+  fprintf (stderr, "\t       resolve %p\n", hp->resolve);
+  print_slist (hp->resolve);
+  fprintf (stderr, "\t telnetoptions %p\n", hp->telnetoptions);
+  print_slist (hp->telnetoptions);
+  fflush (stderr);
+
+  return SCM_UNDEFINED;
+}
+
 void
 cl_init_func ()
 {
@@ -334,6 +441,7 @@ cl_init_func ()
       scm_c_define_gsubr ("%curl-easy-reset", 1, 0, 0, cl_easy_reset);
       scm_c_define_gsubr ("%curl-error-string", 0, 0, 0, cl_error_string);
       scm_c_define_gsubr ("%curl-error-code", 0, 0, 0, cl_error_code);
+      scm_c_define_gsubr ("%curl-dump-handle", 1, 0, 0, cl_dump_handle);
 
       first = 0;
     }

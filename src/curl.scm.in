@@ -14,6 +14,7 @@
 	    curl-easy-reset
 	    curl-error-string
 	    curl-error-code
+	    %curl-dump-handle
 
 	    ;; RNRS_BYTEVECTORS_BEGIN
 	    bv->url-encoded-bv 
