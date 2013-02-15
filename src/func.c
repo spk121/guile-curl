@@ -282,13 +282,13 @@ write_callback (void *ptr, size_t size, size_t nmemb, void *userdata)
 SCM
 cl_easy_reset (SCM handle)
 {
-  CURL *c_handle;
+  handle_post_t *c_handle;
 
   SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "%curl-easy-reset");
 
   c_handle = _scm_to_handle (handle);
 
-  curl_easy_reset (c_handle);
+  curl_easy_reset (c_handle->handle);
 
   return SCM_UNSPECIFIED;
 }
@@ -296,15 +296,9 @@ cl_easy_reset (SCM handle)
 SCM
 cl_easy_cleanup (SCM handle)
 {
-  CURL *c_handle;
-
   SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "%curl-easy-cleanup");
 
-  c_handle = _scm_to_handle (handle);
-
-  curl_easy_cleanup (c_handle);
-
-  c_handle = (CURL *) NULL;
+  gc_free_handle (handle);
 
   return SCM_UNSPECIFIED;
 }

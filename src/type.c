@@ -398,7 +398,7 @@ _scm_convert_to_httppost (SCM x)
     {
       char *name = NULL, *mime = NULL, *filename = NULL;
       uint8_t *contents = NULL;
-      size_t name_len, mime_len, filename_len, contents_len;
+      size_t name_len, contents_len;
 
       SCM elt = SCM_C_LIST_REF (x, j);
       m = SCM_C_LIST_LENGTH (elt);
@@ -407,9 +407,9 @@ _scm_convert_to_httppost (SCM x)
       contents = _scm_convert_to_byte_data (SCM_C_LIST_REF (elt, 1),
 					    &contents_len);
       if (m >= 3)
-	mime = scm_to_locale_stringn (SCM_C_LIST_REF (elt, 2), &mime_len);
+	mime = scm_to_locale_string (SCM_C_LIST_REF (elt, 2));
       if (m == 4)
-	filename = scm_to_locale_stringn (SCM_C_LIST_REF (elt, 3), &filename_len);
+	filename = scm_to_locale_string (SCM_C_LIST_REF (elt, 3));
       if (m == 2)
 	curl_formadd (&post, &last,
 		      CURLFORM_PTRNAME, name,
