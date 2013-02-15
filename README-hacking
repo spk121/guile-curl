@@ -1,1 +1,23 @@
+To get bootstrap to work on OpenBSD
+
+1. create a sha1sum program in /usr/bin with the following script
+
+#!/bin/sh
+if test "x$1" = "x--version"; then
+  echo "0.0";
+  exit 0;
+else
+  sha1 -r $1;
+fi
+
+2. pkg_add libtool  (version 2.4.2)
+   pkg_add autoconf  (version 2.68)
+   pkg_add automake (version 1.11.5p1)
+
+3. set some environment variables
+export AUTOCONF_VERSION=2.68
+export AUTOMAKE_VERSION=1.11
+
+
+
 
