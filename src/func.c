@@ -265,7 +265,7 @@ write_callback (void *ptr, size_t size, size_t nmemb, void *userdata)
 	}
     }
 #else
-  data2 = scm_c_make_string (length1 + length2, SCM_FROM_CHAR('\0'));
+  data2 = scm_c_make_string (length1 + length2, SCM_MAKE_CHAR('\0'));
   memcpy (SCM_STRING_CHARS (data2),
 	  SCM_STRING_CHARS (data1),
 	  length1);
