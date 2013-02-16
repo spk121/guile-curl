@@ -2,4 +2,5 @@ TODO
 
 ** httppost needs multiple file sections
 ** httppost needs content headers
+** wrap curl_easy_getinfo
 

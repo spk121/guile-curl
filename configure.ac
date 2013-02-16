@@ -33,7 +33,7 @@ gl_INIT
 ##################
 # Set some version constants
 LIBGUILE_CURL_MAJOR=0
-LIBGUILE_CURL_INTERFACE="0:1:0"
+LIBGUILE_CURL_INTERFACE="0:2:0"
 AC_SUBST(LIBGUILE_CURL_MAJOR)
 AC_SUBST(LIBGUILE_CURL_INTERFACE)
 
@@ -63,10 +63,20 @@ AM_CONDITIONAL([ETEX_FIX], [test "$enable_etex_fix" = yes])
 ##################
 # Check for libraries
 
-# Guile gets added to LIBS here
-AC_CHECK_LIB([curl],
-             [curl_global_init], ,
-             [AC_MSG_ERROR([The curl library was not found])])
+AC_PATH_PROG(CURL_CONFIG,curl-config)
+if test "$CURL_CONFIG" = "" ; then
+  AC_MSG_ERROR([curl-config required but not found])
+fi
+AC_SUBST(CURL_CONFIG)
+
+AC_MSG_CHECKING([libcurl compile flags])
+CURL_CFLAGS="`curl-config --cflags`"
+AC_MSG_RESULT([$CURL_CFLAGS])
+AC_MSG_CHECKING([libcurl link flags])
+CURL_LDFLAGS="`$CURL_CONFIG --libs`"
+AC_MSG_RESULT([$CURL_LDFLAGS])
+AC_SUBST(CURL_CFLAGS)
+AC_SUBST(CURL_LDFLAGS)
 
 AC_ARG_WITH([guilesitedir],
   [use the specified installation path for Guile modules],
@@ -111,8 +121,9 @@ AC_SUBST([GUILE_EXTENSION_DIR])
 ##################
 # Check for header files
 
-AC_CHECK_HEADERS([curl/curl.h], ,
-                 [AC_MSG_ERROR([<curl.h> was not found])])
+AC_CHECK_HEADER([curl/curl.h], ,
+                [AC_MSG_ERROR([<curl.h> was not found])]
+		[AC_INCLUDES_DEFAULT $(CURL_CFLAGS)])
 dnl AC_CHECK_HEADERS([libguile.h], ,
 dnl                  [AC_MSG_ERROR([<libguile.h> was not found])])
 

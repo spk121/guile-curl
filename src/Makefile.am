@@ -10,12 +10,14 @@ dist_guilesite_DATA = \
 
 ####################
 
-libguile_curl_la_CPPFLAGS = $(GUILE_CFLAGS) -pthread
+libguile_curl_la_CPPFLAGS = $(CURL_CFLAGS) $(GUILE_CFLAGS)
 
 libguile_curl_la_LDFLAGS = \
 	-no-undefined \
 	-export-dynamic \
-	-version-info $(LIBGUILE_CURL_INTERFACE)
+	-version-info $(LIBGUILE_CURL_INTERFACE) \
+	$(CURL_LDFLAGS) \
+	$(GUILE_LDFLAGS)
 
 libguile_curl_la_SOURCES = \
 	const.c const.h \

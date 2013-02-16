@@ -1,1 +1,233 @@
-# meh
+2013-02-15  Mike Gran  <spk121@yahoo.com>
+
+	Type conversion errors
+	* src/func.c
+	* src/type.c
+	* src/type.h
+
+	Add debug function %curl-dump-handle
+	* src/curl.scm.in: export func
+	* src/func.c: (cl_dump_handle, print_slist, print_mem, xstrlen, print_httppost): new
+	* src/func.c: decl for cl_dump_handle
+
+2013-02-14  Mike Gran  <spk121@yahoo.com>
+
+	Notes on OpenBSD
+	* README-hacking: modified
+
+	Fixes for OpenBSD
+	* src/Makefile.am: don't use $<
+	* src/func.c: use SCM_MAKE_CHAR
+
+	Add TODO
+	* Makefile.am (EXTRA_DIST): add TODO
+	* TODO: new file
+
+	Add gnulib submodule
+	* .gitmodules
+
+	Distribute texinfo.tex
+	* build-aux/Makefile.am (EXTRA_DIST): modified
+
+	Include bootstrap
+	* bootstrap: new file
+
+	Fix local lib paths for tests
+	* test/Makefile.am: fix paths
+	* test/do_gdb: take command line arg
+	* test/test001_test.test: don't use useless lib2
+	* test/lib2.scm: removed
+
+	Distribute GNUmakefile, maint.mk
+	* Makefile.am
+
+	Fix cl_easy_perform buffer logic
+	* src/func.c (cl_easy_setopt, cl_easy_perform, write_callback): bad string logic
+	* src/type.c (_scm_from_handle, gc_free_handle): debug info
+	  (_scm_can_convert_to_byte_data): bad #ifdef logic
+	  (cl_init_type): bad size for handle smob
+
+	Bad memset in cl_easy_init
+	* src/func.c (cl_easy_init): modified
+
+	Bad varname in curl-easy-perform
+	* src/curl.scm.in (curl-easy-perform): modified
+
+	make bytevectors depend on guile version
+	* configure.ac (RNRS_BYTEVECTORS): new AC const
+	* src/Makefile.am (curl.scm): new grep rule
+	* src/curl.scm.in [RNRS_BYTEVECTOR]: use new conditional
+
+	Doc clarifications
+	* doc/guile-curl.texi
+
+2013-02-14  Mike Gran  <spk121@yahoo.com>
+
+	Remove GFDL
+	Manual copies some text from the Curl docs
+
+	* Makefile.am (EXTRA_DIST): remove fdl
+	* bootstrap.conf: remove fdl
+	* doc/.gitignore: remove fdl
+	* doc/guile-curl.text: remove fdl
+
+2013-02-13  Mike Gran  <spk121@yahoo.com>
+
+	Missing config.h includes and whitespace
+	* src/const.c: use config.h
+	* src/main.c: use config.h
+	* test/Makefile.am: whitespace
+	* test/lib.scm: whitespace
+	* test/t001_test.test: whitespace
+
+	Clean up curl-easy-setopt documentation
+	* doc/guile-curl.texi
+
+	Clean build system
+	* .gitignore: updated
+	* Makefile.am (EXTRA_DIST): new
+	  (distclean-local, clean-GNUmakefile): new
+	* NEWS: updated
+	* configure.ac: bump version
+	  (guilemoduledir): changed to guilesitedir
+	  (guileextensiondir): new
+	* m4/guile.m4: whitespace
+	* src/Makefile.am: use guilesitedir and guileextensiondir
+
+	Handle complicated curl data types
+	* src/curl.scm.in (curl-easy-setopt): new data types
+	 (curl-easy-perform): optional bytevector flag
+	* src/func.c (scm_flag): new struct
+	  (cl_easy_init): use new handle
+	  (cl_easy_setopt): new parameter 'big', check for new data types
+	  (cl_easy_perform): new parameter 'bvflag'
+	  (write_callback): check for string or bv
+	  (cl_init_func): change guile decl for cl_easy_perform
+	* src/func.h: new decl for cl_easy_perform
+	* src/type.c (SCM_C_LIST_REF, SCM_C_LIST_LENGTH, SCM_IS_LIST): new macros
+	  (_scm_is_handle): use new handle struct
+	  (_scm_to_handle, _scm_from_handle, equalp_handle): use new handle struct
+	  (gc_free_handle): free new handle struct
+	  (print_handle): use new handle struct
+	  (equalp_slist, gc_free_slist, print_slist): remove slist SMOB type
+	  (_scm_is_slist, _scm_to_slist, cl_is_slist_p): removed
+	  (_scm_can_convert_to_slist, _scm_convert_to_slist): new functions
+	  (_scm_convert_to_byte_data, _scm_can_convert_to_byte_data): new functions
+	  (_scm_can_convert_to_httppost_entry, _scm_can_convert_to_httppost): new
+	  (_scm_convert_to_httppost): new
+	  (slist_tag): removed
+	* src/type.h: remove slist declarations, add new declarations
+	  (handle_post_t): new type
+
+2013-02-08  Mike Gran  <spk121@yahoo.com>
+
+	Clean up options constants
+	* doc/guile-curl.texi: clean up options
+	* src/const.c: modified
+	* src/curl.scm.in: modified
+
+	Rename curl.texi -> guile-curl.texi
+	* doc/Makefile.am (TEXINFOS): modified
+	* doc/curl.texi: name before
+	* doc/guile-curl.texi: name after
+
+	bootstrap requires a README-hacking
+	* README-hacking: new file
+
+	Update .gitignore
+	* .gitignore: modified
+	* build-aux/.gitignore: new file
+	* doc/.gitignore: new file
+	* lib/.gitignore: new file
+	* m4/.gitignore: new file
+
+	Don't use @ in Makefile.am
+	* src/Makefile.am: modified
+	* test/Makefile.am: modified
+
+	Don't capitalize error messages
+	* src/curl.scm.in (curl-easy-setopt): modified
+
+	Don't try to build build_aux
+	* Makefile.am (SUBDIRS): modified
+	* configure.ac (AC_CONFIG_FILES): modified
+
+	Add gnulib bootstrap script
+	* bootstrap.conf: new file
+	* cfg.mk: new file
+	* gnulib: updated
+
+	move build_aux to build-aux
+	* build_aux/*: moved
+	* configure.ac (AC_CONFIG_AUX_DIR): modified
+
+2013-02-02  Mike Gran  <spk121@yahoo.com>
+
+	Update to latest libcurl
+	* src/const.c: new constants
+	* src/curl.scm.in: new constants
+	* src/func.c: new slist type
+	* src/type.c: new slist type
+	* src/type.h: new slist type
+
+	Packaging updates
+	* configure.ac: change package name, guilesmoduledir
+	* doc/curl.texi: curl curl -> curl
+	* src/curl.scm.in: curl curl -> curl
+	* test/t001_test.test
+
+2011-09-03  Mike Gran  <spk121@yahoo.com>
+
+	More documentation
+
+2011-08-15  Mike Gran  <spk121@yahoo.com>
+
+	Documentation updates
+	* doc/curl.texi: more documentation
+	* src/curl.scm.in: correct docstrings
+
+	Make curl-easy-perform return a bytevector
+	* src/func.c (cl_easy_perform, write_callback): change return type of
+	  cl_easy_perform to a bytevector.
+
+2011-06-22  Mike Gran  <spk121@yahoo.com>
+
+	Add many of the setopt options
+	* src/const.c: many new constants
+	* src/curl.scm.in: many new constants
+	  (num->ascii-hex-num, u8->encoded-u8-triplet, bv->url-encoded-bv): new funcs
+	  (curl-easy-setopt): new options
+	* src/func.c (cl_easy_setopt): returns #t/#f
+	* test/t001_test.test: add many options tests
+
+	Remove generated file curl.scm
+	* src/curl.scm
+
+	Changes to testing framework
+
+	Make setopt more schemey and add missing functions
+	* src/func.c (cl_easy_setopt): modified
+
+	Fixes for curl handle type
+	* src/type.c (_scm_is_handle, mark_handle, gc_free_handle, print_handle): modified
+
+	Modify initialization to do global init and cleanup
+	* src/main.c (cl_init): modified
+
+	Add curlopt constants
+
+	More documentation
+
+	More .gitignore
+
+2011-01-23  Michael Gran  <spk121@yahoo.com>
+
+	add .gitignore
+
+	use GUILE_FLAGS in configure.ac
+
+	first commits, continued
+
+	initial checkin
+
+	first post!

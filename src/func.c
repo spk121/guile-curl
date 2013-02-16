@@ -379,7 +379,7 @@ print_httppost (struct curl_httppost *hp)
       print_slist (p->contentheader);
       fprintf (stderr, "\n\t\t   showfilename: ");
       print_mem (p->showfilename, xstrlen (p->showfilename));
-      fprintf (stderr, "\n\t\t   flags: 0x%x", p->flags);
+      fprintf (stderr, "\n\t\t   flags: 0x%lx", p->flags);
       fprintf (stderr, "\n");
       i++;
       p = p->next;
@@ -391,7 +391,6 @@ SCM
 cl_dump_handle (SCM handle)
 {
   handle_post_t *hp;
-  struct curl_httppost *post;
 
   SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "%curl-dump-handle");
 
