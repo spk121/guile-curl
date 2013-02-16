@@ -1,3 +1,6 @@
+Notes on hacking guile-curl
+===========================
+
 To get bootstrap to work on OpenBSD
 
 1. create a sha1sum program in /usr/bin with the following script

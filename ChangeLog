@@ -1,4 +1,52 @@
+2013-02-16  Mike Gran  <spk121@yahoo.com>
+
+	Add GPL
+
 2013-02-15  Mike Gran  <spk121@yahoo.com>
+
+	Add visiblity.h to dist and fix test paths
+	* src/Makefile.am: add visibility.h
+	* test/Makefile.am: fix guile load path
+
+	Bad number format and escape characters
+	* src/func.c (cl_dump_handle): fix number format
+	* src/setopt.scm.in: bad string escapes
+
+	Fix setopt test for guile-1.8
+	* src/func.c: bad printf
+	* test/Makefile.am: build setopt.scm
+	* test/setopt.scm.in: renamed from setopt.scm, don't use bytevector w guile 1.8
+
+	Add visibility header
+	* src/visibility.h: new file
+
+	Use visibility, add postfieldsize, and add stress test
+	* src/Makefile.am: use visibility
+	* src/curl.scm.in: add bytevector opt
+	* src/func.c: (cl_easy_setopt): add postfieldsize to handle
+	* src/func.h: use visibility
+	* src/main.c: use visibility
+	* src/type.c: add postfieldsize to handle
+	* src/type.h: use visibility, add postfieldsize to handle
+	* test/Makefile.am: move lib, add stress test
+	* test/lib.scm: move lib
+	* test/setopt.scm: renamed from test/t001_test.test
+	* test/stress.scm: new test
+
+	Fix autobuild bugs
+	* Makefile.am: add lib directory
+	* configure.ac: change name to avoid gnulib clash, add paths to header search
+
+	Tiny bugfixes
+	* AUTHORS: add e-mail address
+	* ChangeLog: update
+	* TODO: mention curl_easy_getinfo
+	* bootstrap.conf: add gitlog-to-changelog
+	* build-aux/.gitignore: ignore gitlog-to-changelog
+	* configure.ac: bump interface, use curl-config
+	* doc/guile-curl.texi: try to use xref at end of sentence
+	* src/Makefile.am: user curl-config flags
+	* src/func.c: bad printf format
 
 	Type conversion errors
 	* src/func.c
