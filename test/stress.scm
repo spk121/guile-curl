@@ -12,5 +12,3 @@
 		       (curl-easy-setopt h 'url "http://localhost"))
 		     (loop (1+ h)))
 		   #t))))))
-
-

@@ -33,7 +33,7 @@
 	    %curl-dump-handle
 
 	    ;; RNRS_BYTEVECTORS_BEGIN
-	    bv->url-encoded-bv 
+	    bv->url-encoded-bv
 	    ;; RNRS_BYTEVECTORS_END
 
 	    CURLPROTO_HTTP
@@ -281,7 +281,7 @@ This handle represents one connection to a server."
 (define (curl-easy-handle? handle)
   "Returns #t if HANDLE is a CURL handle such as would be created by
 `curl-easy-init'"
-  (%curl-easy-init handle))
+  (%curl-easy-handle? handle))
 
 (define (curl-easy-cleanup handle)
   "This forcibly closes all connections that this handle has used

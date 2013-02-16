@@ -36,4 +36,3 @@ setopt.scm: setopt.scm.in
 	else \
 	  cat setopt.scm.in > $@ ; \
 	fi
-
