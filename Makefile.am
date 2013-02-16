@@ -4,6 +4,7 @@ SUBDIRS = \
 	src \
 	m4 \
 	doc \
+	lib \
 	test \
 	build-aux
 
