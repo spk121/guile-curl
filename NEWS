@@ -1,10 +1,8 @@
 For Release 0.2
 
     - Update to recent curl library
-
-    - Add support for all current options, including thost that take
+    - Add support for all current options, including those that take
       slist and httppost
-
     - Fix guile-1.8 and guile-2.0 specific functionality
     - Fixes for i386-unknown-openbsd5.2
     - New debugging function %curl-dump-handle

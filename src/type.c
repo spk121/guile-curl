@@ -470,5 +470,5 @@ cl_init_type ()
   scm_set_smob_free (handle_tag, gc_free_handle);
   scm_set_smob_print (handle_tag, print_handle);
   scm_set_smob_equalp (handle_tag, equalp_handle);
-  scm_c_define_gsubr ("handle?", 1, 0, 0, cl_is_handle_p);
+  scm_c_define_gsubr ("%curl-easy-handle?", 1, 0, 0, cl_is_handle_p);
 }

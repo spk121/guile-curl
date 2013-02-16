@@ -22,7 +22,7 @@
   #:use-module (rnrs bytevectors)
   ;; RNRS_BYTEVECTORS_END
   #:export (
-	    handle?
+	    curl-easy-handle?
 	    curl-easy-init
 	    curl-easy-setopt
 	    curl-easy-perform
@@ -277,6 +277,11 @@ of the original bytevector"
   "Returns a curl handle that you must use as input to other functions.
 This handle represents one connection to a server."
   (%curl-easy-init))
+
+(define (curl-easy-handle? handle)
+  "Returns #t if HANDLE is a CURL handle such as would be created by
+`curl-easy-init'"
+  (%curl-easy-init handle))
 
 (define (curl-easy-cleanup handle)
   "This forcibly closes all connections that this handle has used
