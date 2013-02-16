@@ -2,7 +2,7 @@
 TESTS_ENVIRONMENT = LIBGUILE_CURL_MAJOR=$(LIBGUILE_CURL_MAJOR)
 TESTS_ENVIRONMENT += ../libtool -dlopen ../src/libguile-curl.la \
 	--mode=execute \
-	guile -L $(top_srcdir)/src -L . -s
+	guile -L $(top_srcdir)/src -L $(top_srcdir)/test/. -s
 
 TESTS = setopt.scm \
 	stress.scm

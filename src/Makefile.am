@@ -23,6 +23,7 @@ libguile_curl_la_LDFLAGS = \
 	$(GUILE_LDFLAGS)
 
 libguile_curl_la_SOURCES = \
+	visibility.h \
 	const.c const.h \
 	type.c type.h \
 	func.c func.h \
