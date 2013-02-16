@@ -3,18 +3,13 @@
 
 #include <curses.h>
 #include <curl/curl.h>
-
-#ifdef DLL_EXPORT
-#define API __attribute__ ((dllexport, cdecl))
-#else
-#define API
-#endif
+#include "visibility.h"
 
 typedef struct handle_post_tag
 {
   CURL *handle;
   uint8_t *postfields;
-  // size_t postfieldsize;
+  size_t postfieldsize;
   // curl_off_t postfieldsize_large;
   struct curl_httppost *httppost;
   struct curl_slist *httpheader;
@@ -27,14 +22,14 @@ typedef struct handle_post_tag
   struct curl_slist *telnetoptions;
 } handle_post_t;
 
-void cl_init_type (void) API;
+void DLL_PUBLIC cl_init_type (void);
 
 int _scm_is_handle (SCM x);
 handle_post_t *_scm_to_handle (SCM x);
 SCM _scm_from_handle (handle_post_t *x);
 size_t gc_free_handle (SCM handle);
 
-SCM cl_is_handle_p (SCM x) API;
+SCM DLL_PUBLIC cl_is_handle_p (SCM x);
 
 int _scm_can_convert_to_slist (SCM x);
 struct curl_slist *_scm_convert_to_slist (SCM x);

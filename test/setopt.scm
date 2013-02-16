@@ -1,7 +1,4 @@
-;; -*- Mode: scheme; -*-
-;; t000_test.test --
-
-(use-modules (test lib)
+(use-modules (lib)
 	     (curl))
 
 (with-test-prefix
@@ -10,12 +7,13 @@
 	  (handle? (curl-easy-init))))
 
 (define (check-setopt opt val)
-  (let ((h (curl-easy-init)))
-    (curl-easy-setopt h opt val)))
+  (false-if-exception
+   (let ((h (curl-easy-init)))
+     (curl-easy-setopt h opt val)
+     #t)))
 
 (define (true-if-exception x)
   (not (false-if-exception x)))
-
 
 (with-test-prefix
  "curl-easy-setopt"
@@ -62,7 +60,6 @@
 
  ;; HTTP OPTIONS
  (pass-if "'autoreferer #t" (check-setopt 'autoreferer #t))
- (pass-if "'encoding \"identity\"" (check-setopt 'encoding "identity"))
  (pass-if "'followlocation #t" (check-setopt 'followlocation #t))
  (pass-if "'unrestricted-auth #t" (check-setopt 'unrestricted-auth #t))
  (pass-if "'maxredirs 100" (check-setopt 'maxredirs 100))

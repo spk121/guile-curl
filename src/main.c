@@ -4,14 +4,9 @@
 #include "const.h"
 #include "type.h"
 #include "func.h"
+#include "visibility.h"
 
-#ifdef DLL_EXPORT
-#define API __attribute__ ((dllexport, cdecl))
-#else
-#define API
-#endif
-
-void cl_init (void) API;
+void DLL_PUBLIC cl_init (void);
 
 void
 cl_init ()

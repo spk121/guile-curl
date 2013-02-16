@@ -10,7 +10,10 @@ dist_guilesite_DATA = \
 
 ####################
 
-libguile_curl_la_CPPFLAGS = $(CURL_CFLAGS) $(GUILE_CFLAGS)
+libguile_curl_la_CPPFLAGS = \
+	$(CURL_CFLAGS) \
+	$(GUILE_CFLAGS) \
+	$(CFLAG_VISIBILITY)
 
 libguile_curl_la_LDFLAGS = \
 	-no-undefined \

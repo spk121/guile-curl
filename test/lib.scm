@@ -16,7 +16,7 @@
 ;;;; the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
 ;;;; Boston, MA 02110-1301 USA
 
-(define-module (test lib)
+(define-module (lib)
   :use-module (ice-9 stack-catch)
   :use-module (ice-9 regex)
   :use-module (srfi srfi-1)

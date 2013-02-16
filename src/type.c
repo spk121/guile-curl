@@ -57,6 +57,7 @@ _scm_from_handle (handle_post_t *x)
     {
       fprintf (stderr, "Making <#handle %p>\n", x);
       fprintf (stderr, "\t        handle %p\n", x->handle);
+      fprintf (stderr, "\t    postfields %p\n", x->postfields);
       fprintf (stderr, "\t      httppost %p\n", x->httppost);
       fprintf (stderr, "\t    httpheader %p\n", x->httpheader);
       fprintf (stderr, "\thttp200aliases %p\n", x->http200aliases);
@@ -129,6 +130,7 @@ gc_free_handle (SCM handle)
     {
       free (x->postfields);
       x->postfields = NULL;
+      x->postfieldsize = 0;
     }
   if (x->httppost != NULL)
     {

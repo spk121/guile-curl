@@ -3,23 +3,17 @@
 
 #include <libguile.h>
 #include <curl/curl.h>
+#include "visibility.h"
 
-#ifdef DLL_EXPORT
-#define API __attribute__ ((dllexport, cdecl))
-#else
-#define API
-#endif
+SCM DLL_PUBLIC cl_easy_init (void);
+SCM DLL_PUBLIC cl_easy_getopt (SCM handle, SCM label, SCM val);
+SCM DLL_PUBLIC cl_easy_perform (SCM handle, SCM bvflag);
+SCM DLL_PUBLIC cl_easy_cleanup (SCM handle);
+SCM DLL_PUBLIC cl_easy_reset (SCM handle);
+SCM DLL_PUBLIC cl_error_string (void);
+SCM DLL_PUBLIC cl_error_code (void);
+SCM DLL_PUBLIC cl_dump_handle (SCM h);
 
-SCM cl_easy_init (void) API;
-SCM cl_easy_getopt (SCM handle, SCM label, SCM val) API;
-SCM cl_easy_perform (SCM handle, SCM bvflag) API;
-SCM cl_easy_cleanup (SCM handle) API;
-SCM cl_easy_reset (SCM handle) API;
-SCM cl_error_string (void) API;
-SCM cl_error_code (void) API;
-SCM cl_dump_handle (SCM h) API;
-
-
-void cl_init_func (void) API;
+void cl_init_func (void);
 
 #endif

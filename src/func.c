@@ -150,7 +150,8 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
 	    free (c_handle->postfields);
 	  c_handle->postfields = m;
 	  curl_easy_setopt (c_handle->handle, CURLOPT_POSTFIELDSIZE, len);
-	  code = curl_easy_setopt (c_handle->handle, CURLOPT_POSTFIELDS, m);
+	  c_handle->postfieldsize = len;
+	  code = curl_easy_setopt (c_handle->handle, CURLOPT_POSTFIELDS, (char *) m);
 	}
     }
   else if (_scm_can_convert_to_httppost (param))
@@ -397,6 +398,9 @@ cl_dump_handle (SCM handle)
   hp = _scm_to_handle (handle);
   fprintf (stderr, "<#handle %p>\n", hp);
   fprintf (stderr, "\t        handle %p\n", hp->handle);
+  fprintf (stderr, "\t    postfields %p\n", hp->postfields);
+  fprintf (stderr, "\t postfieldsize %p\n", hp->postfieldsize);
+  print_mem (hp->postfields, hp->postfieldsize);
   fprintf (stderr, "\t      httppost %p\n", hp->httppost);
   print_httppost (hp->httppost);
   fprintf (stderr, "\t    httpheader %p\n", hp->httpheader);

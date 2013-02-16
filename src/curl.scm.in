@@ -482,6 +482,14 @@ Returns #t on success and #f on failure."
 	    (%curl-easy-setopt handle option arg #t))
 	   ((eq? type 'boolean)
 	    (%curl-easy-setopt handle option (c-bool arg) #f))
+	   ((and (eq? type 'bytevector)
+		 (or
+		  (string? arg)
+		  ;; RNRS_BYTEVECTORS_BEGIN
+		  (bytevector? arg)
+		  ;; RNRS_BYTEVECTORS_END
+		  ))
+	    (%curl-easy-setopt handle option arg #f))
 	   ((and (eq? type 'slist)
 		 (list? arg)
 		 (every string? arg))
@@ -489,7 +497,7 @@ Returns #t on success and #f on failure."
 	   ((and (eq? type 'httppost)
 		 (list? arg))
 	    (%curl-easy-setopt handle option arg #f))
-	   ((not (member type '(integer boolean string biginteger slist httppost)))
+	   ((not (member type '(integer boolean string biginteger slist httppost bytevector)))
 	      (error (format #f "unimplemented type: ~a" type)))
 	     (else
 	      (error (format #f "wrong type arg: ~a" arg)))))
