@@ -67,7 +67,10 @@
 	  (check-setopt 'postredir CURL_REDIR_POST_301))
  (pass-if "'put #t" (check-setopt 'put #t))
  (pass-if "'post #t" (check-setopt 'post #t))
+ ;; RNRS_BYTEVECTORS_BEGIN
  (pass-if "'postfields #vu(0 1 2)" (check-setopt 'postfields #vu8(0 1 2)))
+ ;; RNRS_BYTEVECTORS_END
+ (pass-if "'postfields #\nul #\soh #\stx" (check-setopt 'postfields (string #\nul #\soh #\stx)))
  (pass-if "'cookie \"a=1\"" (check-setopt 'cookie "a=1"))
  (pass-if "'cookiefile \"cookie.txt\"" (check-setopt 'cookiefile "cookie.txt"))
  (pass-if "'cookiejar \"cookie.txt\"" (check-setopt 'cookiejar "cookie.txt"))
