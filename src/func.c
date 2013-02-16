@@ -399,7 +399,7 @@ cl_dump_handle (SCM handle)
   fprintf (stderr, "<#handle %p>\n", hp);
   fprintf (stderr, "\t        handle %p\n", hp->handle);
   fprintf (stderr, "\t    postfields %p\n", hp->postfields);
-  fprintf (stderr, "\t postfieldsize %d\n", hp->postfieldsize);
+  fprintf (stderr, "\t postfieldsize %u\n", hp->postfieldsize);
   print_mem (hp->postfields, hp->postfieldsize);
   fprintf (stderr, "\t      httppost %p\n", hp->httppost);
   print_httppost (hp->httppost);
