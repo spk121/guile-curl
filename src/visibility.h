@@ -1,3 +1,6 @@
+/* This header, or versions very much like it, are everywhere.  I
+   think, at this point, this code fragment is basically public
+   domain.  */
 #ifndef VISIBILITY_H
 #define VISIBILITY_H
 
@@ -6,13 +9,13 @@
     #ifdef __GNUC__
       #define DLL_PUBLIC __attribute__ ((dllexport))
     #else
-      #define DLL_PUBLIC __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
+      #define DLL_PUBLIC __declspec(dllexport)
     #endif
   #else
     #ifdef __GNUC__
       #define DLL_PUBLIC __attribute__ ((dllimport))
     #else
-      #define DLL_PUBLIC __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
+      #define DLL_PUBLIC __declspec(dllimport)
     #endif
   #endif
   #define DLL_LOCAL
