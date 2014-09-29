@@ -13,16 +13,46 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-## Process this file with automake to produce Makefile.in
 TESTS_ENVIRONMENT = LIBGUILE_CURL_MAJOR=$(LIBGUILE_CURL_MAJOR)
-TESTS_ENVIRONMENT += ../libtool -dlopen ../src/libguile-curl.la \
-	--mode=execute \
-	guile -L $(top_srcdir)/src -L $(top_srcdir)/test/. -s
+
+################################################################
+# Scheme-based tests
+
+TEST_EXTENSIONS = .scm
+SCM_LOG_COMPILER = ${top_builddir}/libtool \
+    -dlopen ${top_builddir}/src/libguile-curl.la \
+    --mode=execute guile
+AM_SCM_LOG_FLAGS = -L ${top_srcdir}/src -L ${top_srcdir}/test/. -s
 
 TESTS = setopt.scm \
 	stress.scm
 
-EXTRA_DIST = $(TESTS) \
+################################################################
+# Compiled tests
+
+LOG_COMPILER = ${top_builddir}/libtool \
+    -dlopen ${top_builddir}/src/libguile-curl.la \
+    --mode=execute
+
+check_PROGRAMS = check_type
+
+check_type_SOURCES = check_type.c
+AM_CPPFLAGS = \
+	$(CURL_CFLAGS) \
+	$(GUILE_CFLAGS) \
+	-lffi
+
+AM_LDFLAGS = \
+	-L../src -lguile-curl \
+	$(CURL_LDFLAGS) \
+	$(GUILE_LDFLAGS)
+
+TESTS += check_type
+
+################################################################
+
+EXTRA_DIST = setopt.scm \
+	stress.scm \
 	lib.scm \
 	do_gdb \
 	setopt.scm.in
