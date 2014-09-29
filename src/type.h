@@ -17,8 +17,8 @@
 #ifndef CL_TYPE_H
 #define CL_TYPE_H
 
-#include <curses.h>
 #include <curl/curl.h>
+#include <libguile.h>
 #include "visibility.h"
 
 typedef struct handle_post_tag
