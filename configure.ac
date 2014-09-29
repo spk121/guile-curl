@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script
 # Process this file with autoconf to produce a configure script
 
-# Copyright 20011, 2013 Michael L Gran
+# Copyright 20011, 2013, 2014 Michael L Gran
 
 # This file is part of guile-curl.
 
@@ -42,6 +42,7 @@ AC_SUBST(LIBGUILE_CURL_INTERFACE)
 # Check for Programs
 AC_CANONICAL_HOST
 AC_PROG_INSTALL
+AM_PROG_AR
 LT_INIT
 dnl LT_INIT([dlopen disable-fast-install win32-dll])
 AC_PROG_MKDIR_P
