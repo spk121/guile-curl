@@ -267,17 +267,27 @@ _scm_convert_to_slist (SCM x)
   SCM elt;
   char *str;
   struct curl_slist *slist = NULL;
-
+  
   n = scm_to_int (scm_length (x));
   if (n == 0)
     return NULL;
   for (i = 0; i < n; i ++)
-    {
-      elt = SCM_C_LIST_REF(x, i);
-      if (scm_is_string (elt))
-	str = scm_to_locale_string (elt);
+  {
+    elt = SCM_C_LIST_REF(x, i);
+    if (scm_is_string (elt)) {
+      str = scm_to_locale_string (elt);
       slist = curl_slist_append (slist, str);
+      if (slist == NULL) {
+        /* This has been check upstream and should never happen. */
+        scm_error (SCM_BOOL_F,
+                   "conversion to curl string list",
+                   "passed a non-string",
+                   SCM_BOOL_F,
+                   SCM_BOOL_F);
+        
+      }
     }
+  }
   return slist;
 }
 
