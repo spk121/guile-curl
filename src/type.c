@@ -29,7 +29,6 @@
 static scm_t_bits handle_tag;
 
 SCM equalp_handle (SCM x1, SCM x2);
-size_t gc_free_handle (SCM x);
 int print_handle (SCM x, SCM port, scm_print_state *pstate);
 
 
@@ -137,64 +136,67 @@ gc_free_handle (SCM handle)
       fflush (stderr);
     }
 
-  if (x->handle != NULL)
+  if (x != NULL)
     {
-      curl_easy_cleanup (x->handle);
-      x->handle = NULL;
+      if (x->handle != NULL)
+        {
+          curl_easy_cleanup (x->handle);
+          x->handle = NULL;
+        }
+      if (x->postfields != NULL)
+        {
+          free (x->postfields);
+          x->postfields = NULL;
+          x->postfieldsize = 0;
+        }
+      if (x->httppost != NULL)
+        {
+          curl_formfree (x->httppost);
+          x->httppost = NULL;
+        }
+      if (x->httpheader != NULL)
+        {
+          curl_slist_free_all (x->httpheader);
+          x->httpheader = NULL;
+        }
+      if (x->http200aliases != NULL)
+        {
+          curl_slist_free_all (x->http200aliases);
+          x->http200aliases = NULL;
+        }
+      if (x->mail_rcpt != NULL)
+        {
+          curl_slist_free_all (x->mail_rcpt);
+          x->mail_rcpt = NULL;
+        }
+      if (x->quote != NULL)
+        {
+          curl_slist_free_all (x->quote);
+          x->quote = NULL;
+        }
+      if (x->postquote != NULL)
+        {
+          curl_slist_free_all (x->postquote);
+          x->postquote = NULL;
+        }
+      if (x->prequote != NULL)
+        {
+          curl_slist_free_all (x->prequote);
+          x->prequote = NULL;
+        }
+      if (x->resolve != NULL)
+        {
+          curl_slist_free_all (x->resolve);
+          x->resolve = NULL;
+        }
+      if (x->telnetoptions != NULL)
+        {
+          curl_slist_free_all (x->telnetoptions);
+          x->telnetoptions = NULL;
+        }
+      free (x);
+      x = NULL;
     }
-  if (x->postfields != NULL)
-    {
-      free (x->postfields);
-      x->postfields = NULL;
-      x->postfieldsize = 0;
-    }
-  if (x->httppost != NULL)
-    {
-      curl_formfree (x->httppost);
-      x->httppost = NULL;
-    }
-  if (x->httpheader != NULL)
-    {
-      curl_slist_free_all (x->httpheader);
-      x->httpheader = NULL;
-    }
-  if (x->http200aliases != NULL)
-    {
-      curl_slist_free_all (x->http200aliases);
-      x->http200aliases = NULL;
-    }
-  if (x->mail_rcpt != NULL)
-    {
-      curl_slist_free_all (x->mail_rcpt);
-      x->mail_rcpt = NULL;
-    }
-  if (x->quote != NULL)
-    {
-      curl_slist_free_all (x->quote);
-      x->quote = NULL;
-    }
-  if (x->postquote != NULL)
-    {
-      curl_slist_free_all (x->postquote);
-      x->postquote = NULL;
-    }
-  if (x->prequote != NULL)
-    {
-      curl_slist_free_all (x->prequote);
-      x->prequote = NULL;
-    }
-  if (x->resolve != NULL)
-    {
-      curl_slist_free_all (x->resolve);
-      x->resolve = NULL;
-    }
-  if (x->telnetoptions != NULL)
-    {
-      curl_slist_free_all (x->telnetoptions);
-      x->telnetoptions = NULL;
-    }
-  free (x);
-  x = NULL;
   SCM_CRITICAL_SECTION_END;
 
   return 0;
