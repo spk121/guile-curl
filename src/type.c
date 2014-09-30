@@ -138,11 +138,6 @@ gc_free_handle (SCM handle)
 
   if (x != NULL)
     {
-      if (x->handle != NULL)
-        {
-          curl_easy_cleanup (x->handle);
-          x->handle = NULL;
-        }
       if (x->postfields != NULL)
         {
           free (x->postfields);
@@ -194,8 +189,14 @@ gc_free_handle (SCM handle)
           curl_slist_free_all (x->telnetoptions);
           x->telnetoptions = NULL;
         }
+      if (x->handle != NULL)
+        {
+          curl_easy_cleanup (x->handle);
+          x->handle = NULL;
+        }
       free (x);
       x = NULL;
+      SCM_SET_SMOB_DATA(handle, NULL);
     }
   SCM_CRITICAL_SECTION_END;
 
