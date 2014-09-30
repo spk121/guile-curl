@@ -97,7 +97,22 @@ void test_free_handle_empty_slist_option (SCM option)
   SCM ret = cl_easy_setopt(handle, scm_variable_ref(option), str_list, SCM_BOOL_F);
   gc_free_handle(handle);
 }
-  
+
+int test_cl_is_handle_p__handle (void)
+{
+  SCM handle = cl_easy_init();
+  SCM ret = cl_is_handle_p(handle);
+  printf("test that cl_is_handle_p returns #t when passed a handle: %d\n", ret);
+  return scm_is_true(ret);
+}
+
+int test_cl_is_handle_p__true (void)
+{
+  SCM handle = SCM_BOOL_T;
+  SCM ret = cl_is_handle_p(handle);
+  printf("test that cl_is_handle_p returns #f when not passed a handle: %d\n", ret);
+  return scm_is_false(ret);
+}
 int main()
 {
   int ret;
