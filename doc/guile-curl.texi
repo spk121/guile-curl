@@ -353,12 +353,12 @@ Data Types}.
 @item NETWORK OPTIONS
 @item url @tab CURLOPT_URL @tab string
 @item protocols @tab CURLOPT_PROTOCOLS @tab
-integer@footnote{@xref{Integer Constants for protocols}}
-@item redir-protocols @tab CURLOPT_REDIR_PROTOCOLS @tab integer@footnote{@xref{Integer Constants for protocols}}
+integer@footnote{@xref{Integer Constants for protocols}.}
+@item redir-protocols @tab CURLOPT_REDIR_PROTOCOLS @tab integer@footnote{@xref{Integer Constants for protocols}.}
 @item proxy @tab CURLOPT_PROXY @tab string
 @item proxyport @tab CURLOPT_PROXYPORT @tab integer
 @item proxytype @tab CURLOPT_PROXYTYPE @tab
-integer@footnote{@xref{Integer Constants for proxytype}}
+integer@footnote{@xref{Integer Constants for proxytype}.}
 @item noproxy @tab CURLOPT_NOPROXY @tab string
 @item httpproxytunnel @tab CURLOPT_HTTPPROXYTUNNEL @tab boolean
 @item socks5-gssapi-service @tab CURLOPT_SOCKS5_GSSAPI_SERVICE @tab string
@@ -374,7 +374,7 @@ integer@footnote{@xref{Integer Constants for proxytype}}
 
 @item NAMES AND PASSWORD OPTIONS
 @item netrc @tab CURLOPT_NETRC @tab integer@footnote{@xref{Integer
-Constants for netrc}}
+Constants for netrc}.}
 @item netrc-file @tab CURLOPT_NETRC_FILE @tab string
 @item userpwd @tab CURLOPT_USERPWD @tab string
 @item proxyuserpwd @tab CURLOPT_PROXYUSERPWD @tab string
@@ -383,12 +383,12 @@ Constants for netrc}}
 @item proxyusername @tab CURLOPT_PROXYUSERNAME @tab string
 @item proxypassword @tab CURLOPT_PROXYPASSWORD @tab string
 @item httpauth @tab CURLOPT_HTTPAUTH @tab
-integer@footnote{@xref{Integer Constants for httpauth}}
+integer@footnote{@xref{Integer Constants for httpauth}.}
 @item tlsauth-type @tab CURLOPT_TLSAUTH_TYPE @tab
-integer@footnote{@xref{Integer Constants for tlsauth-type}}
+integer@footnote{@xref{Integer Constants for tlsauth-type}.}
 @item tlsauth-username @tab CURLOPT_TLSAUTH_USERNAME @tab string
 @item tlsauth-password @tab CURLOPT_TLSAUTH_PASSWORD @tab string
-@item proxyauth @tab CURLOPT_PROXYAUTH @tab integer@footnote{@xref{Integer Constants for httpauth}}
+@item proxyauth @tab CURLOPT_PROXYAUTH @tab integer@footnote{@xref{Integer Constants for httpauth}.}
 
 @item HTTP OPTIONS
 @item autoreferer @tab CURLOPT_AUTOREFERER @tab boolean
@@ -398,17 +398,18 @@ integer@footnote{@xref{Integer Constants for tlsauth-type}}
 @item unrestricted-auth @tab CURLOPT_UNRESTRICTED_AUTH @tab boolean
 @item maxredirs @tab CURLOPT_MAXREDIRS @tab integer
 @item postredir @tab CURLOPT_POSTREDIR @tab
-integer@footnote{@xref{Integer Constants for postredir}}
+integer@footnote{@xref{Integer Constants for postredir}.}
 @item put @tab CURLOPT_PUT @tab boolean
 @item post @tab CURLOPT_POST @tab boolean
-@item postfields@footnote{@xref{Postfields}} @tab CURLOPT_POSTFIELDS @tab bytevector
+@item postfields@footnote{@xref{Postfields}.} @tab CURLOPT_POSTFIELDS @tab bytevector
 @c @item postfieldsize @tab CURLOPT_POSTFIELDSIZE @tab integer
 @c @item postfieldsize-large @tab CURLOPT_POSTFIELDSIZE_LARGE @tab biginteger
 @c @item copypostfields @tab CURLOPT_COPYPOSTFIELDS @tab bytevector
 @item httppost @tab CURLOPT_HTTPPOST @tab httppost
 @item referer @tab CURLOPT_REFERER @tab string
 @item useragent @tab CURLOPT_USERAGENT @tab string
-@item httpheader @tab CURLOPT_HTTPHEADER @tab slist
+@item httpheader @tab CURLOPT_HTTPHEADER @tab
+slist@footnote{Pass an empty list to clear out the HTTP headers.}
 @item http200aliases @tab CURLOPT_HTTP200ALIASES @tab slist
 @item cookie @tab CURLOPT_COOKIE @tab string
 @item cookiefile @tab CURLOPT_COOKIEFILE @tab string
@@ -417,7 +418,7 @@ integer@footnote{@xref{Integer Constants for postredir}}
 @item cookielist @tab CURLOPT_COOKIELIST @tab string
 @item httpget @tab CURLOPT_HTTPGET @tab boolean
 @item http-version @tab CURLOPT_HTTP_VERSION @tab
-integer@footnote{@xref{Integer Constants for http-version}}
+integer@footnote{@xref{Integer Constants for http-version}.}
 @item ignore-content-length @tab CURLOPT_IGNORE_CONTENT_LENGTH @tab boolean
 @item http-content-decoding @tab CURLOPT_HTTP_CONTENT_DECODING @tab boolean
 @item http-transfer-decoding @tab CURLOPT_HTTP_TRANSFER_DECODING @tab boolean
@@ -450,7 +451,7 @@ integer@footnote{@xref{Integer Constants for ftpsslauth}.}
 @item ftp-filemethod @tab CURLOPT_FTP_FILEMETHOD @tab integer@footnote{@xref{Integer Constants for ftp-filemethod}.}
 
 @item RTSP OPTIONS
-@item rtsp-request @tab CURLOPT_RTSP_REQUEST @tab integer@footnote{@xref{Integer Constants for rtsp-request}}
+@item rtsp-request @tab CURLOPT_RTSP_REQUEST @tab integer@footnote{@xref{Integer Constants for rtsp-request}.}
 @item rtsp-session-id @tab CURLOPT_RTSP_SESSION_ID @tab string
 @item rtsp-stream-uri @tab CURLOPT_RTSP_STREAM_URI @tab string
 @item rtsp-transport @tab CURLOPT_RTSP_TRANSPORT @tab string
@@ -489,9 +490,9 @@ integer@footnote{@xref{Integer Constants for ftpsslauth}.}
 @item forbid-reuse @tab CURLOPT_FORBID_REUSE @tab boolean
 @item connecttimeout @tab CURLOPT_CONNECTTIMEOUT @tab integer
 @item connecttimeout-ms @tab CURLOPT_CONNECTTIMEOUT_MS @tab integer
-@item ipresolve @tab CURLOPT_IPRESOLVE @tab integer@footnote{@xref{Integer Constants for ipresolve}}
+@item ipresolve @tab CURLOPT_IPRESOLVE @tab integer@footnote{@xref{Integer Constants for ipresolve}.}
 @item connect-only @tab CURLOPT_CONNECT_ONLY @tab boolean
-@item use-ssl @tab CURLOPT_USE_SSL @tab integer@footnote{@xref{Integer Constants for use-ssl}}
+@item use-ssl @tab CURLOPT_USE_SSL @tab integer@footnote{@xref{Integer Constants for use-ssl}.}
 @item resolve @tab CURLOPT_RESOLVE @tab slist
 @item dns-servers @tab CURLOPT_DNS_SERVERS @tab string
 @item accepttimeout-ms @tab CURLOPT_ACCEPTTIMEOUT_MS @tab integer
@@ -504,7 +505,7 @@ integer@footnote{@xref{Integer Constants for ftpsslauth}.}
 @item keypasswd @tab CURLOPT_KEYPASSWD @tab string
 @item sslengine @tab CURLOPT_SSLENGINE @tab string
 @item sslengine-default @tab CURLOPT_SSLENGINE_DEFAULT @tab boolean
-@item sslversion @tab CURLOPT_SSLVERSION @tab integer@footnote{@xref{Integer Constants for sslversion}}
+@item sslversion @tab CURLOPT_SSLVERSION @tab integer@footnote{@xref{Integer Constants for sslversion}.}
 @item ssl-verifypeer @tab CURLOPT_SSL_VERIFYPEER @tab boolean
 @item cainfo @tab CURLOPT_CAINFO @tab string
 @item issuercert @tab CURLOPT_ISSUERCERT @tab string
@@ -517,10 +518,10 @@ integer@footnote{@xref{Integer Constants for ftpsslauth}.}
 @item ssl-cipher-list @tab CURLOPT_SSL_CIPHER_LIST @tab string
 @item ssl-sessionid-cache @tab CURLOPT_SSL_SESSIONID_CACHE @tab boolean
 @item krblevel @tab CURLOPT_KRBLEVEL @tab string
-@item gssapi-delegation @tab CURLOPT_GSSAPI_DELEGATION @tab integer@footnote{@xref{Integer Constants for gssapi-delegation}}
+@item gssapi-delegation @tab CURLOPT_GSSAPI_DELEGATION @tab integer@footnote{@xref{Integer Constants for gssapi-delegation}.}
 
 @item SSH OPTIONS
-@item ssh-auth-types @tab CURLOPT_SSH_AUTH_TYPES @tab integer@footnote{@xref{Integer Constants for ssh-auth-types}}
+@item ssh-auth-types @tab CURLOPT_SSH_AUTH_TYPES @tab integer@footnote{@xref{Integer Constants for ssh-auth-types}.}
 @item ssh-host-public-key-md5 @tab
 CURLOPT_SSH_HOST_PUBLIC_KEY_MD5 @tab string
 @item ssh-public-keyfile @tab CURLOPT_SSH_PUBLIC_KEYFILE @tab string
