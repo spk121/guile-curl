@@ -82,24 +82,22 @@ void test_free_handle_bytevector_postfields(void)
 }
 #endif
 
-void test_free_handle_httpheader(void)
+void test_free_handle_slist_option (SCM option)
 {
-  extern SCM cl_CURLOPT_HTTPHEADER;
   SCM handle = cl_easy_init();
   SCM str_list = scm_list_2(scm_from_locale_string("foo"), scm_from_locale_string("bar"));
-  SCM ret = cl_easy_setopt(handle, scm_variable_ref(cl_CURLOPT_HTTPHEADER), str_list, SCM_BOOL_F);
+  SCM ret = cl_easy_setopt(handle, scm_variable_ref(option), str_list, SCM_BOOL_F);
   gc_free_handle(handle);
 }
 
-void test_free_handle_empty_httpheader(void)
+void test_free_handle_empty_slist_option (SCM option)
 {
-  extern SCM cl_CURLOPT_HTTPHEADER;
   SCM handle = cl_easy_init();
   SCM str_list = scm_list_n(SCM_UNDEFINED);
-  SCM ret = cl_easy_setopt(handle, scm_variable_ref(cl_CURLOPT_HTTPHEADER), str_list, SCM_BOOL_F);
+  SCM ret = cl_easy_setopt(handle, scm_variable_ref(option), str_list, SCM_BOOL_F);
   gc_free_handle(handle);
 }
-
+  
 int main()
 {
   int ret;
@@ -145,11 +143,21 @@ int main()
   test_free_handle_bytevector_postfields();
 #endif
 
-  printf("test that frees of a handle with http headers doesn't segfault\n");
-  test_free_handle_httpheader();
 
-  printf("test that frees of a handle with an empty list of http headers doesn't segfault\n");
-  test_free_handle_empty_httpheader();
+#define TEST_SLIST(x) \
+  extern SCM x; \
+  printf ("test that frees of a handle with a " #x " slist doesn't segfault\n"); \
+  test_free_handle_slist_option(x); \
+  printf ("test that frees of a handle with an empty " #x " slist don't segfault\n"); \
+  test_free_handle_empty_slist_option(x)
 
+  TEST_SLIST(cl_CURLOPT_HTTPHEADER);
+  TEST_SLIST(cl_CURLOPT_HTTP200ALIASES);
+  TEST_SLIST(cl_CURLOPT_MAIL_RCPT);
+  TEST_SLIST(cl_CURLOPT_QUOTE);
+  TEST_SLIST(cl_CURLOPT_POSTQUOTE);
+  TEST_SLIST(cl_CURLOPT_PREQUOTE);
+  TEST_SLIST(cl_CURLOPT_RESOLVE);
+  TEST_SLIST(cl_CURLOPT_TELNETOPTIONS);
   return 0;
 }
