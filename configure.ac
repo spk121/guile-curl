@@ -21,7 +21,7 @@
 ##################
 # Package info
 AC_PREREQ([2.61])
-AC_INIT([GuileCurl],[0.2],[spk121@yahoo.com])
+AC_INIT([GuileCurl],[0.3],[spk121@yahoo.com])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([gnu std-options -Wall])
 AC_PROG_CC_C99
