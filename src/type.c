@@ -276,6 +276,9 @@ _scm_convert_to_slist (SCM x)
   char *str;
   struct curl_slist *slist = NULL;
 
+  if (!_scm_can_convert_to_slist (x))
+    return NULL;
+
   n = scm_to_int (scm_length (x));
   if (n == 0)
     return NULL;
@@ -288,7 +291,7 @@ _scm_convert_to_slist (SCM x)
           slist = curl_slist_append (slist, str);
           if (slist == NULL)
             {
-              /* This should never happen. */
+              /* This should be impossible. */
               scm_error (SCM_BOOL_F,
                          "_scm_convert_to_slist",
                          "failed to create a Curl list of strings from a Guile list of strings",
@@ -299,7 +302,7 @@ _scm_convert_to_slist (SCM x)
         }
       else
         {
-          /* This has been check upstream and should never happen. */
+          /* This should be impossible. */
           scm_error (SCM_BOOL_F,
                      "_scm_convert_to_slist",
                      "failed to create a Curl list of strings from a Guile list that contained non-string data",
