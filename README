@@ -2,6 +2,7 @@ guile-curl is a project that has procedures that allow Guile to do
 client-side URL transfers, like requesting documents from http or ftp
 servers.  It is based on the libcurl library.
 
-For information on installation, check INSTALL.
+For the boilerplate information on how to install a GNU package
+from source, check INSTALL.
 
 For information on how to use it, there is a manual in the doc/ directory.
