@@ -28,7 +28,6 @@
 
 static scm_t_bits handle_tag;
 
-SCM equalp_handle (SCM x1, SCM x2);
 int print_handle (SCM x, SCM port, scm_print_state *pstate);
 
 
@@ -96,6 +95,9 @@ equalp_handle (SCM x1, SCM x2)
   SCM ret;
   CURL *handle1;
   CURL *handle2;
+
+  SCM_ASSERT (SCM_SMOB_PREDICATE (handle_tag, x1), x1, SCM_ARG1, "equalp-handle");
+  SCM_ASSERT (SCM_SMOB_PREDICATE (handle_tag, x2), x2, SCM_ARG2, "equalp-handle");
 
   SCM_CRITICAL_SECTION_START;
   handle1 = (handle_post_t *) SCM_SMOB_DATA (x1);
@@ -210,6 +212,9 @@ print_handle (SCM x, SCM port, scm_print_state *pstate __attribute__ ((unused)))
   print_handle (SCM x, SCM port, scm_print_state *pstate)
 #endif
 {
+
+  SCM_ASSERT (SCM_SMOB_PREDICATE (handle_tag, x), x, SCM_ARG1, "print-handle");
+
   handle_post_t *frm = (handle_post_t *) SCM_SMOB_DATA (x);
   char *str;
 
@@ -222,9 +227,9 @@ print_handle (SCM x, SCM port, scm_print_state *pstate __attribute__ ((unused)))
   else
     {
       if (asprintf (&str, "%p", frm) < 0)
-	scm_puts ("???", port);
+        scm_puts ("???", port);
       else
-	scm_puts (str, port);
+        scm_puts (str, port);
     }
 
   scm_puts (">", port);
@@ -270,27 +275,39 @@ _scm_convert_to_slist (SCM x)
   SCM elt;
   char *str;
   struct curl_slist *slist = NULL;
-  
+
   n = scm_to_int (scm_length (x));
   if (n == 0)
     return NULL;
   for (i = 0; i < n; i ++)
-  {
-    elt = SCM_C_LIST_REF(x, i);
-    if (scm_is_string (elt)) {
-      str = scm_to_locale_string (elt);
-      slist = curl_slist_append (slist, str);
-      if (slist == NULL) {
-        /* This has been check upstream and should never happen. */
-        scm_error (SCM_BOOL_F,
-                   "conversion to curl string list",
-                   "passed a non-string",
-                   SCM_BOOL_F,
-                   SCM_BOOL_F);
-        
-      }
+    {
+      elt = SCM_C_LIST_REF(x, i);
+      if (scm_is_string (elt))
+        {
+          str = scm_to_locale_string (elt);
+          slist = curl_slist_append (slist, str);
+          if (slist == NULL)
+            {
+              /* This should never happen. */
+              scm_error (SCM_BOOL_F,
+                         "_scm_convert_to_slist",
+                         "failed to create a Curl list of strings from a Guile list of strings",
+                         SCM_BOOL_F,
+                         SCM_BOOL_F);
+              break;
+            }
+        }
+      else
+        {
+          /* This has been check upstream and should never happen. */
+          scm_error (SCM_BOOL_F,
+                     "_scm_convert_to_slist",
+                     "failed to create a Curl list of strings from a Guile list that contained non-string data",
+                     SCM_BOOL_F,
+                     SCM_BOOL_F);
+          break;
+        }
     }
-  }
   return slist;
 }
 
