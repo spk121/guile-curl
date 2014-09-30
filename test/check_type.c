@@ -67,7 +67,7 @@ void test_free_handle_string_postfields(void)
   gc_free_handle(handle);
 }
 
-#if SCM_MAJOR_VERSION != 1
+#if (SCM_MAJOR_VERSION != 1)
 void test_free_handle_bytevector_postfields(void)
 {
   extern SCM cl_CURLOPT_POSTFIELDS;
@@ -81,6 +81,24 @@ void test_free_handle_bytevector_postfields(void)
   gc_free_handle(handle);
 }
 #endif
+
+void test_free_handle_httpheader(void)
+{
+  extern SCM cl_CURLOPT_HTTPHEADER;
+  SCM handle = cl_easy_init();
+  SCM str_list = scm_list_2(scm_from_locale_string("foo"), scm_from_locale_string("bar"));
+  SCM ret = cl_easy_setopt(handle, scm_variable_ref(cl_CURLOPT_HTTPHEADER), str_list, SCM_BOOL_F);
+  gc_free_handle(handle);
+}
+
+void test_free_handle_empty_httpheader(void)
+{
+  extern SCM cl_CURLOPT_HTTPHEADER;
+  SCM handle = cl_easy_init();
+  SCM str_list = scm_list_n(SCM_UNDEFINED);
+  SCM ret = cl_easy_setopt(handle, scm_variable_ref(cl_CURLOPT_HTTPHEADER), str_list, SCM_BOOL_F);
+  gc_free_handle(handle);
+}
 
 int main()
 {
@@ -126,6 +144,12 @@ int main()
   printf("test that frees of a handle with bytevector-based postfields doesn't segfault\n");
   test_free_handle_bytevector_postfields();
 #endif
+
+  printf("test that frees of a handle with http headers doesn't segfault\n");
+  test_free_handle_httpheader();
+
+  printf("test that frees of a handle with an empty list of http headers doesn't segfault\n");
+  test_free_handle_empty_httpheader();
 
   return 0;
 }
