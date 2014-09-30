@@ -104,6 +104,22 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
         scm_error (SCM_BOOL_F, "cl-easy-setopt", "CURLOPT_POSTFIELDS requires 8-bit string or bytevector data",
                    SCM_BOOL_F, SCM_BOOL_F);
     }
+  else if (c_option == CURLOPT_HTTPHEADER)
+    {
+      if (_scm_can_convert_to_slist (param))
+        {
+          /* slists require special handling to free them properly, so
+             they are stored with the Curl handle.  */
+          struct curl_slist *sl = _scm_convert_to_slist (param);
+          if (c_handle->httpheader)
+            curl_slist_free_all (c_handle->httpheader);
+          c_handle->httpheader = sl;
+          code = curl_easy_setopt (c_handle->handle, CURLOPT_HTTPHEADER, sl);
+        }
+      else
+        scm_error (SCM_BOOL_F, "cl-easy-setopt", "CURLOPT_HTTPHEADER requires a list of strings",
+                   SCM_BOOL_F, SCM_BOOL_F);
+    }
   else if (scm_is_integer (param))
     {
       if (scm_is_true (big))
@@ -125,13 +141,7 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
          they are stored with the Curl handle.  */
       struct curl_slist *sl = _scm_convert_to_slist (param);
       int ok = 1;
-      if (c_option == CURLOPT_HTTPHEADER)
-        {
-          if (c_handle->httpheader)
-            curl_slist_free_all (c_handle->httpheader);
-          c_handle->httpheader = sl;
-        }
-      else if (c_option == CURLOPT_HTTP200ALIASES)
+      if (c_option == CURLOPT_HTTP200ALIASES)
         {
           if (c_handle->http200aliases)
             curl_slist_free_all (c_handle->http200aliases);
