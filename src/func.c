@@ -1,6 +1,6 @@
-/* Constants for guile-curl
+/* Functions for guile-curl
 
-   Copyright (c) 2011, 2013 Michael L. Gran
+   Copyright (c) 2011, 2013, 2014 Michael L. Gran
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
