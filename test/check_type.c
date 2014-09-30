@@ -1,3 +1,4 @@
+#include <curl/curl.h>
 #include "../src/type.h"
 #include "../src/func.h"
 #include "../src/const.h"
@@ -113,6 +114,56 @@ int test_cl_is_handle_p__true (void)
   printf("test that cl_is_handle_p returns #f when not passed a handle: %d\n", ret);
   return scm_is_false(ret);
 }
+
+int test_can_convert_to_slist__slist (void)
+{
+  SCM str_list = scm_list_2(scm_from_locale_string("foo"), scm_from_locale_string("bar"));
+  int ret = _scm_can_convert_to_slist (str_list);
+  printf("test that _scm_can_convert_to_slist returns 1 when passed a list of strings: %d\n", ret == 1);
+  return ret == 1;
+}
+
+int test_can_convert_to_slist__empty_list (void)
+{
+  SCM str_list = scm_list_n(SCM_UNDEFINED);
+  int ret = _scm_can_convert_to_slist (str_list);
+  printf("test that _scm_can_convert_to_slist returns 1 when passed an empty list: %d\n", ret == 1);
+  return ret == 1;
+}
+
+int test_can_convert_to_slist__list_of_integers (void)
+{
+  SCM str_list = scm_list_2(scm_from_int(1), scm_from_int(2));
+  int ret = _scm_can_convert_to_slist (str_list);
+  printf("test that _scm_can_convert_to_slist returns 0 when passed a list of integers: %d\n", ret == 0);
+  return ret == 0;
+}
+
+int test_scm_convert_to_slist__slist (void)
+{
+  SCM str_list = scm_list_2(scm_from_locale_string("foo"), scm_from_locale_string("bar"));
+  struct curl_slist *ret = _scm_convert_to_slist (str_list);
+  printf("test that _scm_convert_to_slist returns an slist when passed a list of strings: %d\n", ret != NULL);
+  return ret != NULL;
+}
+
+int test_scm_convert_to_slist__empty_list (void)
+{
+  SCM str_list = scm_list_n(SCM_UNDEFINED);
+  struct curl_slist *ret = _scm_convert_to_slist (str_list);
+  printf("test that _scm_convert_to_slist returns NULL when passed an empty list: %d\n", ret == NULL);
+  return ret == NULL;
+}
+
+int test_scm_convert_to_slist__list_of_integers (void)
+{
+  SCM str_list = scm_list_2(scm_from_int(1), scm_from_int(2));
+  struct curl_slist *ret = _scm_convert_to_slist (str_list);
+  printf("test that _scm_convert_to_slist returns NULL when passed a list of integers: %d\n", ret == NULL);
+  return ret == NULL;
+}
+
+
 int main()
 {
   int ret;
@@ -123,10 +174,12 @@ int main()
   printf("test that a handle is a handle: %d\n", ret);
   if (!ret)
     return 1;
+
   ret = test_scm_is_not_handle();
   printf("test that a bool is not handle: %d\n", ret);
   if (!ret)
     return 1;
+
   ret = test_equalp_handle();
   printf("test that a handle equals itself: %d\n", ret);
   if (!ret)
@@ -158,7 +211,6 @@ int main()
   test_free_handle_bytevector_postfields();
 #endif
 
-
 #define TEST_SLIST(x) \
   extern SCM x; \
   printf ("test that frees of a handle with a " #x " slist doesn't segfault\n"); \
@@ -174,5 +226,38 @@ int main()
   TEST_SLIST(cl_CURLOPT_PREQUOTE);
   TEST_SLIST(cl_CURLOPT_RESOLVE);
   TEST_SLIST(cl_CURLOPT_TELNETOPTIONS);
+
+  ret = test_cl_is_handle_p__handle ();
+  if (!ret)
+    return 1;
+
+  ret = test_cl_is_handle_p__true ();
+  if (!ret)
+    return 1;
+
+  ret = test_can_convert_to_slist__slist ();
+  if (!ret)
+    return 1;
+
+  ret = test_can_convert_to_slist__empty_list ();
+  if (!ret)
+    return 1;
+
+  ret = test_can_convert_to_slist__list_of_integers ();
+  if (!ret)
+    return 1;
+
+  ret = test_scm_convert_to_slist__slist ();
+  if (!ret)
+    return 1;
+
+  ret = test_scm_convert_to_slist__empty_list ();
+  if (!ret)
+    return 1;
+
+  ret = test_scm_convert_to_slist__list_of_integers ();
+  if (!ret)
+    return 1;
+
   return 0;
 }
