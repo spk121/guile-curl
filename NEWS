@@ -1,3 +1,8 @@
+For Release 0.3 - Oct 2, 2014
+
+    - Fix bad memory allocation for POSTFIELDS
+    - More tests
+
 For Release 0.2 - Feb 16, 2013
 
     - Update to recent curl library
