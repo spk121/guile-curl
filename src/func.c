@@ -86,12 +86,30 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
 
   c_handle = _scm_to_handle (handle);
   c_option = (CURLoption) scm_to_int (option);
-  if (scm_is_integer (param))
+
+  if (c_option == CURLOPT_POSTFIELDS)
+    {
+      if (_scm_can_convert_to_byte_data (param))
+        {
+          size_t len;
+          uint8_t *m = _scm_convert_to_byte_data (param, &len);
+          if (c_handle->postfields)
+            free (c_handle->postfields);
+          c_handle->postfields = m;
+          curl_easy_setopt (c_handle->handle, CURLOPT_POSTFIELDSIZE, len);
+          c_handle->postfieldsize = len;
+          code = curl_easy_setopt (c_handle->handle, CURLOPT_POSTFIELDS, (char *) m);
+        }
+      else
+        scm_error (SCM_BOOL_F, "cl-easy-setopt", "CURLOPT_POSTFIELDS requires 8-bit string or bytevector data",
+                   SCM_BOOL_F, SCM_BOOL_F);
+    }
+  else if (scm_is_integer (param))
     {
       if (scm_is_true (big))
-	code = curl_easy_setopt (c_handle->handle, c_option, scm_to_int64 (param));
+        code = curl_easy_setopt (c_handle->handle, c_option, scm_to_int64 (param));
       else
-	code = curl_easy_setopt (c_handle->handle, c_option, scm_to_long (param));
+        code = curl_easy_setopt (c_handle->handle, c_option, scm_to_long (param));
     }
   else if (scm_is_string (param))
     {
@@ -104,71 +122,65 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
   else if (_scm_can_convert_to_slist (param))
     {
       /* slists require special handling to free them properly, so
-	 they are stored with the Curl handle.  */
+         they are stored with the Curl handle.  */
       struct curl_slist *sl = _scm_convert_to_slist (param);
+      int ok = 1;
       if (c_option == CURLOPT_HTTPHEADER)
-	{
-	  if (c_handle->httpheader)
-	    curl_slist_free_all (c_handle->httpheader);
-	  c_handle->httpheader = sl;
-	}
+        {
+          if (c_handle->httpheader)
+            curl_slist_free_all (c_handle->httpheader);
+          c_handle->httpheader = sl;
+        }
       else if (c_option == CURLOPT_HTTP200ALIASES)
-	{
-	  if (c_handle->http200aliases)
-	    curl_slist_free_all (c_handle->http200aliases);
-	  c_handle->http200aliases = sl;
-	}
+        {
+          if (c_handle->http200aliases)
+            curl_slist_free_all (c_handle->http200aliases);
+          c_handle->http200aliases = sl;
+        }
       else if (c_option == CURLOPT_MAIL_RCPT)
-	{
-	  if (c_handle->mail_rcpt)
-	    curl_slist_free_all (c_handle->mail_rcpt);
-	  c_handle->mail_rcpt = sl;
-	}
+        {
+          if (c_handle->mail_rcpt)
+            curl_slist_free_all (c_handle->mail_rcpt);
+          c_handle->mail_rcpt = sl;
+        }
       else if (c_option == CURLOPT_QUOTE)
-	{
-	  if (c_handle->quote)
-	    curl_slist_free_all (c_handle->quote);
-	  c_handle->quote = sl;
-	}
+        {
+          if (c_handle->quote)
+            curl_slist_free_all (c_handle->quote);
+          c_handle->quote = sl;
+        }
       else if (c_option == CURLOPT_POSTQUOTE)
-	{
-	  if (c_handle->postquote)
-	    curl_slist_free_all (c_handle->postquote);
-	  c_handle->postquote = sl;
-	}
+        {
+          if (c_handle->postquote)
+            curl_slist_free_all (c_handle->postquote);
+          c_handle->postquote = sl;
+        }
       else if (c_option == CURLOPT_PREQUOTE)
-	{
-	  if (c_handle->prequote)
-	    curl_slist_free_all (c_handle->prequote);
-	  c_handle->prequote = sl;
-	}
+        {
+          if (c_handle->prequote)
+            curl_slist_free_all (c_handle->prequote);
+          c_handle->prequote = sl;
+        }
       else if (c_option == CURLOPT_RESOLVE)
-	{
-	  if (c_handle->resolve)
-	    curl_slist_free_all (c_handle->resolve);
-	  c_handle->resolve = sl;
-	}
+        {
+          if (c_handle->resolve)
+            curl_slist_free_all (c_handle->resolve);
+          c_handle->resolve = sl;
+        }
       else if (c_option == CURLOPT_TELNETOPTIONS)
-	{
-	  if (c_handle->telnetoptions)
-	    curl_slist_free_all (c_handle->telnetoptions);
-	  c_handle->telnetoptions = sl;
-	}
-      code = curl_easy_setopt (c_handle->handle, c_option, sl);
-    }
-  else if (_scm_can_convert_to_byte_data (param))
-    {
-      if (c_option == CURLOPT_POSTFIELDS)
-	{
-	  size_t len;
-	  uint8_t *m = _scm_convert_to_byte_data (param, &len);
-	  if (c_handle->postfields)
-	    free (c_handle->postfields);
-	  c_handle->postfields = m;
-	  curl_easy_setopt (c_handle->handle, CURLOPT_POSTFIELDSIZE, len);
-	  c_handle->postfieldsize = len;
-	  code = curl_easy_setopt (c_handle->handle, CURLOPT_POSTFIELDS, (char *) m);
-	}
+        {
+          if (c_handle->telnetoptions)
+            curl_slist_free_all (c_handle->telnetoptions);
+          c_handle->telnetoptions = sl;
+        }
+      else
+        {
+          // Bad slist option
+          ok = 0;
+        }
+      if (ok)
+        code = curl_easy_setopt (c_handle->handle, c_option, sl);
+
     }
   else if (_scm_can_convert_to_httppost (param))
     {

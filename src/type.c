@@ -345,23 +345,34 @@ _scm_convert_to_byte_data (SCM x, size_t *len)
   if (scm_is_string (x))
     {
       size_t i;
-      SCM bv;
+      uint8_t *buf;
 
       *len = scm_c_string_length (x);
       if (*len == 0)
-	return NULL;
+        return NULL;
 
-      bv = scm_c_make_bytevector (*len);
+      buf = scm_malloc (*len);
       for (i = 0; i < *len; i ++)
-	{
-	  SCM_BYTEVECTOR_CONTENTS(bv)[i] = SCM_C_STRING_REF (x, i);
-	}
-      return (uint8_t *) SCM_BYTEVECTOR_CONTENTS (bv);
+        {
+          buf[i] = SCM_C_STRING_REF (x, i);
+        }
+      return buf;
     }
   else
     {
+      size_t i;
+      uint8_t *buf;
+
       *len = SCM_BYTEVECTOR_LENGTH (x);
-      return SCM_BYTEVECTOR_CONTENTS (x);
+      if (*len == 0)
+        return NULL;
+
+      buf = scm_malloc (*len);
+      for (i = 0; i < *len; i ++)
+        {
+          buf[i] = SCM_BYTEVECTOR_CONTENTS (x)[i];
+        }
+      return buf;
     }
 #endif
 }
