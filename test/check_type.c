@@ -17,6 +17,47 @@ int test_scm_is_not_handle(void)
   return (ret == 0);
 }
 
+int test_equalp_handle(void)
+{
+  SCM handle = cl_easy_init();
+  SCM ret = equalp_handle(handle, handle);
+  return (ret == SCM_BOOL_T);
+}
+
+int test_not_equalp_handle(void)
+{
+  SCM handle1 = cl_easy_init();
+  SCM handle2 = cl_easy_init();
+  SCM ret = equalp_handle(handle1, handle2);
+  return (ret == SCM_BOOL_F);
+}
+
+int test_not_free_handle(void)
+{
+  SCM handle = cl_easy_init();
+  handle_post_t *x = _scm_to_handle(handle);
+  int ret = (x != NULL);
+  gc_free_handle(handle);
+  return ret;
+}
+
+int test_free_handle(void)
+{
+  SCM handle = cl_easy_init();
+  gc_free_handle(handle);
+  handle_post_t *x = _scm_to_handle(handle);
+  int ret = (x == NULL);
+  return ret;
+}
+
+void test_double_free_handle(void)
+{
+  SCM handle = cl_easy_init();
+  gc_free_handle(handle);
+  gc_free_handle(handle);
+  gc_free_handle(handle);
+}
+
 void test_free_handle_string_postfields(void)
 {
   extern SCM cl_CURLOPT_POSTFIELDS;
@@ -45,14 +86,39 @@ int main()
 {
   int ret;
   scm_init_guile();
+  cl_init_const();
 
   ret = test_scm_is_handle();
-  printf("test scm is handle: %d\n", ret);
+  printf("test that a handle is a handle: %d\n", ret);
   if (!ret)
     return 1;
-  printf("test scm is not handle: %d\n", ret);
+  ret = test_scm_is_not_handle();
+  printf("test that a bool is not handle: %d\n", ret);
   if (!ret)
     return 1;
+  ret = test_equalp_handle();
+  printf("test that a handle equals itself: %d\n", ret);
+  if (!ret)
+    return 1;
+
+  ret = test_not_equalp_handle();
+  printf("test that a handle does not equal another handle: %d\n", ret);
+  if (!ret)
+    return 1;
+
+  ret = test_not_free_handle();
+  printf("test that an unfreed handle has non-NULL SMOB data: %d\n", ret);
+  if (!ret)
+    return 1;
+
+  ret = test_free_handle();
+  printf("test that a freed handle has NULL SMOB data: %d\n", ret);
+  if (!ret)
+    return 1;
+
+  printf("test that double frees of handles don't segfault\n");
+  test_double_free_handle();
+
   printf("test that frees of a handle with string-based postfields doesn't segfault\n");
   test_free_handle_string_postfields();
 
@@ -63,4 +129,3 @@ int main()
 
   return 0;
 }
-
