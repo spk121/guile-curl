@@ -444,10 +444,10 @@ integer@footnote{@xref{Integer Constants for http-version}}
 @item ftp-alternative-to-user @tab CURLOPT_FTP_ALTERNATIVE_TO_USER @tab string
 @item ftp-skip-pasv-ip @tab CURLOPT_FTP_SKIP_PASV_IP @tab boolean
 @item ftpsslauth @tab CURLOPT_FTPSSLAUTH @tab
-integer@footnote{@xref{Integer Constants for ftpsslauth}}
-@item ftp-ssl-ccc @tab CURLOPT_FTP_SSL_CCC @tab integer@footnote{@xref{Integer Constants for ftp-ssl-ccc}}
+integer@footnote{@xref{Integer Constants for ftpsslauth}.}
+@item ftp-ssl-ccc @tab CURLOPT_FTP_SSL_CCC @tab integer@footnote{@xref{Integer Constants for ftp-ssl-ccc}.}
 @item ftp-account @tab CURLOPT_FTP_ACCOUNT @tab string
-@item ftp-filemethod @tab CURLOPT_FTP_FILEMETHOD @tab integer@footnote{@xref{Integer Constants for ftp-filemethod}}
+@item ftp-filemethod @tab CURLOPT_FTP_FILEMETHOD @tab integer@footnote{@xref{Integer Constants for ftp-filemethod}.}
 
 @item RTSP OPTIONS
 @item rtsp-request @tab CURLOPT_RTSP_REQUEST @tab integer@footnote{@xref{Integer Constants for rtsp-request}}
