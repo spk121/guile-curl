@@ -14,6 +14,8 @@
 
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+
+#include <config.h>
 #include <curl/curl.h>
 #include "../src/type.h"
 #include "../src/func.h"
@@ -180,9 +182,10 @@ int test_scm_convert_to_slist__list_of_integers (void)
 }
 
 
-int main()
+int main(int argc, char **argv)
 {
   int ret;
+
   scm_init_guile();
   cl_init_const();
 
