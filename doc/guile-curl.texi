@@ -289,8 +289,8 @@ describe what will happen when @code{curl-easy-perform} is called.  At
 a minimum, @code{curl-easy-setopt} must be called at least once per
 handle to set the @code{url} option.  @var{option} is a symbol name of
 an option, and @var{info} is additional information needed for the
-option.  For a table of options and their associated required types of
-info, @xref{Options}.
+option.  @xref{Options}, for a table of options and their associated
+required type.
 
 @quotation important
 Options for a handle are not cleared after @code{curl-easy-perform} is
@@ -336,8 +336,8 @@ manual page for the C library function @code{curl_easy_setopt}.
 The third column is the type of data that you would pass as the
 @code{info} argument to @code{curl-easy-setopt}.  These may differ
 from those in the manual page for C library function
-@code{curl_easy_setopt}.  For more about these types, @xref{Option
-Data Types}.
+@code{curl_easy_setopt}.  @xref{Option Data Types}, for more about
+these types.
 @end itemize
 
 @multitable @columnfractions .25 .55 .25
