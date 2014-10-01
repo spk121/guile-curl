@@ -30,6 +30,11 @@ libguile_curl_la_CPPFLAGS = \
 	$(GUILE_CFLAGS)
 #	$(CFLAG_VISIBILITY)
 
+#libguile_curl_la_CPPFLAGS += -Wall -Wextra -Wstrict-prototypes		\
+#-Wmissing-prototypes -Wpointer-arith -Wreturn-type -Wcast-qual		\
+#-Wswitch -Wshadow -Wcast-align -Wwrite-strings -Wchar-subscripts	\
+#-Winline -Wnested-externs -Wredundant-decls -Wunused -Wformat=2
+
 libguile_curl_la_LDFLAGS = \
 	-no-undefined \
 	-export-dynamic \
