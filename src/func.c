@@ -219,29 +219,48 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
 }
 
 SCM
-cl_easy_perform (SCM handle, SCM bvflag)
+cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag)
 {
   handle_post_t *c_handle;
   SCM data;
   CURLcode status;
-  struct scm_flag sf;
+  struct scm_flag body_sf, header_sf;
 
   SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "%curl-easy-perform");
 
   c_handle = _scm_to_handle (handle);
-  sf.flag = scm_is_true (bvflag);
+
+  body_sf.flag = scm_is_true (bvflag);
 #if SCM_MAJOR_VERSION == 2
-  if (sf.flag)
+  if (body_sf.flag)
     data = scm_c_make_bytevector (0);
   else
     data = scm_c_make_string (0, SCM_MAKE_CHAR('\n'));
 #else
   data = scm_c_make_string (0, SCM_MAKE_CHAR('\n'));
 #endif
-  sf.scm = data;
+  body_sf.scm = data;
+
+  header_sf.flag = 0;
+#if SCM_MAJOR_VERSION == 2
+  if (header_sf.flag)
+    data = scm_c_make_bytevector (0);
+  else
+    data = scm_c_make_string (0, SCM_MAKE_CHAR('\n'));
+#else
+  data = scm_c_make_string (0, SCM_MAKE_CHAR('\n'));
+#endif
+  header_sf.scm = data;
+
+  if (scm_is_true (headerflag)) 
+  {
+    curl_easy_setopt (c_handle->handle, CURLOPT_HEADERFUNCTION, write_callback);
+    curl_easy_setopt (c_handle->handle, CURLOPT_HEADERDATA, &header_sf);
+    curl_easy_setopt (c_handle->handle, CURLOPT_ERRORBUFFER, error_string);    
+  }
 
   curl_easy_setopt (c_handle->handle, CURLOPT_WRITEFUNCTION, write_callback);
-  curl_easy_setopt (c_handle->handle, CURLOPT_WRITEDATA, &sf);
+  curl_easy_setopt (c_handle->handle, CURLOPT_WRITEDATA, &body_sf);
   curl_easy_setopt (c_handle->handle, CURLOPT_ERRORBUFFER, error_string);
 
   /* Do the transfer, and fill c_str with the result */
@@ -252,7 +271,10 @@ cl_easy_perform (SCM handle, SCM bvflag)
       return (SCM_BOOL_F);
     }
 
-  return (sf.scm);
+  if (scm_is_true (headerflag)) 
+    return (scm_list_2 (header_sf.scm, body_sf.scm));
+
+  return (body_sf.scm);
 }
 
 /* This callback function catches the data passed by libcurl and sends
@@ -469,7 +491,7 @@ cl_init_func ()
     {
       scm_c_define_gsubr ("%curl-easy-init", 0, 0, 0, cl_easy_init);
       scm_c_define_gsubr ("%curl-easy-setopt", 4, 0, 0, cl_easy_setopt);
-      scm_c_define_gsubr ("%curl-easy-perform", 2, 0, 0, cl_easy_perform);
+      scm_c_define_gsubr ("%curl-easy-perform", 3, 0, 0, cl_easy_perform);
       scm_c_define_gsubr ("%curl-easy-cleanup", 1, 0, 0, cl_easy_cleanup);
       scm_c_define_gsubr ("%curl-easy-reset", 1, 0, 0, cl_easy_reset);
       scm_c_define_gsubr ("%curl-error-string", 0, 0, 0, cl_error_string);
