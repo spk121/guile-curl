@@ -23,7 +23,7 @@
 #include "func.h"
 
 static size_t write_callback (void *ptr, size_t size, size_t nmemb,
-			      void *port);
+                              void *port);
 
 CURLcode error_code = CURLE_OK;
 char error_string[CURL_ERROR_SIZE+1] = "";
@@ -44,10 +44,10 @@ SCM cl_easy_init ()
   if (handle == NULL)
     {
       scm_error (SCM_BOOL_F,
-		 "curl-easy-init",
-		 "initialization failure",
-		 SCM_BOOL_F,
-		 SCM_BOOL_F);
+                 "curl-easy-init",
+                 "initialization failure",
+                 SCM_BOOL_F,
+                 SCM_BOOL_F);
     }
 
   hp = scm_malloc (sizeof (handle_post_t));
@@ -93,8 +93,7 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
         {
           size_t len;
           uint8_t *m = _scm_convert_to_byte_data (param, &len);
-          if (c_handle->postfields)
-            free (c_handle->postfields);
+          free (c_handle->postfields);
           c_handle->postfields = m;
           curl_easy_setopt (c_handle->handle, CURLOPT_POSTFIELDSIZE, len);
           c_handle->postfieldsize = len;
@@ -195,27 +194,26 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
   else if (_scm_can_convert_to_httppost (param))
     {
       if (c_option == CURLOPT_HTTPPOST)
-	{
-	  struct curl_httppost *p;
-	  p = _scm_convert_to_httppost (param);
-	  if (c_handle->httppost)
-	    free (c_handle->httppost);
-	  c_handle->httppost = p;
-	  code = curl_easy_setopt (c_handle, CURLOPT_HTTPPOST, p);
-	}
+        {
+          struct curl_httppost *p;
+          p = _scm_convert_to_httppost (param);
+          free (c_handle->httppost);
+          c_handle->httppost = p;
+          code = curl_easy_setopt (c_handle, CURLOPT_HTTPPOST, p);
+        }
     }
   else
     scm_error (SCM_BOOL_F,
-	       "curl-easy-setopt",
-	       "unimplemented option type",
-	       SCM_BOOL_F,
-	       SCM_BOOL_F);
+               "curl-easy-setopt",
+               "unimplemented option type",
+               SCM_BOOL_F,
+               SCM_BOOL_F);
   if (code != CURLE_OK)
     scm_error (SCM_BOOL_F,
-	       "curl-easy-setopt",
-	       "bad handle",
-	       SCM_BOOL_F,
-	       SCM_BOOL_F);
+               "curl-easy-setopt",
+               "bad handle",
+               SCM_BOOL_F,
+               SCM_BOOL_F);
 
   return SCM_UNSPECIFIED;
 }
@@ -285,33 +283,33 @@ write_callback (void *ptr, size_t size, size_t nmemb, void *userdata)
     {
       data2 = scm_c_make_bytevector (length1 + length2);
       memcpy (SCM_BYTEVECTOR_CONTENTS (data2),
-	      SCM_BYTEVECTOR_CONTENTS (data1),
-	      length1);
+              SCM_BYTEVECTOR_CONTENTS (data1),
+              length1);
       memcpy (SCM_BYTEVECTOR_CONTENTS (data2) + length1,
-	      ptr,
-	      length2);
+              ptr,
+              length2);
     }
   else
     {
       data2 = scm_c_make_string (length1 + length2, SCM_MAKE_CHAR('\0'));
       for (size_t i = 0; i < length1; i ++)
-	{
-	  scm_c_string_set_x (data2, i, scm_c_string_ref (data1, i));
-	}
+        {
+          scm_c_string_set_x (data2, i, scm_c_string_ref (data1, i));
+        }
       for (size_t i = 0; i < length2; i ++)
-	{
-	  scm_c_string_set_x (data2, i + length1,
-			      SCM_MAKE_CHAR (((char *)ptr)[i]));
-	}
+        {
+          scm_c_string_set_x (data2, i + length1,
+                              SCM_MAKE_CHAR (((char *)ptr)[i]));
+        }
     }
 #else
   data2 = scm_c_make_string (length1 + length2, SCM_MAKE_CHAR('\0'));
   memcpy (SCM_STRING_CHARS (data2),
-	  SCM_STRING_CHARS (data1),
-	  length1);
+          SCM_STRING_CHARS (data1),
+          length1);
   memcpy (SCM_STRING_CHARS (data2) + length1,
-	  ptr,
-	  length2);
+          ptr,
+          length2);
 #endif
   sf->scm = data2;
 
@@ -381,11 +379,11 @@ print_mem (char *data, long len)
   for (long i = 0; i < print_len; i ++)
     {
       if (isprint (data[i]))
-	fprintf (stderr, "%c", data[i]);
+        fprintf (stderr, "%c", data[i]);
       else if (data[i] + 32 < 256)
-	fprintf (stderr, "^%c", data[i] + 32);
+        fprintf (stderr, "^%c", data[i] + 32);
       else
-	fprintf (stderr, "?");
+        fprintf (stderr, "?");
     }
   if (print_len != len)
     fprintf (stderr, "...");
