@@ -1,6 +1,6 @@
 ## Process this file with automake to produce Makefile.in
 
-# Copyright (C) 2011, 2013 Michael L. Gran
+# Copyright (C) 2011, 2013, 2014 Michael L. Gran
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,5 +27,6 @@
 # endif
 
 info_TEXINFOS = guile-curl.texi
+guile_curl_TEXINFOS = ex_http_header_charset.scm
 
 CLEANFILES = guile-curl.dvi

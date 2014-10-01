@@ -1,7 +1,7 @@
 \input texinfo @c -*- Mode: texinfo; Fillcolumn: 70; -*-
 @c %**start of header
 
-@c Copyright @copyright{} 2007, 2011, 2013 Michael L. Gran
+@c Copyright @copyright{} 2007, 2011, 2013, 2014 Michael L. Gran
 
 @c Permission is hereby granted, free of charge, to any person obtaining a
 @c copy of these software and associated documentation files (the
@@ -85,6 +85,14 @@ Tutorial
 
 * Fetching from an HTTP server::
 
+Fetching from an HTTP server
+
+* Handling String Encodings::
+* HTTP Headers and Content-Type::
+* Parsing HTTP Headers::
+* Parsing an HTML Document's meta information for Encodings::
+* Interpreting the HTML Document with a Given Encoding::
+
 Reference
 
 * Procedures::
@@ -159,6 +167,13 @@ returns the resource as a 8-bit string.
 @node Fetching from an HTTP server,  , Introduction, Introduction
 @section Fetching from an HTTP server
 
+Guile 2.0 already has a nice set of functions to handle fetching
+HTML from HTTP, so there is no need to use this library for simple
+use cases like this.
+
+But @code{guile-curl} may still be of value if you are trying to use
+@code{https} or other more complicated use cases.
+
 The following code will fetch a web page that has a simple URL.
 
 @lisp
@@ -173,7 +188,7 @@ adding the optional argument @code{#t} to the call to
 @code{curl-easy-perform}.
 
 @lisp
-(use-modules (curl))
+(use-modules (curl)
              (rnrs bytevectors))
 (define handle (curl-easy-init))
 (curl-easy-setopt handle 'url "http://www.gnu.org")
@@ -183,6 +198,149 @@ adding the optional argument @code{#t} to the call to
 That's pretty much all there is to it.  Beyond that, there are dozens
 of options that can be set by @code{curl-easy-setopt} that change how
 the request is performed.
+
+Unless, of course, you actually wanted the result as a string that is
+properly encoded for your locale.  In that case, things get more
+complicated.
+
+@menu
+* Handling String Encodings::
+* HTTP Headers and Content-Type::
+* Parsing HTTP Headers::
+* Parsing an HTML Document's meta information for Encodings::
+* Interpreting the HTML Document with a Given Encoding::
+@end menu
+
+@node Handling String Encodings, HTTP Headers and Content-Type, Fetching from an HTTP server, Fetching from an HTTP server
+@subsection Handling String Encodings
+
+The result passed to you from @code{curl-easy-perform} will either be
+as a string or as a bytevector, depending on the value of the 2nd
+parameter.  The default is to return a string, which you will receive
+if you call it this way.
+
+@lisp
+(curl-easy-perform handle)
+@end lisp
+
+or
+
+@lisp
+(curl-easy-perform handle #f)
+@end lisp
+
+If you are using Guile-1.8, the string will always be returned as an
+8-bit string.  Data encoded in multi-byte encodings like UTF-8 will be
+unceremoniously reduced to 8-bit bytes.  This is a limitation of Guile
+1.8.
+
+For Guile 2.0, the string will always be returned in the ISO-8859-1
+encoding, aka the Latin-1 encoding.  This is because converting data
+in some unknown format to Latin-1 will never fail.  It may not be
+right, but, the conversion won't fail.
+
+If you know that the data to be fetched is to be interpreted as a
+UTF-8 string, you should request the data as a bytevector and then
+convert the result to a string, like so...
+
+@lisp
+(utf8->string (curl-easy-perform handle #t)))
+@end lisp
+
+But if you don't know the encoding, things are gonna get way more
+complicated.
+
+@node HTTP Headers and Content-Type, Parsing HTTP Headers, Handling String Encodings, Fetching from an HTTP server
+@subsection HTTP Headers and Content-Type
+
+The first and best place to look for an HTTP document's encoding is in
+the @code{Content-Type} field of the HTTP headers.  By default, the
+HTTP Headers are not stored, but, you can have them prepended to the
+result of @code{curl-easy-perform} by using the @code{'header} option.
+
+The following code snippet will fetch an HTTP document with the header
+attached.
+
+@lisp
+(use-modules (curl)
+             (rnrs bytevectors))
+(define handle (curl-easy-init))
+(curl-easy-setopt handle 'url "http://www.w3.org")
+(curl-easy-setopt handle 'header #t)
+(define x (curl-easy-perform handle))
+(display x)
+@end lisp
+
+Near the top of the document will be a @code{Content-Type} header line
+like the following.
+
+@verbatim
+Content-Type: text/html; charset=utf-8
+@end verbatim
+
+Note that it is also possible to have @code{guile-curl} return the
+header and the body as separate strings, instead of as a single string
+with the header attached. @xref{Parsing HTTP Headers}.
+
+But, not all HTTP-served documents have a @code{charset} line in the
+@code{Content-Type} header.  If it isn't there, the next most
+authoritative place to look for an encoding is in the XML declaration
+if this is an XHTML document. But XHTML is uncommon.
+
+The another place to check is in a @code{meta} element in the HTML
+document itself.  It might look like the following.
+
+@verbatim
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+@end verbatim
+
+It could also appear as a UTF-16 BOM.  Its a complicated issue,
+because encodings are hard.
+
+The first of these possibilities, finding and encoding in the HTTP
+header's @code{Content-Type} is a tractable problem.
+
+@node Parsing HTTP Headers, Parsing an HTML Document's meta information for Encodings, HTTP Headers and Content-Type, Fetching from an HTTP server
+@subsection Parsing HTTP Headers for Encodings
+
+In a relatively few lines of code, it is possible to extract the
+character encoding from the HTTP header, if it was reported.
+
+If you are using Guile 2.0, it contains a nice set of functions to
+handle the parsing of HTTP headers for use with its simple HTTP
+library.  With just a little bit of work, we can make use of it.
+
+But first we have to fetch the HTTP header separate from the body.
+If you pass @code{#t} as the third parameter to
+@code{curl-easy-perform}, it will return a list of two strings.  The
+first string contains the HTTP header and the second string contains
+the body of the request.
+
+The header needs to be converted to a string port. Then, the
+``HTTP/1.1'' line needs to be removed from the header.  At that point,
+Guile 2.0's web functions can parse the header.
+
+@lisp
+@verbatiminclude ex_http_header_charset.scm
+@end lisp
+
+So this will print the encoding as listed in the HTTP header.  If one
+is not found, it will print @code{#f}.
+
+@node Parsing an HTML Document's meta information for Encodings, Interpreting the HTML Document with a Given Encoding, Parsing HTTP Headers, Fetching from an HTTP server
+@subsection Parsing an HTML Document's meta information for Encodings
+
+Umm. Sounds complicated.
+
+Regular expresions?  Or maybe convert to sxhtml, or something?
+
+@node Interpreting the HTML Document with a Given Encoding,  , Parsing an HTML Document's meta information for Encodings, Fetching from an HTTP server
+@subsection Interpreting the HTML Document with a Given Encoding
+
+OK.  Once you finally know what the encoding of your HTML document is,
+you can convert the body of your request into a string.  If you've
+requested the HTML document as a bytevector, the
+@code{bytevector->string} procedure could be used to make the conversion.
 
 @node Reference, Index, Introduction, Top
 @chapter Reference
