@@ -1,8 +1,8 @@
 # Configuration for maintainer-makefile
 #
-# Copyright (c) 2013 Free Software Foundation, Inc.
+# Copyright (c) 2014 Michael L. Gran
 #
-# This file is part of guile-aspell
+# This file is part of guile-curl
 #
 # guile-aspell is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -21,3 +21,10 @@
 
 # Set format of NEWS
 old_NEWS_hash :=
+
+local-checks-to-skip = \
+	sc_bindtextdomain \
+	sc_error_message_uppercase \
+	sc_immutable_NEWS \
+	sc_program_name \
+	sc_unmarked_diagnostics
