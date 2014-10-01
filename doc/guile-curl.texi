@@ -232,7 +232,7 @@ shares.@footnote{from the libcurl 7.12.1 curl_easy_reset man page}
 The return value is unspecified.
 @end deffn
 
-@deffn Procedure curl-easy-perform handle #:optional bytevector?
+@deffn Procedure curl-easy-perform handle #:optional bytevector? #:optional header?
 From the C documentation
 @quotation
 This function is called after the init and all the
@@ -269,6 +269,12 @@ returned as a bytevector.
 It returns either a string containing the resource, a bytevector
 containing the resource, or @code{#f} on failure.  For information
 about the failure, you can call @code{curl-error-string}.
+
+If the optional @code{header?} parameter is set to @code{#t}, it
+returns a list of two elements.  The first is a string that contains
+any headers, such as HTTP headers, associated with this operation.
+The second is the body of the request, either as a string or as a
+bytevector, as described above.
 @end deffn
 
 @deffn Procedure curl-error-string
