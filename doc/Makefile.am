@@ -27,6 +27,8 @@
 # endif
 
 info_TEXINFOS = guile-curl.texi
-guile_curl_TEXINFOS = ex_http_header_charset.scm
+guile_curl_TEXINFOS = ex_http_simple_get.scm \
+	ex_http_simple_get_utf8.scm \
+	ex_http_header_charset.scm
 
 CLEANFILES = guile-curl.dvi
