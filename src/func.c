@@ -24,6 +24,8 @@
 
 static size_t write_callback (void *ptr, size_t size, size_t nmemb,
                               void *port);
+static size_t read_callback (void *ptr, size_t size, size_t nmemb,
+                             void *port);
 
 CURLcode error_code = CURLE_OK;
 char error_string[CURL_ERROR_SIZE+1] = "";
@@ -202,6 +204,14 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
           code = curl_easy_setopt (c_handle, CURLOPT_HTTPPOST, p);
         }
     }
+  else if (scm_is_true (scm_input_port_p (param)))
+    {
+      if (c_option == CURLOPT_READDATA)
+        {
+          curl_easy_setopt (c_handle->handle, CURLOPT_READFUNCTION, read_callback);
+          code = curl_easy_setopt (c_handle->handle, CURLOPT_READDATA, SCM2PTR (param));          
+        }
+    }
   else
     scm_error (SCM_BOOL_F,
                "curl-easy-setopt",
@@ -337,6 +347,19 @@ write_callback (void *ptr, size_t size, size_t nmemb, void *userdata)
 
   return length2;
 }
+
+/* This callback function sends some data froma port over to curl. */
+static size_t
+read_callback (void *ptr, size_t size, size_t nmemb, void *userdata)
+{
+  size_t length1;
+  SCM port;
+
+  port = PTR2SCM(userdata);
+  length1 = scm_c_read (port, ptr, size * nmemb);
+  return length1;
+}
+
 
 SCM
 cl_easy_reset (SCM handle)

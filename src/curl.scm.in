@@ -1,6 +1,6 @@
 ;; -*- Mode: scheme; -*-
 
-;;; Copyright (C) 2011, 2013 Michael L. Gran
+;;; Copyright (C) 2011, 2013, 2014 Michael L. Gran
 
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
@@ -22,209 +22,209 @@
   #:use-module (rnrs bytevectors)
   ;; RNRS_BYTEVECTORS_END
   #:export (
-	    curl-easy-handle?
-	    curl-easy-init
-	    curl-easy-setopt
-	    curl-easy-perform
-	    curl-easy-cleanup
-	    curl-easy-reset
-	    curl-error-string
-	    curl-error-code
-	    %curl-dump-handle
+            curl-easy-handle?
+            curl-easy-init
+            curl-easy-setopt
+            curl-easy-perform
+            curl-easy-cleanup
+            curl-easy-reset
+            curl-error-string
+            curl-error-code
+            %curl-dump-handle
 
-	    ;; RNRS_BYTEVECTORS_BEGIN
-	    bv->url-encoded-bv
-	    ;; RNRS_BYTEVECTORS_END
+            ;; RNRS_BYTEVECTORS_BEGIN
+            bv->url-encoded-bv
+            ;; RNRS_BYTEVECTORS_END
 
-	    CURLPROTO_HTTP
-	    CURLPROTO_HTTPS
-	    CURLPROTO_FTP
-	    CURLPROTO_FTPS
-	    CURLPROTO_SCP
-	    CURLPROTO_SFTP
-	    CURLPROTO_TELNET
-	    CURLPROTO_LDAP
-	    CURLPROTO_LDAPS
-	    CURLPROTO_DICT
-	    CURLPROTO_FILE
-	    CURLPROTO_TFTP
-	    CURLPROTO_IMAP
-	    CURLPROTO_IMAPS
-	    CURLPROTO_POP3
-	    CURLPROTO_POP3S
-	    CURLPROTO_SMTP
-	    CURLPROTO_SMTPS
-	    CURLPROTO_RTSP
-	    CURLPROTO_RTMP
-	    CURLPROTO_RTMPT
-	    CURLPROTO_RTMPE
-	    CURLPROTO_RTMPTE
-	    CURLPROTO_GOPHER
-	    CURLPROTO_ALL
+            CURLPROTO_HTTP
+            CURLPROTO_HTTPS
+            CURLPROTO_FTP
+            CURLPROTO_FTPS
+            CURLPROTO_SCP
+            CURLPROTO_SFTP
+            CURLPROTO_TELNET
+            CURLPROTO_LDAP
+            CURLPROTO_LDAPS
+            CURLPROTO_DICT
+            CURLPROTO_FILE
+            CURLPROTO_TFTP
+            CURLPROTO_IMAP
+            CURLPROTO_IMAPS
+            CURLPROTO_POP3
+            CURLPROTO_POP3S
+            CURLPROTO_SMTP
+            CURLPROTO_SMTPS
+            CURLPROTO_RTSP
+            CURLPROTO_RTMP
+            CURLPROTO_RTMPT
+            CURLPROTO_RTMPE
+            CURLPROTO_RTMPTE
+            CURLPROTO_GOPHER
+            CURLPROTO_ALL
 
-	    CURLPROXY_HTTP
-	    CURLPROXY_HTTP_1_0
-	    CURLPROXY_SOCKS4
-	    CURLPROXY_SOCKS5
-	    CURLPROXY_SOCKS4A
-	    CURLPROXY_SOCKS5_HOSTNAME
+            CURLPROXY_HTTP
+            CURLPROXY_HTTP_1_0
+            CURLPROXY_SOCKS4
+            CURLPROXY_SOCKS5
+            CURLPROXY_SOCKS4A
+            CURLPROXY_SOCKS5_HOSTNAME
 
-	    CURL_NETRC_OPTIONAL
-	    CURL_NETRC_IGNORED
-	    CURL_NETRC_REQUIRED
+            CURL_NETRC_OPTIONAL
+            CURL_NETRC_IGNORED
+            CURL_NETRC_REQUIRED
 
-	    CURLAUTH_BASIC
-	    CURLAUTH_DIGEST
-	    CURLAUTH_DIGEST_IE
-	    CURLAUTH_GSSNEGOTIATE
-	    CURLAUTH_NTLM
-	    CURLAUTH_NTLM_WB
-	    CURLAUTH_ANY
-	    CURLAUTH_ANYSAFE
-	    CURLAUTH_ONLY
+            CURLAUTH_BASIC
+            CURLAUTH_DIGEST
+            CURLAUTH_DIGEST_IE
+            CURLAUTH_GSSNEGOTIATE
+            CURLAUTH_NTLM
+            CURLAUTH_NTLM_WB
+            CURLAUTH_ANY
+            CURLAUTH_ANYSAFE
+            CURLAUTH_ONLY
 
-	    CURL_TLSAUTH_SRP
+            CURL_TLSAUTH_SRP
 
-	    CURL_REDIR_POST_301
-	    CURL_REDIR_POST_302
-	    CURL_REDIR_POST_ALL
+            CURL_REDIR_POST_301
+            CURL_REDIR_POST_302
+            CURL_REDIR_POST_ALL
 
-	    CURL_HTTP_VERSION_NONE
-	    CURL_HTTP_VERSION_1_0
-	    CURL_HTTP_VERSION_1_1
+            CURL_HTTP_VERSION_NONE
+            CURL_HTTP_VERSION_1_0
+            CURL_HTTP_VERSION_1_1
 
-	    CURLFTPAUTH_DEFAULT
-	    CURLFTPAUTH_SSL
-	    CURLFTPAUTH_TLS
+            CURLFTPAUTH_DEFAULT
+            CURLFTPAUTH_SSL
+            CURLFTPAUTH_TLS
 
-	    CURLFTPSSL_CCC_NONE
-	    CURLFTPSSL_CCC_PASSIVE
-	    CURLFTPSSL_CCC_ACTIVE
+            CURLFTPSSL_CCC_NONE
+            CURLFTPSSL_CCC_PASSIVE
+            CURLFTPSSL_CCC_ACTIVE
 
-	    CURLFTPMETHOD_MULTICWD
-	    CURLFTPMETHOD_NOCWD
-	    CURLFTPMETHOD_SINGLECWD
+            CURLFTPMETHOD_MULTICWD
+            CURLFTPMETHOD_NOCWD
+            CURLFTPMETHOD_SINGLECWD
 
-	    CURL_RTSPREQ_OPTIONS
-	    CURL_RTSPREQ_DESCRIBE
-	    CURL_RTSPREQ_ANNOUNCE
-	    CURL_RTSPREQ_SETUP
-	    CURL_RTSPREQ_PLAY
-	    CURL_RTSPREQ_PAUSE
-	    CURL_RTSPREQ_TEARDOWN
-	    CURL_RTSPREQ_GET_PARAMETER
-	    CURL_RTSPREQ_SET_PARAMETER
-	    CURL_RTSPREQ_RECORD
-	    CURL_RTSPREQ_RECEIVE
+            CURL_RTSPREQ_OPTIONS
+            CURL_RTSPREQ_DESCRIBE
+            CURL_RTSPREQ_ANNOUNCE
+            CURL_RTSPREQ_SETUP
+            CURL_RTSPREQ_PLAY
+            CURL_RTSPREQ_PAUSE
+            CURL_RTSPREQ_TEARDOWN
+            CURL_RTSPREQ_GET_PARAMETER
+            CURL_RTSPREQ_SET_PARAMETER
+            CURL_RTSPREQ_RECORD
+            CURL_RTSPREQ_RECEIVE
 
-	    CURL_IPRESOLVE_WHATEVER
-	    CURL_IPRESOLVE_V4
-	    CURL_IPRESOLVE_V6
+            CURL_IPRESOLVE_WHATEVER
+            CURL_IPRESOLVE_V4
+            CURL_IPRESOLVE_V6
 
-	    CURLUSESSL_NONE
-	    CURLUSESSL_TRY
-	    CURLUSESSL_CONTROL
-	    CURLUSESSL_ALL
+            CURLUSESSL_NONE
+            CURLUSESSL_TRY
+            CURLUSESSL_CONTROL
+            CURLUSESSL_ALL
 
-	    CURL_SSLVERSION_DEFAULT
-	    CURL_SSLVERSION_TLSv1
-	    CURL_SSLVERSION_SSLv2
-	    CURL_SSLVERSION_SSLv3
+            CURL_SSLVERSION_DEFAULT
+            CURL_SSLVERSION_TLSv1
+            CURL_SSLVERSION_SSLv2
+            CURL_SSLVERSION_SSLv3
 
-	    CURLGSSAPI_DELEGATION_FLAG
-	    CURLGSSAPI_DELEGATION_POLICY_FLAG
+            CURLGSSAPI_DELEGATION_FLAG
+            CURLGSSAPI_DELEGATION_POLICY_FLAG
 
-	    CURLSSH_AUTH_PUBLICKEY
-	    CURLSSH_AUTH_PASSWORD
-	    CURLSSH_AUTH_HOST
-	    CURLSSH_AUTH_KEYBOARD
-	    CURLSSH_AUTH_ANY
+            CURLSSH_AUTH_PUBLICKEY
+            CURLSSH_AUTH_PASSWORD
+            CURLSSH_AUTH_HOST
+            CURLSSH_AUTH_KEYBOARD
+            CURLSSH_AUTH_ANY
 
-	    CURLE_OK
-	    CURLE_UNSUPPORTED_PROTOCOL
-	    CURLE_FAILED_INIT
-	    CURLE_URL_MALFORMAT
-	    CURLE_URL_MALFORMAT_USER
-	    CURLE_COULDNT_RESOLVE_PROXY
-	    CURLE_COULDNT_RESOLVE_HOST
-	    CURLE_COULDNT_CONNECT
-	    CURLE_FTP_WEIRD_SERVER_REPLY
-	    CURLE_FTP_ACCESS_DENIED
-	    CURLE_FTP_USER_PASSWORD_INCORRECT
-	    CURLE_FTP_WEIRD_PASS_REPLY
-	    CURLE_FTP_WEIRD_USER_REPLY
-	    CURLE_FTP_WEIRD_PASV_REPLY
-	    CURLE_FTP_WEIRD_227_FORMAT
-	    CURLE_FTP_CANT_GET_HOST
-	    CURLE_FTP_CANT_RECONNECT
-	    CURLE_FTP_COULDNT_SET_BINARY
-	    CURLE_PARTIAL_FILE
-	    CURLE_FTP_COULDNT_RETR_FILE
-	    CURLE_FTP_WRITE_ERROR
-	    CURLE_FTP_QUOTE_ERROR
-	    CURLE_HTTP_RETURNED_ERROR
-	    CURLE_WRITE_ERROR
-	    CURLE_MALFORMAT_USER
-	    CURLE_UPLOAD_FAILED
-	    CURLE_READ_ERROR
-	    CURLE_OUT_OF_MEMORY
-	    CURLE_OPERATION_TIMEOUTED
-	    CURLE_FTP_COULDNT_SET_ASCII
-	    CURLE_FTP_PORT_FAILED
-	    CURLE_FTP_COULDNT_USE_REST
-	    CURLE_FTP_COULDNT_GET_SIZE
-	    CURLE_HTTP_RANGE_ERROR
-	    CURLE_HTTP_POST_ERROR
-	    CURLE_SSL_CONNECT_ERROR
-	    CURLE_BAD_DOWNLOAD_RESUME
-	    CURLE_FILE_COULDNT_READ_FILE
-	    CURLE_LDAP_CANNOT_BIND
-	    CURLE_LDAP_SEARCH_FAILED
-	    CURLE_LIBRARY_NOT_FOUND
-	    CURLE_FUNCTION_NOT_FOUND
-	    CURLE_ABORTED_BY_CALLBACK
-	    CURLE_BAD_FUNCTION_ARGUMENT
-	    CURLE_BAD_CALLING_ORDER
-	    CURLE_INTERFACE_FAILED
-	    CURLE_BAD_PASSWORD_ENTERED
-	    CURLE_TOO_MANY_REDIRECTS
-	    CURLE_UNKNOWN_TELNET_OPTION
-	    CURLE_TELNET_OPTION_SYNTAX
-	    CURLE_OBSOLETE
-	    CURLE_SSL_PEER_CERTIFICATE
-	    CURLE_GOT_NOTHING
-	    CURLE_SSL_ENGINE_NOTFOUND
-	    CURLE_SSL_ENGINE_SETFAILED
-	    CURLE_SEND_ERROR
-	    CURLE_RECV_ERROR
-	    CURLE_SHARE_IN_USE
-	    CURLE_SSL_CERTPROBLEM
-	    CURLE_SSL_CIPHER
-	    CURLE_SSL_CACERT
-	    CURLE_BAD_CONTENT_ENCODING
-	    CURLE_LDAP_INVALID_URL
-	    CURLE_FILESIZE_EXCEEDED
-	    CURLE_FTP_SSL_FAILED
-	    CURLE_SEND_FAIL_REWIND
-	    CURLE_SSL_ENGINE_INITFAILED
-	    CURLE_LOGIN_DENIED
-	    CURLE_TFTP_NOTFOUND
-	    CURLE_TFTP_PERM
-	    CURLE_TFTP_DISKFULL
-	    CURLE_TFTP_ILLEGAL
-	    CURLE_TFTP_UNKNOWNID
-	    CURLE_TFTP_EXISTS
-	    CURLE_TFTP_NOSUCHUSER
-	    CURLE_CONV_FAILED
-	    CURLE_CONV_REQD
-	    CURLE_SSL_CACERT_BADFILE
-	    CURLE_REMOTE_FILE_NOT_FOUND
-	    CURLE_SSH
-	    CURLE_SSL_SHUTDOWN_FAILED
+            CURLE_OK
+            CURLE_UNSUPPORTED_PROTOCOL
+            CURLE_FAILED_INIT
+            CURLE_URL_MALFORMAT
+            CURLE_URL_MALFORMAT_USER
+            CURLE_COULDNT_RESOLVE_PROXY
+            CURLE_COULDNT_RESOLVE_HOST
+            CURLE_COULDNT_CONNECT
+            CURLE_FTP_WEIRD_SERVER_REPLY
+            CURLE_FTP_ACCESS_DENIED
+            CURLE_FTP_USER_PASSWORD_INCORRECT
+            CURLE_FTP_WEIRD_PASS_REPLY
+            CURLE_FTP_WEIRD_USER_REPLY
+            CURLE_FTP_WEIRD_PASV_REPLY
+            CURLE_FTP_WEIRD_227_FORMAT
+            CURLE_FTP_CANT_GET_HOST
+            CURLE_FTP_CANT_RECONNECT
+            CURLE_FTP_COULDNT_SET_BINARY
+            CURLE_PARTIAL_FILE
+            CURLE_FTP_COULDNT_RETR_FILE
+            CURLE_FTP_WRITE_ERROR
+            CURLE_FTP_QUOTE_ERROR
+            CURLE_HTTP_RETURNED_ERROR
+            CURLE_WRITE_ERROR
+            CURLE_MALFORMAT_USER
+            CURLE_UPLOAD_FAILED
+            CURLE_READ_ERROR
+            CURLE_OUT_OF_MEMORY
+            CURLE_OPERATION_TIMEOUTED
+            CURLE_FTP_COULDNT_SET_ASCII
+            CURLE_FTP_PORT_FAILED
+            CURLE_FTP_COULDNT_USE_REST
+            CURLE_FTP_COULDNT_GET_SIZE
+            CURLE_HTTP_RANGE_ERROR
+            CURLE_HTTP_POST_ERROR
+            CURLE_SSL_CONNECT_ERROR
+            CURLE_BAD_DOWNLOAD_RESUME
+            CURLE_FILE_COULDNT_READ_FILE
+            CURLE_LDAP_CANNOT_BIND
+            CURLE_LDAP_SEARCH_FAILED
+            CURLE_LIBRARY_NOT_FOUND
+            CURLE_FUNCTION_NOT_FOUND
+            CURLE_ABORTED_BY_CALLBACK
+            CURLE_BAD_FUNCTION_ARGUMENT
+            CURLE_BAD_CALLING_ORDER
+            CURLE_INTERFACE_FAILED
+            CURLE_BAD_PASSWORD_ENTERED
+            CURLE_TOO_MANY_REDIRECTS
+            CURLE_UNKNOWN_TELNET_OPTION
+            CURLE_TELNET_OPTION_SYNTAX
+            CURLE_OBSOLETE
+            CURLE_SSL_PEER_CERTIFICATE
+            CURLE_GOT_NOTHING
+            CURLE_SSL_ENGINE_NOTFOUND
+            CURLE_SSL_ENGINE_SETFAILED
+            CURLE_SEND_ERROR
+            CURLE_RECV_ERROR
+            CURLE_SHARE_IN_USE
+            CURLE_SSL_CERTPROBLEM
+            CURLE_SSL_CIPHER
+            CURLE_SSL_CACERT
+            CURLE_BAD_CONTENT_ENCODING
+            CURLE_LDAP_INVALID_URL
+            CURLE_FILESIZE_EXCEEDED
+            CURLE_FTP_SSL_FAILED
+            CURLE_SEND_FAIL_REWIND
+            CURLE_SSL_ENGINE_INITFAILED
+            CURLE_LOGIN_DENIED
+            CURLE_TFTP_NOTFOUND
+            CURLE_TFTP_PERM
+            CURLE_TFTP_DISKFULL
+            CURLE_TFTP_ILLEGAL
+            CURLE_TFTP_UNKNOWNID
+            CURLE_TFTP_EXISTS
+            CURLE_TFTP_NOSUCHUSER
+            CURLE_CONV_FAILED
+            CURLE_CONV_REQD
+            CURLE_SSL_CACERT_BADFILE
+            CURLE_REMOTE_FILE_NOT_FOUND
+            CURLE_SSH
+            CURLE_SSL_SHUTDOWN_FAILED
 
 
 
-	    ))
+            ))
 
 (load-extension "XXlibnameXX" "cl_init")
 
@@ -238,9 +238,9 @@
 the ASCII character code of the hex digit 0123456789ABCDEF"
   (cond
    ((and (>= x 0) (<= x 9))
-    (+ x 48))				; 47 == #\0
+    (+ x 48))               ; 47 == #\0
    ((and (>= x 10) (<= x 15))
-    (+ (- x 10) 65))			; 65 is #\A
+    (+ (- x 10) 65))            ; 65 is #\A
    (else
     (error "out of range"))))
 
@@ -248,9 +248,9 @@ the ASCII character code of the hex digit 0123456789ABCDEF"
   "Converts the u8 integer X into a list of three integers
 that are the ASCII character codes of PERCENT_SIGN +
 HEXADECIMAL + HEXADECIMAL"
-  (list 37				; PERCENT SIGN
-	(num->ascii-hex-num (quotient x 16))
-	(num->ascii-hex-num (remainder x 16))))
+  (list 37              ; PERCENT SIGN
+        (num->ascii-hex-num (quotient x 16))
+        (num->ascii-hex-num (remainder x 16))))
 
 ;; RNRS_BYTEVECTORS_BEGIN
 (define (bv->url-encoded-bv bv)
@@ -260,15 +260,15 @@ of the original bytevector"
    (fold
     (lambda (x prev)
       (cond
-       ((or (= x 33)			; #\!
-	    (= x 36)			; #\$
-	    (and (>= x 39) (<= x 57))	; #\` to #\9
-	    (and (>= x 65) (<= x 90))	; #\A to #\Z
-	    (= x 95)			; #\_
-	    (and (>= x 97) (<= x 122))) ; #\a to #\z
-	(append prev (list x)))
+       ((or (= x 33)            ; #\!
+            (= x 36)            ; #\$
+            (and (>= x 39) (<= x 57))   ; #\` to #\9
+            (and (>= x 65) (<= x 90))   ; #\A to #\Z
+            (= x 95)            ; #\_
+            (and (>= x 97) (<= x 122))) ; #\a to #\z
+        (append prev (list x)))
        (else
-	(append prev (u8->encoded-u8-triplet x)))))
+        (append prev (u8->encoded-u8-triplet x)))))
     '()
     (bytevector->u8-list bv))))
 ;; RNRS_BYTEVECTORS_END
@@ -308,6 +308,9 @@ cache, the cookies or the shared."
     ;; CURLOPT_NOPROGRESS is deprecated
     (nosignal ,CURLOPT_NOSIGNAL boolean)
     (wildcardmatch ,CURLOPT_WILDCARDMATCH boolean)
+
+    ;; CALLBACK OPTIONS
+    (readdata ,CURLOPT_READDATA input-port)
 
     ;; NETWORK OPTIONS
     (url ,CURLOPT_URL string)
@@ -490,40 +493,43 @@ Returns #t on success and #f on failure."
 
   (let ((value (assq-ref symbol-options option)))
     (if value
-	(let ((option (car value))
-	      (type (cadr value)))
-	  (cond
-	   ((or (and (eq? type 'integer)
-		     (integer? arg))
-		(and (eq? type 'string)
-		     (string? arg)))
-	    (%curl-easy-setopt handle option arg #f))
-	   ((and (eq? type 'biginteger)
-		 (integer? arg))
-	    (%curl-easy-setopt handle option arg #t))
-	   ((eq? type 'boolean)
-	    (%curl-easy-setopt handle option (c-bool arg) #f))
-	   ((and (eq? type 'bytevector)
-		 (or
-		  (string? arg)
-		  ;; RNRS_BYTEVECTORS_BEGIN
-		  (bytevector? arg)
-		  ;; RNRS_BYTEVECTORS_END
-		  ))
-	    (%curl-easy-setopt handle option arg #f))
-	   ((and (eq? type 'slist)
-		 (list? arg)
-		 (every string? arg))
-	    (%curl-easy-setopt handle option arg #f))
-	   ((and (eq? type 'httppost)
-		 (list? arg))
-	    (%curl-easy-setopt handle option arg #f))
-	   ((not (member type '(integer boolean string biginteger slist httppost bytevector)))
-	      (error (format #f "unimplemented type: ~a" type)))
-	     (else
-	      (error (format #f "wrong type arg: ~a" arg)))))
-	;; else
-	(error (format #f "unknown option: ~a" option)))))
+        (let ((option (car value))
+              (type (cadr value)))
+          (cond
+           ((or (and (eq? type 'integer)
+                     (integer? arg))
+                (and (eq? type 'string)
+                     (string? arg)))
+            (%curl-easy-setopt handle option arg #f))
+           ((and (eq? type 'biginteger)
+                 (integer? arg))
+            (%curl-easy-setopt handle option arg #t))
+           ((eq? type 'boolean)
+            (%curl-easy-setopt handle option (c-bool arg) #f))
+           ((and (eq? type 'bytevector)
+                 (or
+                  (string? arg)
+                  ;; RNRS_BYTEVECTORS_BEGIN
+                  (bytevector? arg)
+                  ;; RNRS_BYTEVECTORS_END
+                  ))
+            (%curl-easy-setopt handle option arg #f))
+           ((and (eq? type 'slist)
+                 (list? arg)
+                 (every string? arg))
+            (%curl-easy-setopt handle option arg #f))
+           ((and (eq? type 'httppost)
+                 (list? arg))
+            (%curl-easy-setopt handle option arg #f))
+           ((and (eq? type 'input-port)
+                 (input-port? arg))
+            (%curl-easy-setopt handle option arg #f))
+           ((not (member type '(integer boolean string biginteger slist httppost bytevector)))
+            (error (format #f "unimplemented type: ~a" type)))
+           (else
+            (error (format #f "wrong type arg: ~a" arg)))))
+        ;; else
+        (error (format #f "unknown option: ~a" option)))))
 
 (define* (curl-easy-perform handle #:optional (bytevector? #f) (header? #f))
   "This function is called after the init and all the curl-easy-setopt

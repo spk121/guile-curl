@@ -91,14 +91,6 @@ Fetching from an HTTP server
 * Using web response procedures::
 * Handling String Encodings::
 
-Using web response procedures
-
-* Handling String Encodings::
-* HTTP Headers and Content-Type::
-* Parsing HTTP Headers::
-* Parsing an HTML Document's meta information for Encodings::
-* Interpreting the HTML Document with a Given Encoding::
-
 Reference
 
 * Procedures::
@@ -266,15 +258,6 @@ Second, we need to create a string port from the response.
 @example
 @verbatiminclude ex_http_web_response.scm
 @end example
-
-
-@menu
-* Handling String Encodings::
-* HTTP Headers and Content-Type::
-* Parsing HTTP Headers::
-* Parsing an HTML Document's meta information for Encodings::
-* Interpreting the HTML Document with a Given Encoding::
-@end menu
 
 @node Handling String Encodings,  , Using web response procedures, Fetching from an HTTP server
 @subsection Handling String Encodings
@@ -519,6 +502,9 @@ these types.
 @c CURLOPT_NOPROGRESS is deprecated
 @item nosignal @tab CURLOPT_NOSIGNAL @tab boolean
 @item wildcardmatch @tab CURLOPT_WILDCARDMATCH @tab boolean
+
+@item CALLBACK OPTIONS
+@item readdata @tab CURLOPT_READDATA @tab input port
 
 @item NETWORK OPTIONS
 @item url @tab CURLOPT_URL @tab string
