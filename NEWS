@@ -1,3 +1,7 @@
+For Release 0.4 - ???
+
+    - Add support for readdata option
+
 For Release 0.3 - Oct 2, 2014
 
     - Fix bad memory allocation for POSTFIELDS
