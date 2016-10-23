@@ -1,6 +1,6 @@
 /* Type helper functions for guile-curl
 
-   Copyright (c) 2011, 2013, 2014 Michael L. Gran
+   Copyright (c) 2011, 2013, 2014, 2016 Michael L. Gran
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -96,9 +96,6 @@ equalp_handle (SCM x1, SCM x2)
   CURL *handle1;
   CURL *handle2;
 
-  SCM_ASSERT (SCM_SMOB_PREDICATE (handle_tag, x1), x1, SCM_ARG1, "equalp-handle");
-  SCM_ASSERT (SCM_SMOB_PREDICATE (handle_tag, x2), x2, SCM_ARG2, "equalp-handle");
-
   SCM_CRITICAL_SECTION_START;
   handle1 = (handle_post_t *) SCM_SMOB_DATA (x1);
   handle2 = (handle_post_t *) SCM_SMOB_DATA (x2);
@@ -117,8 +114,6 @@ size_t
 gc_free_handle (SCM handle)
 {
   SCM_CRITICAL_SECTION_START;
-
-  SCM_ASSERT (SCM_SMOB_PREDICATE (handle_tag, handle), handle, SCM_ARG1, "free-handle");
 
   handle_post_t *x = _scm_to_handle (handle);
 
@@ -212,9 +207,6 @@ print_handle (SCM x, SCM port, scm_print_state *pstate __attribute__ ((unused)))
   print_handle (SCM x, SCM port, scm_print_state *pstate)
 #endif
 {
-
-  SCM_ASSERT (SCM_SMOB_PREDICATE (handle_tag, x), x, SCM_ARG1, "print-handle");
-
   handle_post_t *frm = (handle_post_t *) SCM_SMOB_DATA (x);
   char *str;
 
