@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script
 # Process this file with autoconf to produce a configure script
 
-# Copyright 20011, 2013, 2014 Michael L Gran
+# Copyright 20011, 2013, 2014, 2016 Michael L Gran
 
 # This file is part of guile-curl.
 
@@ -21,7 +21,7 @@
 ##################
 # Package info
 AC_PREREQ([2.61])
-AC_INIT([GuileCurl],[0.3],[spk121@yahoo.com])
+AC_INIT([GuileCurl],[0.4],[spk121@yahoo.com])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([gnu std-options -Wall])
 AC_PROG_CC_C99
@@ -33,8 +33,8 @@ gl_INIT
 
 ##################
 # Set some version constants
-LIBGUILE_CURL_MAJOR=0
-LIBGUILE_CURL_INTERFACE="0:2:0"
+LIBGUILE_CURL_MAJOR=1
+LIBGUILE_CURL_INTERFACE="1:0:0"
 AC_SUBST(LIBGUILE_CURL_MAJOR)
 AC_SUBST(LIBGUILE_CURL_INTERFACE)
 

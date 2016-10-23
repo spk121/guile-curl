@@ -1,5 +1,6 @@
-For Release 0.4 - ???
+For Release 0.4 - Oct 23, 2016
 
+    - Fix GC with Guile 2.0.12+
     - Add support for readdata option
 
 For Release 0.3 - Oct 2, 2014
