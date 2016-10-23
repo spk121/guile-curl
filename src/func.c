@@ -1,6 +1,6 @@
 /* Functions for guile-curl
 
-   Copyright (c) 2011, 2013, 2014 Michael L. Gran
+   Copyright (c) 2011, 2013, 2014, 2016 Michael L. Gran
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -55,7 +55,6 @@ SCM cl_easy_init ()
   hp = scm_malloc (sizeof (handle_post_t));
   memset (hp, 0, sizeof (handle_post_t));
   hp->handle = handle;
-
 
   if (0)
     {
@@ -348,7 +347,7 @@ write_callback (void *ptr, size_t size, size_t nmemb, void *userdata)
   return length2;
 }
 
-/* This callback function sends some data froma port over to curl. */
+/* This callback function sends some data from a port over to curl. */
 static size_t
 read_callback (void *ptr, size_t size, size_t nmemb, void *userdata)
 {
@@ -480,7 +479,7 @@ cl_dump_handle (SCM handle)
   fprintf (stderr, "<#handle %p>\n", hp);
   fprintf (stderr, "\t        handle %p\n", hp->handle);
   fprintf (stderr, "\t    postfields %p\n", hp->postfields);
-  fprintf (stderr, "\t postfieldsize %u\n", hp->postfieldsize);
+  fprintf (stderr, "\t postfieldsize %zu\n", hp->postfieldsize);
   print_mem (hp->postfields, hp->postfieldsize);
   fprintf (stderr, "\t      httppost %p\n", hp->httppost);
   print_httppost (hp->httppost);
