@@ -8,7 +8,7 @@
 
 void DLL_PUBLIC cl_init (void);
 
-void
+void DLL_PUBLIC
 cl_init ()
 {
   CURLcode ret;

@@ -36,7 +36,7 @@ struct scm_flag
   int flag;
 };
 
-SCM cl_easy_init ()
+SCM DLL_PUBLIC cl_easy_init ()
 {
   CURL *handle;
   handle_post_t *hp;
@@ -75,7 +75,7 @@ SCM cl_easy_init ()
   return _scm_from_handle (hp);
 }
 
-SCM
+SCM DLL_PUBLIC
 cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
 {
   handle_post_t *c_handle;
@@ -227,7 +227,7 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
   return SCM_UNSPECIFIED;
 }
 
-SCM
+SCM DLL_PUBLIC
 cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag)
 {
   handle_post_t *c_handle;
@@ -360,7 +360,7 @@ read_callback (void *ptr, size_t size, size_t nmemb, void *userdata)
 }
 
 
-SCM
+SCM DLL_PUBLIC
 cl_easy_reset (SCM handle)
 {
   handle_post_t *c_handle;
@@ -374,7 +374,7 @@ cl_easy_reset (SCM handle)
   return SCM_UNSPECIFIED;
 }
 
-SCM
+SCM DLL_PUBLIC
 cl_easy_cleanup (SCM handle)
 {
   SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "%curl-easy-cleanup");
@@ -384,13 +384,13 @@ cl_easy_cleanup (SCM handle)
   return SCM_UNSPECIFIED;
 }
 
-SCM
+SCM DLL_PUBLIC
 cl_error_string ()
 {
   return (scm_from_locale_string (error_string));
 }
 
-SCM
+SCM DLL_PUBLIC
 cl_error_code ()
 {
   return scm_from_int ((int) error_code);
@@ -468,7 +468,7 @@ print_httppost (struct curl_httppost *hp)
 }
 
 
-SCM
+SCM DLL_PUBLIC
 cl_dump_handle (SCM handle)
 {
   handle_post_t *hp;

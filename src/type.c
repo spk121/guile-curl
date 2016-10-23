@@ -499,7 +499,7 @@ _scm_convert_to_httppost (SCM x)
   return post;
 }
 
-void
+void DLL_PUBLIC
 cl_init_type ()
 {
   handle_tag = scm_make_smob_type ("handle", sizeof (handle_post_t));
