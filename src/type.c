@@ -230,7 +230,7 @@ print_handle (SCM x, SCM port, scm_print_state *pstate __attribute__ ((unused)))
   return 1;
 }
 
-SCM
+SCM SCM_PUBLIC
 cl_is_handle_p (SCM x)
 {
   return scm_from_bool (_scm_is_handle (x));
