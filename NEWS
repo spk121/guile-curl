@@ -1,3 +1,7 @@
+For Release 0.5 - April 8, 2017
+
+    - Fix configure to search for Guile 2.2.x.
+
 For Release 0.4 - Oct 23, 2016
 
     - Fix GC with Guile 2.0.12+
