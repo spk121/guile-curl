@@ -1,7 +1,6 @@
 # Process this file with autoconf to produce a configure script
-# Process this file with autoconf to produce a configure script
 
-# Copyright 20011, 2013, 2014, 2016 Michael L Gran
+# Copyright 20011, 2013, 2014, 2016, 2017 Michael L Gran
 
 # This file is part of guile-curl.
 
@@ -21,7 +20,7 @@
 ##################
 # Package info
 AC_PREREQ([2.61])
-AC_INIT([GuileCurl],[0.4],[spk121@yahoo.com])
+AC_INIT([guile-curl],[0.5],[spk121@yahoo.com])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([gnu std-options -Wall])
 AC_PROG_CC_C99
@@ -79,6 +78,11 @@ AC_MSG_RESULT([$CURL_LDFLAGS])
 AC_SUBST(CURL_CFLAGS)
 AC_SUBST(CURL_LDFLAGS)
 
+GUILE_PKG([2.2 2.0])
+GUILE_PROGS
+GUILE_FLAGS
+GUILE_SITE_DIR
+
 AC_ARG_WITH([guilesitedir],
   [use the specified installation path for Guile modules],
   [case "x$withval" in
@@ -86,10 +90,6 @@ AC_ARG_WITH([guilesitedir],
     *)        guilesitedir="$withval";;
    esac],
   [guilesiteir=""])
-
-GUILE_PROGS
-GUILE_FLAGS
-GUILE_SITE_DIR
 
 pkgdatadir="$datadir/$PACKAGE_NAME"
 if test "x$guilesitedir" = "x"; then
@@ -109,13 +109,6 @@ if test "x$guileextensiondir" = "x"; then
   guileextensiondir="$libdir"
 fi
 AC_SUBST([guileextensiondir])
-
-GUILE_EXTENSION_DIR=`pkg-config guile-2.0 --variable=extensiondir`
-if test "x$GUILE_EXTENSION_DIR" = "x"; then
-GUILE_EXTENSION_DIR=`guile-config info libdir`
-fi
-AC_SUBST([GUILE_EXTENSION_DIR])
-
 
 ##################
 # Check for header files
@@ -162,11 +155,11 @@ if test "$guilesitedir" != "$GUILE_SITE"; then
    [variable.])
 fi
 
-if test "x$GUILE_EXTENSION_DIR" != "x"; then
-if test "$guileextensiondir" != "$GUILE_EXTENSION_DIR"; then
+if test "x$GUILE_EXTENSION" != "x"; then
+if test "$guileextensiondir" != "$GUILE_EXTENSION"; then
    AC_MSG_WARN([]
    [The Guile extensions will be installed in ${guileextensiondir}.]
    [You should consider re-running `configure' with]
-   [`--with-guileextensiondir=$GUILE_EXTENSION_DIR'])
+   [`--with-guileextensiondir=$GUILE_EXTENSION'])
 fi
 fi
