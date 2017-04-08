@@ -51,6 +51,11 @@ Includes portions of the libcurl documentation, which is Copyright
 @copyright{} 1998 - 2012 Daniel Stenberg, et al.
 @end copying
 
+@dircategory The Algorithmic Language Scheme
+@direntry
+* Guile Curl: (guile-curl).     A URL-fetching library for Guile.
+@end direntry
+
 @titlepage
 @title A Guile Curl Library
 @subtitle For version @value{VERSION}, @value{UPDATED}
