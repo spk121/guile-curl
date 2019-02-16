@@ -1,3 +1,11 @@
+For Release 0.6 - Feb 15, 2019
+
+    - Eliminate Guile 1.8 support
+    - Update to libcurl 7.61.x constant
+    - guilesitedir become guilemoduledir
+    - follow guile-hall's guidance of how guile directories are formed
+    - load unversioned libguile-curl library in curl.scm
+
 For Release 0.5 - April 8, 2017
 
     - Fix configure to search for Guile 2.2.x.
