@@ -83,32 +83,15 @@ GUILE_PROGS
 GUILE_FLAGS
 GUILE_SITE_DIR
 
-AC_ARG_WITH([guilesitedir],
-  [use the specified installation path for Guile modules],
-  [case "x$withval" in
-    xyes|xno) guilesitedir="";;
-    *)        guilesitedir="$withval";;
-   esac],
-  [guilesiteir=""])
 
-pkgdatadir="$datadir/$PACKAGE_NAME"
-if test "x$guilesitedir" = "x"; then
-  guilesitedir="$pkgdatadir"
-fi
-AC_SUBST([guilesitedir])
-
-AC_ARG_WITH([guileextensiondir],
-  [use the specified installation path for Guile binary shared libraries],
-  [case "x$withval" in
-    xyes|xno) guileextensiondir="";;
-    *)        guileextensiondir="$withval";;
-   esac],
-  [guileextensiondir=""])
-
-if test "x$guileextensiondir" = "x"; then
-  guileextensiondir="$libdir"
-fi
+dnl Installation directories for .scm and .go files.
+guilemoduledir="${datarootdir}/guile/site/$GUILE_EFFECTIVE_VERSION"
+guileobjectdir="${libdir}/guile/$GUILE_EFFECTIVE_VERSION/site-ccache"
+guileextensiondir=${libdir}/guile/$GUILE_EFFECTIVE_VERSION/extensions
+AC_SUBST([guilemoduledir])
+AC_SUBST([guileobjectdir])
 AC_SUBST([guileextensiondir])
+
 
 ##################
 # Check for header files
@@ -144,21 +127,17 @@ AC_CONFIG_FILES([Makefile
 
 AC_OUTPUT
 
-if test "$guilesitedir" != "$GUILE_SITE"; then
+if test "$guilemoduledir" != "$GUILE_SITE"; then
    # Guile has a different prefix than this module
    AC_MSG_WARN([]
-   [The Guile modules will be installed in '${guilesitedir}'.]
-   [You should probably re-run `configure' with]
-   [`--with-guilesitedir=$GUILE_SITE']
-   [Otherwise, you will have to adjust the `GUILE_LOAD_PATH' environment]
+   [The Guile modules will be installed in '${guilemoduledir}'.]
+   [You will have to adjust the `GUILE_LOAD_PATH' environment]
    [variable.])
 fi
 
 if test "x$GUILE_EXTENSION" != "x"; then
 if test "$guileextensiondir" != "$GUILE_EXTENSION"; then
    AC_MSG_WARN([]
-   [The Guile extensions will be installed in ${guileextensiondir}.]
-   [You should consider re-running `configure' with]
-   [`--with-guileextensiondir=$GUILE_EXTENSION'])
+   [The Guile extensions will be installed in ${guileextensiondir}.])
 fi
 fi

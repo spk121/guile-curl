@@ -20,7 +20,7 @@
 guileextension_LTLIBRARIES = \
 	libguile-curl.la
 
-dist_guilesite_DATA = \
+dist_guilemodule_DATA = \
 	curl.scm
 
 ####################
