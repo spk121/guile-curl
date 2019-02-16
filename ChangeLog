@@ -1,4 +1,265 @@
+2019-02-16  Michael Gran  <spk121@yahoo.com>
+
+	Update some texinfo nodes and menus
+
+	Comment out some options that are too new
+
+	Use guile-hall names for install directories
+
+	Add new libcurl options
+
+2019-02-11  Michael Gran  <spk121@yahoo.com>
+
+	Bump rev to 0.6
+
+2018-11-22  Mike Gran  <spk121@yahoo.com>
+
+	Update guile.m4
+	Pulled in newer guile.m4 from the official Guile build
+
+	guile.m4: modified
+
+2018-11-22  Mike Gran  <spk121@yahoo.com>
+
+	Added name and email to readme
+	README: updated
+
+	Mention bootstrap script in the README
+	README: updated
+
+2018-11-22  Mike Gran  <spk121@yahoo.com>
+
+	Avoid hyphen in project name
+	Apparently gnulib bootstrap can handle hyphenated project names
+
+	configure.ac: updated
+
+2017-04-08  Mike Gran  <spk121@yahoo.com>
+
+	Update NEWS
+	* NEWS: updated
+
+	Use new bootstrap
+	* bootstrap: updated
+
+	Revert to official guile.m4
+	* m4/guile.m4: updated
+
+	Add dircategory to docs
+	* doc/guile-curl.texi: modified
+
+	Update autoconfigury to look for Guile 2.2
+	* configure.ac: updated
+
+2016-10-23  Michael Gran  <spk121@yahoo.com>
+
+	Bump to 0.4
+
+	Update guile.m4
+
+	typo
+
+	Make cl_is_handle_p into DLL public
+
+	Add copyright for main.c
+
+	Mark public functions for DLL
+	* src/func.c (cl_easy_init, cl_easy_setopt, cl_easy_perform): mark DLL public
+	   (cl_easy_reset, cl_easy_cleanup, cl_error_string, cl_error_code)
+	   (cl_dump_handle)
+	* src/main.c (cl_main): mark DLL public
+	* src/type.c (cl_init_type
+
+	Use new %zu to printf size_t
+	* src/func.c (cl_dump_handle): use %zu to print size_t
+
+2016-10-23  Michael Gran  <spk121@yahoo.com>
+
+	SMOBs may forget their "type" when being freed.
+	Agressive type checking of SMOB functions is deprecated
+
+	* src/type.c (equalp_handle, gc_free_handle, print_handle): no SMOB typecheck
+
+2014-10-20  Mike Gran  <spk121@yahoo.com>
+
+	Update NEWS
+
+	Add functionality for sending READDATA bodies
+	* doc/guile-curl.texi: remove broken menu, add READDATA option
+	* src/const.c (CURLOPT_READDATA): new global
+	* src/curl.scm.in (curl-easy-setopt): add readdata option
+	* src/func.c (read_callback): new procedure
+	  (cl_easy_setopt): add hook for CURLOPT_READDATA
+
+2014-10-07  Mike Gran  <spk121@yahoo.com>
+
+	Document (web response) and HTTP fetching
+	* doc/Makefile.am: add new examples
+	* doc/ex_http_simple_get.scm: new example
+	* doc/ex_http_simple_get_utf8.scm: new example
+	* doc/ex_http_web_response.scm: new example
+	* doc/guile-curl.texi: more documentation
+	* doc/ex_http_header_charset.scm: example removed
+
+2014-10-01  Mike Gran  <spk121@yahoo.com>
+
+	Update guile-curl.texi
+	More discussion of HTTP encodings
+
+	Document  the encoding problems of HTTP requests
+	* doc/guile-curl.texi: updated
+
+	Document curl-easy-perform API change
+	* doc/guile-curl.texi (curl-easy-perform): document API change
+
+	All curl-easy-perform to split body and header
+	* src/curl.scm.in (curl-easy-perform): add parameter to split body and header
+	* src/func.c (cl_easy_perform): add parameter to split body and header
+	* src/func.h: update declaration of cl_easy_perform
+
+2014-09-30  Mike Gran  <spk121@yahoo.com>
+
+	Missing config.h in test runner
+	* test/check_type.c: add config.h
+
+	Ignore some 'make syntax-check' tests
+	* cfg.mk: add tests to ignore
+
+	Reword some xrefs
+	* doc/guile-curl.texi: modified
+
+	Whitespace
+	* AUTHORS
+	* README-hacking
+	* TODO
+
+	Remove some if-before-free
+	* src/func.c (cl_easy_setopt): remove if-before-free
+
+	Upgrade to GPL3 to match rest of code
+	* test/lib.scm: moved to GPL3
+
+	update bootstrap from gnulib
+	* bootstrap: updated to latest gnulib version
+
+	Update gnulib
+
+	comment out some compiler warnings
+	* src/Makefile.am
+
+	Update gnulib
+
+	Remove bootstrap module from bootstrap configuration
+	* bootstrap.conf: remove bootstrap
+
+	Update README
+
+	Update NEWS
+
+	Bump version number
+	* configure.ac (AC_INIT): bump version to 0.3
+
+	Update copyright and license headers
+
+	Add tests for _scm_can_convert_to_slist and _scm_convert_to_slist
+	* test/check_type.c (test_can_convert_to_slist__slist): new test
+	  (test_can_convert_to_slist__empty_list): new test
+	  (test_can_convert_to_slist__list_of_integers): new test
+	  (test_scm_convert_to_slist__slist, test_scm_convert_to_slist__empty_list)
+	  (test_convert_to_slist__list_of_integers): new tests
+
+	Add tests for cl_is_handle_p
+	* test/check_type.c (test_cl_is_handle_p__handle): new test
+	  (test_cl_is_handle_p__true): new test
+
+	_scm_convert_to_slist now returns NULL on bad input
+	* src/type.c (_scm_convert_to_slist): return NULL on bad input
+
+	Add test for freeing slist options
+	* test/check_type.c (test_free_handle_slist_option): new test
+	  (test_free_handle_empty_slist_option): new test
+	  (test_free_handle_empty_httpheader, test_free_handle_httpheader): removed
+
+	Quiet doc warnings about missing periods after @xref
+	* doc/guile-curl.texi: modified
+
+	Add footnote about emptying httpheader
+	* doc/guile-curl.text: modified
+
+2014-09-29  Mike Gran  <spk121@yahoo.com>
+
+	Increase stress in stress allocation test
+	* test/stress.scm (handle gc): increase memory allocation
+
+	Add test for freeing handles with HTTPHEADER
+	* test/check_type (test_free_handle_httpheader): new test
+	  (test_free_handle_empty_httpheader): new test
+
+	Stricter input checking in cl-easy-setopt for CURLOPT_HTTPHEADER
+	* src/func.c (cl_easy_setopt): modify argument checks
+
+	Add more paranoia in low-level handle functions
+	* src/type.c (equalp_handle): assert input types
+	  (print_handle): assert input types
+	  (_scm_convert_to_slist): add new error checks
+
+	Set SMOB data to NULL on free
+	* src/type (gc_free_handle): modified
+
+	Add basic handle tests
+	* test/check_type.c (test_equalp_handle): new test
+	  (test_not_equalp_handle, test_free_handle, test_not_free_handle): new tests
+	  (test_double_free_handle): new test
+
+	cl-easy-setopt processing for CURLOPT_POSTFIELDS incorrect
+	* src/func.c (cl_easy_setopt): stricter validation
+	* src/type.c (_scm_convert_to_byte_data): make sure to allocate fresh storage
+	* src/check_type.c (test_free_handle_string_postfields): new test
+	  (test_free_handle_bytevector_postfields): new test
+
+2014-09-28  Mike Gran  <spk121@yahoo.com>
+
+	Oops, don't check in generated file test/setopt.scm
+	* test/setopt.scm: removed
+
+	Add check for not freeing already freed handle
+	* src/type.c (gc_free_handle): don't free NULL handle
+
+	string list conversion is incorrect
+	* src/type.c (_scm_convert_to_slist): fix missing brackets
+
+	Missing libguile include for type.h
+	* src/type.h: include libguile.h
+
+	Missing declaration for cl_easy_setopt
+	* src/func.h: add declaration
+
+	configure script need AM_PROG_AR for linking
+	* configure.ac: add AM_PROG_AR
+
+	Add some tests
+	* test/Makefile.am: split test environment variables, add test
+	  harness for compiled tests
+	* src/Makefile.am: remove strict visiblity so we can do binary tests
+	* test/check_type.c: new compiled test
+
 2013-02-16  Mike Gran  <spk121@yahoo.com>
+
+	Add date to news
+	* NEWS
+
+	Whitespace
+	* src/curl.scm.in
+	* test/Makefile.am
+	* test/stress.scm
+
+	handle? -> curl-easy-handle?
+	* src/curl.scm.in: rename func
+	* src/type.c: rename func
+
+	Add more README
+	* README
+	* README-hacking
 
 	Add GPL
 
