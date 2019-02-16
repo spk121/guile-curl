@@ -114,7 +114,6 @@ Option Data Types
 * Integer Constants for proxytype::
 * Integer Constants for netrc::
 * Integer Constants for httpauth::
-* Integer Constants for tlsauth-type::
 * Integer Constants for postredir::
 * Integer Constants for http-version::
 * Integer Constants for ftpsslauth::
@@ -794,7 +793,6 @@ The format of this data structure will change in the next version
 * Integer Constants for proxytype::
 * Integer Constants for netrc::
 * Integer Constants for httpauth::
-* Integer Constants for tlsauth-type::
 * Integer Constants for postredir::
 * Integer Constants for http-version::
 * Integer Constants for ftpsslauth::
@@ -885,7 +883,7 @@ CURL_NETRC_IGNORED,
 CURL_NETRC_REQUIRED
 @end flushleft
 
-@node Integer Constants for httpauth, Integer Constants for tlsauth-type, Integer Constants for netrc, Option Data Types
+@node Integer Constants for httpauth, Integer Constants for postredir, Integer Constants for netrc, Option Data Types
 @subsubsection Integer Constants for httpauth
 The following list of integer constants can be used with the
 @code{httpauth} and @code{proxyauth} options.
@@ -903,9 +901,7 @@ CURLAUTH_ANYSAFE,
 CURLAUTH_ONLY
 @end flushleft
 
-@node Integer Constants for tlsauth-type, Integer Constants for postredir, Integer Constants for httpauth, Option Data Types
-
-@node Integer Constants for postredir, Integer Constants for http-version, Integer Constants for tlsauth-type, Option Data Types
+@node Integer Constants for postredir, Integer Constants for http-version, Integer Constants for httpauth, Option Data Types
 @subsubsection Integer Constants for postredir
 The following list integer constants can be used with the
 @code{postredir} option.
@@ -1087,7 +1083,6 @@ There is a set of named integer-value constants for the error codes.
 
 .
 
-
 @table @code
 @item     CURLE_RANGE_ERROR
 @item     CURLE_HTTP_POST_ERROR
@@ -1132,6 +1127,11 @@ There is a set of named integer-value constants for the error codes.
 @item     CURLE_SSH
 @item     CURLE_SSL_SHUTDOWN_FAILED
 @item     CURLE_AGAIN
+@end table
+
+.
+
+@table @code
 @item     CURLE_SSL_CRL_BADFILE
 @item     CURLE_SSL_ISSUER_ERROR
 @item     CURLE_FTP_PRET_FAILED
