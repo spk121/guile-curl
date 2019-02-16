@@ -1,6 +1,6 @@
 ## Process this file with automake to produce Makefile.in
 
-# Copyright (C) 2011, 2013 Michael L. Gran
+# Copyright (C) 2011, 2013, 2019 Michael L. Gran
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -50,16 +50,3 @@ libguile_curl_la_SOURCES = \
 	main.c
 
 ETAGS_ARGS = curl.scm
-
-EXTRA_DIST = \
-	curl.scm.in
-
-BUILT_SOURCES = curl.scm
-CLEANFILES = curl.scm
-
-curl.scm: curl.scm.in
-	if test "x$(RNRS_BYTEVECTORS)" = "xno" ; then \
-	  cat curl.scm.in | sed -e 's|XXlibnameXX|libguile-curl|' -e 's|;; RNRS_BYTEVECTORS_BEGIN|#!|' -e 's|;; RNRS_BYTEVECTORS_END|!#|' > $@ ; \
-	else \
-	  cat curl.scm.in | sed -e 's|XXlibnameXX|libguile-curl|' > $@ ; \
-	fi

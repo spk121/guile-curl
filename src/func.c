@@ -240,25 +240,17 @@ cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag)
   c_handle = _scm_to_handle (handle);
 
   body_sf.flag = scm_is_true (bvflag);
-#if SCM_MAJOR_VERSION == 2
   if (body_sf.flag)
     data = scm_c_make_bytevector (0);
   else
     data = scm_c_make_string (0, SCM_MAKE_CHAR('\n'));
-#else
-  data = scm_c_make_string (0, SCM_MAKE_CHAR('\n'));
-#endif
   body_sf.scm = data;
 
   header_sf.flag = 0;
-#if SCM_MAJOR_VERSION == 2
   if (header_sf.flag)
     data = scm_c_make_bytevector (0);
   else
     data = scm_c_make_string (0, SCM_MAKE_CHAR('\n'));
-#else
-  data = scm_c_make_string (0, SCM_MAKE_CHAR('\n'));
-#endif
   header_sf.scm = data;
 
   if (scm_is_true (headerflag)) 
@@ -297,19 +289,14 @@ write_callback (void *ptr, size_t size, size_t nmemb, void *userdata)
 
   sf = (struct scm_flag *) userdata;
   data1 = sf->scm;
-#if SCM_MAJOR_VERSION == 2
   if (sf->flag)
     length1 = scm_c_bytevector_length (data1);
   else
     length1 = scm_c_string_length (data1);
-#else
-  length1 = scm_c_string_length (data1);
-#endif
 
   length2 = size * nmemb;
 
   /* printf ("In write_callback\n"); */
-#if SCM_MAJOR_VERSION == 2
   if (sf->flag)
     {
       data2 = scm_c_make_bytevector (length1 + length2);
@@ -333,15 +320,6 @@ write_callback (void *ptr, size_t size, size_t nmemb, void *userdata)
                               SCM_MAKE_CHAR (((char *)ptr)[i]));
         }
     }
-#else
-  data2 = scm_c_make_string (length1 + length2, SCM_MAKE_CHAR('\0'));
-  memcpy (SCM_STRING_CHARS (data2),
-          SCM_STRING_CHARS (data1),
-          length1);
-  memcpy (SCM_STRING_CHARS (data2) + length1,
-          ptr,
-          length2);
-#endif
   sf->scm = data2;
 
   return length2;

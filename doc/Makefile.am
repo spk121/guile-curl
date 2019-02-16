@@ -1,6 +1,6 @@
 ## Process this file with automake to produce Makefile.in
 
-# Copyright (C) 2011, 2013, 2014 Michael L. Gran
+# Copyright (C) 2011, 2013, 2014, 2019 Michael L. Gran
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,20 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# Cygwin's texi2dvi can try to call etex, resulting in this error:
-#   "texinfo.tex appears to be broken, quitting"
-# The problem lies in Cygwin's etex.fmt file
-# Forcing TEX to tex works around this problem
-# This should not harm other platforms
-
-# if ETEX_FIX
-# TEX=tex
-# TEXI2DVI = TEX=${TEX} texi2dvi
-# endif
-
 info_TEXINFOS = guile-curl.texi
 guile_curl_TEXINFOS = ex_http_simple_get.scm \
 	ex_http_simple_get_utf8.scm \
 	ex_http_web_response.scm
-
-CLEANFILES = guile-curl.dvi

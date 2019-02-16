@@ -32,8 +32,8 @@ gl_INIT
 
 ##################
 # Set some version constants
-LIBGUILE_CURL_MAJOR=1
-LIBGUILE_CURL_INTERFACE="1:0:0"
+LIBGUILE_CURL_MAJOR=2
+LIBGUILE_CURL_INTERFACE="2:0:0"
 AC_SUBST(LIBGUILE_CURL_MAJOR)
 AC_SUBST(LIBGUILE_CURL_INTERFACE)
 
@@ -129,9 +129,6 @@ CPPFLAGS="$tmp_CPPFLAGS"
 ##################
 # Check for library functions
 
-GUILE_MODULE_AVAILABLE(RNRS_BYTEVECTORS, [(rnrs bytevectors)])
-AC_SUBST([RNRS_BYTEVECTORS])
-
 ##################
 # Check for system services
 
@@ -140,7 +137,7 @@ AC_SUBST([RNRS_BYTEVECTORS])
 AC_CONFIG_FILES([Makefile
                 src/Makefile
                 doc/Makefile
-		lib/Makefile
+		        lib/Makefile
                 test/Makefile
                 m4/Makefile
                 build-aux/Makefile])

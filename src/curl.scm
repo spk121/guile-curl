@@ -1,6 +1,6 @@
 ;; -*- Mode: scheme; -*-
 
-;;; Copyright (C) 2011, 2013, 2014 Michael L. Gran
+;;; Copyright (C) 2011, 2013, 2014, 2019 Michael L. Gran
 
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
@@ -18,9 +18,7 @@
 (define-module (curl)
   #:use-module (srfi srfi-1)
   #:use-module (ice-9 optargs)
-  ;; RNRS_BYTEVECTORS_BEGIN
   #:use-module (rnrs bytevectors)
-  ;; RNRS_BYTEVECTORS_END
   #:export (
             curl-easy-handle?
             curl-easy-init
@@ -32,41 +30,44 @@
             curl-error-code
             %curl-dump-handle
 
-            ;; RNRS_BYTEVECTORS_BEGIN
             bv->url-encoded-bv
-            ;; RNRS_BYTEVECTORS_END
 
-            CURLPROTO_HTTP
-            CURLPROTO_HTTPS
-            CURLPROTO_FTP
-            CURLPROTO_FTPS
-            CURLPROTO_SCP
-            CURLPROTO_SFTP
-            CURLPROTO_TELNET
-            CURLPROTO_LDAP
-            CURLPROTO_LDAPS
+            CURLPROTO_ALL
             CURLPROTO_DICT
             CURLPROTO_FILE
-            CURLPROTO_TFTP
+            CURLPROTO_FTP
+            CURLPROTO_FTPS
+            CURLPROTO_GOPHER
+            CURLPROTO_HTTP
+            CURLPROTO_HTTPS
             CURLPROTO_IMAP
             CURLPROTO_IMAPS
+            CURLPROTO_LDAP
+            CURLPROTO_LDAPS
             CURLPROTO_POP3
             CURLPROTO_POP3S
+            CURLPROTO_RTMP
+            CURLPROTO_RTMPE
+            CURLPROTO_RTMPS
+            CURLPROTO_RTMPT
+            CURLPROTO_RTMPTE
+            CURLPROTO_RTMPTS
+            CURLPROTO_RTSP
+            CURLPROTO_SCP
+            CURLPROTO_SFTP
+            CURLPROTO_SMB
+            CURLPROTO_SMBS
             CURLPROTO_SMTP
             CURLPROTO_SMTPS
-            CURLPROTO_RTSP
-            CURLPROTO_RTMP
-            CURLPROTO_RTMPT
-            CURLPROTO_RTMPE
-            CURLPROTO_RTMPTE
-            CURLPROTO_GOPHER
-            CURLPROTO_ALL
+            CURLPROTO_TELNET
+            CURLPROTO_TFTP
 
             CURLPROXY_HTTP
+            CURLPROXY_HTTPS
             CURLPROXY_HTTP_1_0
             CURLPROXY_SOCKS4
-            CURLPROXY_SOCKS5
             CURLPROXY_SOCKS4A
+            CURLPROXY_SOCKS5
             CURLPROXY_SOCKS5_HOSTNAME
 
             CURL_NETRC_OPTIONAL
@@ -76,14 +77,13 @@
             CURLAUTH_BASIC
             CURLAUTH_DIGEST
             CURLAUTH_DIGEST_IE
-            CURLAUTH_GSSNEGOTIATE
+            CURLAUTH_BEARER
+            CURLAUTH_NEGOTIATE
             CURLAUTH_NTLM
             CURLAUTH_NTLM_WB
             CURLAUTH_ANY
             CURLAUTH_ANYSAFE
             CURLAUTH_ONLY
-
-            CURL_TLSAUTH_SRP
 
             CURL_REDIR_POST_301
             CURL_REDIR_POST_302
@@ -92,6 +92,9 @@
             CURL_HTTP_VERSION_NONE
             CURL_HTTP_VERSION_1_0
             CURL_HTTP_VERSION_1_1
+            CURL_HTTP_VERSION_2_0
+            CURL_HTTP_VERSION_2TLS
+            CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE
 
             CURLFTPAUTH_DEFAULT
             CURLFTPAUTH_SSL
@@ -128,6 +131,15 @@
 
             CURL_SSLVERSION_DEFAULT
             CURL_SSLVERSION_TLSv1
+            CURL_SSLVERSION_TLSv1_0
+            CURL_SSLVERSION_TLSv1_1
+            CURL_SSLVERSION_TLSv1_2
+            CURL_SSLVERSION_TLSv1_3
+            CURL_SSLVERSION_MAX_DEFAULT
+            CURL_SSLVERSION_MAX_TLSv1_0
+            CURL_SSLVERSION_MAX_TLSv1_1
+            CURL_SSLVERSION_MAX_TLSv1_2
+            CURL_SSLVERSION_MAX_TLSv1_3
             CURL_SSLVERSION_SSLv2
             CURL_SSLVERSION_SSLv3
 
@@ -140,6 +152,90 @@
             CURLSSH_AUTH_KEYBOARD
             CURLSSH_AUTH_ANY
 
+            CURLE_OK
+            CURLE_UNSUPPORTED_PROTOCOL
+            CURLE_FAILED_INIT
+            CURLE_URL_MALFORMAT
+            CURLE_NOT_BUILT_IN
+            CURLE_COULDNT_RESOLVE_PROXY
+            CURLE_COULDNT_RESOLVE_HOST
+            CURLE_COULDNT_CONNECT
+            CURLE_FTP_WEIRD_SERVER_REPLY
+            CURLE_REMOTE_ACCESS_DENIED
+            CURLE_FTP_ACCEPT_FAILED
+            CURLE_FTP_WEIRD_PASS_REPLY
+            CURLE_FTP_ACCEPT_TIMEOUT
+            CURLE_FTP_WEIRD_PASV_REPLY
+            CURLE_FTP_WEIRD_227_FORMAT
+            CURLE_FTP_CANT_GET_HOST
+            CURLE_HTTP2
+            CURLE_FTP_COULDNT_SET_TYPE
+            CURLE_PARTIAL_FILE
+            CURLE_FTP_COULDNT_RETR_FILE
+            CURLE_FTP_QUOTE_ERROR
+            CURLE_HTTP_RETURNED_ERROR
+            CURLE_WRITE_ERROR
+            CURLE_UPLOAD_FAILED
+            CURLE_READ_ERROR
+            CURLE_OUT_OF_MEMORY
+            CURLE_OPERATION_TIMEDOUT
+            CURLE_FTP_PORT_FAILED
+            CURLE_FTP_COULDNT_USE_REST
+            CURLE_RANGE_ERROR
+            CURLE_HTTP_POST_ERROR
+            CURLE_SSL_CONNECT_ERROR
+            CURLE_BAD_DOWNLOAD_RESUME
+            CURLE_FILE_COULDNT_READ_FILE
+            CURLE_LDAP_CANNOT_BIND
+            CURLE_LDAP_SEARCH_FAILED
+            CURLE_FUNCTION_NOT_FOUND
+            CURLE_ABORTED_BY_CALLBACK
+            CURLE_BAD_FUNCTION_ARGUMENT
+            CURLE_INTERFACE_FAILED
+            CURLE_TOO_MANY_REDIRECTS
+            CURLE_UNKNOWN_OPTION
+            CURLE_TELNET_OPTION_SYNTAX
+            CURLE_GOT_NOTHING
+            CURLE_SSL_ENGINE_NOTFOUND
+            CURLE_SSL_ENGINE_SETFAILED
+            CURLE_SEND_ERROR
+            CURLE_RECV_ERROR
+            CURLE_SSL_CERTPROBLEM
+            CURLE_SSL_CIPHER
+            CURLE_PEER_FAILED_VERIFICATION
+            CURLE_BAD_CONTENT_ENCODING
+            CURLE_LDAP_INVALID_URL
+            CURLE_FILESIZE_EXCEEDED
+            CURLE_USE_SSL_FAILED
+            CURLE_SEND_FAIL_REWIND
+            CURLE_SSL_ENGINE_INITFAILED
+            CURLE_LOGIN_DENIED
+            CURLE_TFTP_NOTFOUND
+            CURLE_TFTP_PERM
+            CURLE_REMOTE_DISK_FULL
+            CURLE_TFTP_ILLEGAL
+            CURLE_TFTP_UNKNOWNID
+            CURLE_REMOTE_FILE_EXISTS
+            CURLE_TFTP_NOSUCHUSER
+            CURLE_CONV_FAILED
+            CURLE_CONV_REQD
+            CURLE_SSL_CACERT_BADFILE
+            CURLE_REMOTE_FILE_NOT_FOUND
+            CURLE_SSH
+            CURLE_SSL_SHUTDOWN_FAILED
+            CURLE_AGAIN
+            CURLE_SSL_CRL_BADFILE
+            CURLE_SSL_ISSUER_ERROR
+            CURLE_FTP_PRET_FAILED
+            CURLE_RTSP_CSEQ_ERROR
+            CURLE_FTP_BAD_FILE_LIST
+            CURLE_CHUNK_FAILED
+            CURLE_NO_CONNECTION_AVAILABLE
+            CURLE_SSL_PINNEDPUBKEYNOTMATCH
+            CURLE_SSL_INVALIDCERTSTATUS
+            CURLE_HTTP2_STREAM
+            CURLE_RECURSIVE_API_CALL
+            
             CURLE_OK
             CURLE_UNSUPPORTED_PROTOCOL
             CURLE_FAILED_INIT
@@ -221,12 +317,9 @@
             CURLE_REMOTE_FILE_NOT_FOUND
             CURLE_SSH
             CURLE_SSL_SHUTDOWN_FAILED
-
-
-
             ))
 
-(load-extension "XXlibnameXX" "cl_init")
+(load-extension "libguile-curl" "cl_init")
 
 (define (c-bool x)
   (if x
@@ -252,7 +345,6 @@ HEXADECIMAL + HEXADECIMAL"
         (num->ascii-hex-num (quotient x 16))
         (num->ascii-hex-num (remainder x 16))))
 
-;; RNRS_BYTEVECTORS_BEGIN
 (define (bv->url-encoded-bv bv)
   "Creates a bytevector that contains a URL-encoded representation
 of the original bytevector"
@@ -271,7 +363,6 @@ of the original bytevector"
         (append prev (u8->encoded-u8-triplet x)))))
     '()
     (bytevector->u8-list bv))))
-;; RNRS_BYTEVECTORS_END
 
 (define (curl-easy-init)
   "Returns a curl handle that you must use as input to other functions.
@@ -314,24 +405,39 @@ cache, the cookies or the shared."
 
     ;; NETWORK OPTIONS
     (url ,CURLOPT_URL string)
+    (path-as-is ,CURLOPT_PATH_AS_IS boolean)
     (protocols ,CURLOPT_PROTOCOLS integer)
     (redir-protocols ,CURLOPT_REDIR_PROTOCOLS integer)
+    (default-protocol ,CURLOPT_DEFAULT_PROTOCOL string)
     (proxy ,CURLOPT_PROXY string)
+    (pre-proxy ,CURLOPT_PRE_PROXY string)
     (proxyport ,CURLOPT_PROXYPORT integer)
     (proxytype ,CURLOPT_PROXYTYPE integer)
     (noproxy ,CURLOPT_NOPROXY string)
     (httpproxytunnel ,CURLOPT_HTTPPROXYTUNNEL boolean)
+    (connect-to ,CURLOPT_CONNECT_TO slist)
+    (socks5-auth, CURLOPT_SOCKS5_AUTH integer)
     (socks5-gssapi-service ,CURLOPT_SOCKS5_GSSAPI_SERVICE string)
     (socks5-gssapi-nec ,CURLOPT_SOCKS5_GSSAPI_NEC boolean)
+    (proxy-service-name ,CURLOPT_PROXY_SERVICE_NAME string)
+    (haproxyprotocol ,CURLOPT_HAPROXYPROTOCOL integer)
+    (service-name ,CURLOPT_SERVICE_NAME string)
     (interface ,CURLOPT_INTERFACE string)
     (localport ,CURLOPT_LOCALPORT integer)
     (localportrange ,CURLOPT_LOCALPORTRANGE integer)
     (dns-cache-timeout ,CURLOPT_DNS_CACHE_TIMEOUT integer)
     ;; dns-use-global-cache is deprecated
+    (doh-url ,CURLOPT_DOH_URL string)
     (buffersize ,CURLOPT_BUFFERSIZE integer)
     (port ,CURLOPT_PORT integer)
+    (tcp-fastopen ,CURLOPT_TCP_FASTOPEN boolean)
     (tcp-nodelay ,CURLOPT_TCP_NODELAY boolean)
     (address-scope ,CURLOPT_ADDRESS_SCOPE integer)
+    (tcp-keepalive ,CURLOPT_TCP_KEEPALIVE boolean)
+    (tcp-keepidle ,CURLOPT_TCP_KEEPIDLE integer)
+    (tcp-keepintvl ,CURLOPT_TCP_KEEPINTVL integer)
+    (unix-socket-path ,CURLOPT_UNIX_SOCKET_PATH string)
+    (abstract-unix-socket ,CURLOPT_ABSTRACT_UNIX_SOCKET string)
 
     ;; NAMES AND PASSWORD OPTIONS
     (netrc ,CURLOPT_NETRC integer)
@@ -340,13 +446,21 @@ cache, the cookies or the shared."
     (proxyuserpwd ,CURLOPT_PROXYUSERPWD string)
     (username ,CURLOPT_USERNAME string)
     (password ,CURLOPT_PASSWORD string)
+    (login-options ,CURLOPT_LOGIN_OPTIONS string)
     (proxyusername ,CURLOPT_PROXYUSERNAME string)
     (proxypassword ,CURLOPT_PROXYPASSWORD string)
     (httpauth ,CURLOPT_HTTPAUTH integer)
-    (tlsauth-type ,CURLOPT_TLSAUTH_TYPE integer)
+    (tlsauth-type ,CURLOPT_TLSAUTH_TYPE string)
     (tlsauth-username ,CURLOPT_TLSAUTH_USERNAME string)
+    (proxy-tlsauth-username ,CURLOPT_PROXY_TLSAUTH_USERNAME string)
     (tlsauth-password ,CURLOPT_TLSAUTH_PASSWORD string)
+    (proxy-tlsauth-password ,CURLOPT_PROXY_TLSAUTH_PASSWORD string)
+    (tlsauth-type ,CURLOPT_TLSAUTH_TYPE string)
+    (proxy-tlsauth-type ,CURLOPT_PROXY_TLSAUTH_TYPE string)
     (proxyauth ,CURLOPT_PROXYAUTH integer)
+    (sasl-ir ,CURLOPT_SASL_IR boolean)
+    (xoauth2-bearer ,CURLOPT_XOAUTH2_BEARER string)
+    (disallow-username-in-url ,CURLOPT_DISALLOW_USERNAME_IN_URL boolean)
 
     ;; HTTP OPTIONS
     (autoreferer ,CURLOPT_AUTOREFERER boolean)
@@ -366,6 +480,7 @@ cache, the cookies or the shared."
     (referer ,CURLOPT_REFERER string)
     (useragent ,CURLOPT_USERAGENT string)
     (httpheader ,CURLOPT_HTTPHEADER slist)
+    (headeropt ,CURLOPT_HEADEROPT integer)
     (http200aliases ,CURLOPT_HTTP200ALIASES slist)
     (cookie ,CURLOPT_COOKIE string)
     (cookiefile ,CURLOPT_COOKIEFILE string)
@@ -373,24 +488,31 @@ cache, the cookies or the shared."
     (cookiesession ,CURLOPT_COOKIESESSION boolean)
     (cookielist ,CURLOPT_COOKIELIST string)
     (httpget ,CURLOPT_HTTPGET boolean)
+    (request-target ,CURLOPT_REQUEST_TARGET string)
     (http-version ,CURLOPT_HTTP_VERSION integer)
+    (http09-allowed ,CURLOPT_HTTP09_ALLOWED boolean)
     (ignore-content-length ,CURLOPT_IGNORE_CONTENT_LENGTH boolean)
     (http-content-decoding ,CURLOPT_HTTP_CONTENT_DECODING boolean)
     (http-transfer-decoding ,CURLOPT_HTTP_TRANSFER_DECODING boolean)
-
+    (expect-100-timeout-ms ,CURLOPT_EXPECT_100_TIMEOUT_MS integer)
+    (pipewait ,CURLOPT_PIPEWAIT boolean)
+    (stream-wait ,CURLOPT_STREAM_WEIGHT integer)
+    
     ;; SMTP OPTIONS
     (mail-from ,CURLOPT_MAIL_FROM string)
     (mail-rcpt ,CURLOPT_MAIL_RCPT slist)
+    (mail-auth ,CURLOPT_MAIL_AUTH string)
 
     ;; TFTP OPTIONS
     (tftp-blksize ,CURLOPT_TFTP_BLKSIZE integer)
+    (tftp-no-options ,CURLOPT_TFTP_NO_OPTIONS boolean)
 
     ;; FTP OPTIONS
     (ftpport ,CURLOPT_FTPPORT string)
     (quote ,CURLOPT_QUOTE slist)
     (postquote ,CURLOPT_POSTQUOTE slist)
     (prequote ,CURLOPT_PREQUOTE slist)
-    (dirlistonly ,CURLOPT_DIRLISTONLY boolean)
+    ;; (dirlistonly ,CURLOPT_DIRLISTONLY boolean)
     (append ,CURLOPT_APPEND boolean)
     (ftp-use-eprt ,CURLOPT_FTP_USE_EPRT boolean)
     (ftp-use-epsv ,CURLOPT_FTP_USE_EPSV boolean)
@@ -422,14 +544,17 @@ cache, the cookies or the shared."
     (resume-from-large ,CURLOPT_RESUME_FROM_LARGE biginteger)
     (customrequest ,CURLOPT_CUSTOMREQUEST string)
     (filetime ,CURLOPT_FILETIME boolean)
+    (dirlistonly ,CURLOPT_DIRLISTONLY boolean)
     (nobody ,CURLOPT_NOBODY boolean)
     (infilesize ,CURLOPT_INFILESIZE integer)
     (infilesize-large ,CURLOPT_INFILESIZE_LARGE biginteger)
     (upload ,CURLOPT_UPLOAD boolean)
+    (upload-buffersize ,CURLOPT_UPLOAD_BUFFERSIZE integer)
     (maxfilesize ,CURLOPT_MAXFILESIZE integer)
     (maxfilesize-large ,CURLOPT_MAXFILESIZE_LARGE biginteger)
     (timecondition ,CURLOPT_TIMECONDITION integer)
     (timevalue ,CURLOPT_TIMEVALUE integer)
+    (timevalue-large ,CURLOPT_TIMEVALUE_LARGE biginteger)
 
     ;; CONNECTION OPTIONS
     (timeout ,CURLOPT_TIMEOUT integer)
@@ -448,22 +573,42 @@ cache, the cookies or the shared."
     (connect-only ,CURLOPT_CONNECT_ONLY boolean)
     (use-ssl ,CURLOPT_USE_SSL integer)
     (resolve ,CURLOPT_RESOLVE slist)
+    (dns-interface ,CURLOPT_DNS_INTERFACE string)
+    (dns-local-ip4 ,CURLOPT_DNS_LOCAL_IP4 string)
+    (dns-local-ip6 ,CURLOPT_DNS_LOCAL_IP6 string)
+    (dns-shuffle-addresses ,CURLOPT_DNS_SHUFFLE_ADDRESSES boolean)
     (dns-servers ,CURLOPT_DNS_SERVERS string)
     (accepttimeout-ms ,CURLOPT_ACCEPTTIMEOUT_MS integer)
+    (happy-eyeballs-timeout-ms ,CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS integer)
+    (upkeep-interval-ms ,CURLOPT_UPKEEP_INTERVAL_MS integer)
 
     ;; SSL and SECURITY OPTIONS
     (sslcert ,CURLOPT_SSLCERT string)
+    (proxy-sslcert ,CURLOPT_PROXY_SSLCERT string)
     (sslcerttype ,CURLOPT_SSLCERTTYPE string)
+    (proxy-sslcerttype ,CURLOPT_PROXY_SSLCERTTYPE string)
     (sslkey ,CURLOPT_SSLKEY string)
+    (proxy-sslkey ,CURLOPT_PROXY_SSLKEY string)
     (sslkeytype ,CURLOPT_SSLKEYTYPE string)
+    (proxy-sslkeytype ,CURLOPT_PROXY_SSLKEYTYPE string)
     (keypasswd ,CURLOPT_KEYPASSWD string)
+    (proxy-keypasswd ,CURLOPT_PROXY_KEYPASSWD string)
+    (ssl-enable-alpn ,CURLOPT_SSL_ENABLE_ALPN boolean)
+    (ssl-enable-npn ,CURLOPT_SSL_ENABLE_NPN boolean)
     (sslengine ,CURLOPT_SSLENGINE string)
     (sslengine-default ,CURLOPT_SSLENGINE_DEFAULT boolean)
+    (ssl-falsestart ,CURLOPT_SSL_FALSESTART boolean)
     (sslversion ,CURLOPT_SSLVERSION integer)
+    (proxy-sslversion ,CURLOPT_PROXY_SSLVERSION integer)
+    (ssl-verifyhost ,CURLOPT_PROXY_VERIFYHOST boolean)
+    (proxy-ssl-verifyhost ,CURLOPT_PROXY_VERIFYHOST boolean)
     (ssl-verifypeer ,CURLOPT_SSL_VERIFYPEER boolean)
+    (proxy-ssl-verifypeer ,CURLOPT_PROXY_SSL_VERIFYPEER boolean)
     (cainfo ,CURLOPT_CAINFO string)
+    (proxy-cainfo ,CURLOPT_PROXY_CAINFO string)
     (issuercert ,CURLOPT_ISSUERCERT string)
     (capath ,CURLOPT_CAPATH string)
+    (proxy-capath ,CURLOPT_PROXY_CAPATH string)
     (crlfile ,CURLOPT_CRLFILE string)
     (ssl-verifyhost ,CURLOPT_SSL_VERIFYHOST integer)
     (certinfo ,CURLOPT_CERTINFO boolean)
@@ -509,9 +654,7 @@ Returns #t on success and #f on failure."
            ((and (eq? type 'bytevector)
                  (or
                   (string? arg)
-                  ;; RNRS_BYTEVECTORS_BEGIN
                   (bytevector? arg)
-                  ;; RNRS_BYTEVECTORS_END
                   ))
             (%curl-easy-setopt handle option arg #f))
            ((and (eq? type 'slist)

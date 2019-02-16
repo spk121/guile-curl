@@ -1,7 +1,7 @@
 \input texinfo @c -*- Mode: texinfo; Fillcolumn: 70; -*-
 @c %**start of header
 
-@c Copyright @copyright{} 2007, 2011, 2013, 2014 Michael L. Gran
+@c Copyright @copyright{} 2007, 2011, 2013, 2014, 2019 Michael L. Gran
 
 @c Permission is hereby granted, free of charge, to any person obtaining a
 @c copy of these software and associated documentation files (the
@@ -45,10 +45,10 @@ This manual is for @code{guile-curl}, a Guile net client library,
 provides bindings for the underlying libcurl library, which provides
 functionality for accessing files via urls.
 
-Copyright @copyright{} 2007, 2011, 2013 Michael L. Gran
+Copyright @copyright{} 2007, 2011, 2013, 2014, 2019 Michael L. Gran
 
 Includes portions of the libcurl documentation, which is Copyright
-@copyright{} 1998 - 2012 Daniel Stenberg, et al.
+@copyright{} 1998 - 2018 Daniel Stenberg, et al.
 @end copying
 
 @dircategory The Algorithmic Language Scheme
@@ -157,11 +157,10 @@ to behave.  There are many dozens of options that can be set, but,
 at a minimum, it just needs a URL.
 
 Then, to initiate the transfer, the procedure @code{curl-easy-perform}
-is called.  For Guile-2.0, it can return the requested resource as
-either a bytevector or a string.  If the data is returned as a string,
-no coding conversions will be performed, e.g., the program will
-presume that the data is in the Latin-1 encoding.  For Guile-1.8 it
-returns the resource as a 8-bit string.
+is called.  It can return the requested resource as either a bytevector
+or a string.  If the data is returned as a string, no coding conversions
+will be performed, e.g., the program will presume that the data is in
+the Latin-1 encoding.
 
 @menu
 * Fetching from an HTTP server::
@@ -196,22 +195,16 @@ will write the string to the current output port.
 @verbatiminclude ex_http_simple_get.scm
 @end lisp
 
-In Guile-1.8, the returned string will be `8-bit clean'.  This means
-that the request is read in binary and put into a string of 8-bit,
-single-byte characters.
+The returned string is also read in as binary and put into a string of
+8-bit, single byte characters.  But, since Guile's characters are
+Unicode codepoints, this, in effect, means that the response was
+interpreted in the ISO-8859-1 (or Latin-1) encoding.
 
-In Guile-2.0, the returned string is also read in as binary and put
-into a string of 8-bit, single byte characters.  But, since
-Guile-2.0's characters are Unicode codepoints, this, in effect, means
-that the response was interpreted in the ISO-8859-1 (or Latin-1)
-encoding.
-
-In Guile-2.0, you can also fetch the resource as a bytevector by
-adding the optional argument @code{#t} to the call to
-@code{curl-easy-perform}.  Fetching a result as a bytevector is useful
-as it can then be re-encoded into UTF-8 by using the
-@code{utf8->string} procedure or to any character encoding by using
-the @code{bytevector->string} procedure.
+You can also fetch the resource as a bytevector by adding the optional
+argument @code{#t} to the call to @code{curl-easy-perform}.  Fetching a
+result as a bytevector is useful as it can then be re-encoded into UTF-8
+by using the @code{utf8->string} procedure or to any character encoding
+by using the @code{bytevector->string} procedure.
 
 The following code will fetch a web page from an HTTP server as a
 bytevector, convert the bytevector to a string interpreting its
@@ -245,7 +238,7 @@ case, things get complicated.
 @node Using web response procedures, Handling String Encodings, Performing the HTTP GET, Fetching from an HTTP server
 @subsection Using web response procedures
 
-In Guile-2.0 there @code{(web response)} module can be used to help
+The @code{(web response)} module can be used to help
 interpret the response from an HTTP server.  The module has many
 procedures for the proper parsing of the HTTP header.  But since
 @code{(web response)} was written to expect data from Guile's internal
@@ -282,15 +275,10 @@ or
 (curl-easy-perform handle #f)
 @end lisp
 
-If you are using Guile-1.8, the string will always be returned as an
-8-bit string.  Data encoded in multi-byte encodings like UTF-8 will be
-unceremoniously reduced to 8-bit bytes.  This is a limitation of Guile
-1.8.
-
-For Guile 2.0, the string will always be returned in the ISO-8859-1
-encoding, aka the Latin-1 encoding.  This is because converting data
-in some unknown format to Latin-1 will never fail.  It may not be
-right, but, the conversion won't fail.
+The string will always be returned in the ISO-8859-1 encoding, aka the
+Latin-1 encoding.  This is because converting data in some unknown
+format to Latin-1 will never fail.  It may not be right, but, the
+conversion won't fail.
 
 If you know that the data to be fetched is to be interpreted as a
 UTF-8 string, you should request the data as a bytevector and then
@@ -408,10 +396,7 @@ curl handles.@footnote{from the libcurl 7.7 curl_easy_perform man
 page}
 @end quotation
 
-With Guile-1.8, it returns a string containing the resource.
-The optional argument @var{bytevector?} is ignored.
-
-With Guile-2.0, its default behavior is to return a string containing
+The default behavior is to return a string containing
 the resource.  There is no way to handle the encoding of the string:
 the binary data will mapped byte-by-byte to a string containing
 codepoints U+0000 through U+00FF. If the optional @var{bytevector?}
@@ -513,25 +498,40 @@ these types.
 
 @item NETWORK OPTIONS
 @item url @tab CURLOPT_URL @tab string
+@item path-as-is @tab CURLOPT_PATH_AS_IS @tab boolean
 @item protocols @tab CURLOPT_PROTOCOLS @tab
 integer@footnote{@xref{Integer Constants for protocols}.}
 @item redir-protocols @tab CURLOPT_REDIR_PROTOCOLS @tab integer@footnote{@xref{Integer Constants for protocols}.}
+@item default-protocol @tab CURLOPT_DEFAULT_PROTOCOL @tab string
 @item proxy @tab CURLOPT_PROXY @tab string
+@item pre-proxy @tab CURLOPT_PRE_PROXY @tab string
 @item proxyport @tab CURLOPT_PROXYPORT @tab integer
 @item proxytype @tab CURLOPT_PROXYTYPE @tab
 integer@footnote{@xref{Integer Constants for proxytype}.}
 @item noproxy @tab CURLOPT_NOPROXY @tab string
 @item httpproxytunnel @tab CURLOPT_HTTPPROXYTUNNEL @tab boolean
+@item connect-to @tab CURLOPT_CONNECT_TO @tab slist
+@item socks5-auth @tab CURLOPT_SOCKS5_AUTH @tab integer
 @item socks5-gssapi-service @tab CURLOPT_SOCKS5_GSSAPI_SERVICE @tab string
 @item socks5-gssapi-nec @tab CURLOPT_SOCKS5_GSSAPI_NEC @tab boolean
+@item proxy-service-name @tab CURLOPT_PROXY_SERVICE_NAME @tab string
+@item haproxyprotocol @tab CURLOPT_HAPROXYPROTOCOL @tab boolean
+@item service-name @tab CURLOPT_SERVICE_NAME @tab string
 @item interface @tab CURLOPT_INTERFACE @tab string
 @item localport @tab CURLOPT_LOCALPORT @tab integer
 @item localportrange @tab CURLOPT_LOCALPORTRANGE @tab integer
 @item dns-cache-timeout @tab CURLOPT_DNS_CACHE_TIMEOUT @tab integer
+@item doh-url @tab CURLOPT_DOH_URL @tab string
 @item buffersize @tab CURLOPT_BUFFERSIZE @tab integer
 @item port @tab CURLOPT_PORT @tab integer
+@item tcp-fastopen @tab CURLOPT_TCP_FASTOPEN @tab boolean
 @item tcp-nodelay @tab CURLOPT_TCP_NODELAY @tab boolean
 @item address-scope @tab CURLOPT_ADDRESS_SCOPE @tab integer
+@item tcp-keepalive @tab CURLOPT_TCP_KEEPALIVE @tab boolean
+@item tcp-keepidle @tab CURLOPT_TCP_KEEPIDLE @tab integer
+@item tcp-keepintvl @tab CURLOPT_TCP_KEEPINTVL @tab integer
+@item unix-socket-path @tab CURLOPT_UNIX_SOCKET_PATH @tab string
+@item abstract-unix-socket @tab CURLOPT_ABSTRACT_UNIX_SOCKET @tab string
 
 @item NAMES AND PASSWORD OPTIONS
 @item netrc @tab CURLOPT_NETRC @tab integer@footnote{@xref{Integer
@@ -541,15 +541,22 @@ Constants for netrc}.}
 @item proxyuserpwd @tab CURLOPT_PROXYUSERPWD @tab string
 @item username @tab CURLOPT_USERNAME @tab string
 @item password @tab CURLOPT_PASSWORD @tab string
+@item login-options @tab CURLOPT_LOGIN_OPTIONS @tab string
 @item proxyusername @tab CURLOPT_PROXYUSERNAME @tab string
 @item proxypassword @tab CURLOPT_PROXYPASSWORD @tab string
 @item httpauth @tab CURLOPT_HTTPAUTH @tab
 integer@footnote{@xref{Integer Constants for httpauth}.}
-@item tlsauth-type @tab CURLOPT_TLSAUTH_TYPE @tab
-integer@footnote{@xref{Integer Constants for tlsauth-type}.}
 @item tlsauth-username @tab CURLOPT_TLSAUTH_USERNAME @tab string
+@item tlsauth-type @tab CURLOPT_TLSAUTH_TYPE @tab string
+@item proxy-tlsauth-username @tab CURLOPT_PROXY_TLSAUTH_USERNAME @tab string
 @item tlsauth-password @tab CURLOPT_TLSAUTH_PASSWORD @tab string
+@item proxy-tlsauth-password @tab CURLOPT_PROXY_TLSAUTH_PASSWORD @tab string
+@item tlsauth-type @tab CURLOPT_TLSAUTH_TYPE @tab string
+@item proxy-tlsauth-type @tab CURLOPT_PROXY_TLSAUTH_TYPE @tab string
 @item proxyauth @tab CURLOPT_PROXYAUTH @tab integer@footnote{@xref{Integer Constants for httpauth}.}
+@item sasl-ir @tab CURLOPT_SASL_IR @tab boolean
+@item xoauth2-bearer @tab CURLOPT_XOAUTH2_BEARER @tab string
+@item disallow-username-in-url @tab CURLOPT_DISALLOW_USERNAME_IN_URL @tab boolean
 
 @item HTTP OPTIONS
 @item autoreferer @tab CURLOPT_AUTOREFERER @tab boolean
@@ -571,6 +578,8 @@ integer@footnote{@xref{Integer Constants for postredir}.}
 @item useragent @tab CURLOPT_USERAGENT @tab string
 @item httpheader @tab CURLOPT_HTTPHEADER @tab
 slist@footnote{Pass an empty list to clear out the HTTP headers.}
+@item headeropt @tab CURLOPT_HEADEROPT @tab integer
+@item proxyheader @tab CURLOPT_PROXYHEADER @tab slist
 @item http200aliases @tab CURLOPT_HTTP200ALIASES @tab slist
 @item cookie @tab CURLOPT_COOKIE @tab string
 @item cookiefile @tab CURLOPT_COOKIEFILE @tab string
@@ -578,25 +587,32 @@ slist@footnote{Pass an empty list to clear out the HTTP headers.}
 @item cookiesession @tab CURLOPT_COOKIESESSION @tab boolean
 @item cookielist @tab CURLOPT_COOKIELIST @tab string
 @item httpget @tab CURLOPT_HTTPGET @tab boolean
+@item request-target @tab CURLOPT_REQUEST_TARGET @tab string
 @item http-version @tab CURLOPT_HTTP_VERSION @tab
 integer@footnote{@xref{Integer Constants for http-version}.}
+@item http09-allowed @tab CURLOPT_HTTP09_ALLOWED @tab boolean
 @item ignore-content-length @tab CURLOPT_IGNORE_CONTENT_LENGTH @tab boolean
 @item http-content-decoding @tab CURLOPT_HTTP_CONTENT_DECODING @tab boolean
 @item http-transfer-decoding @tab CURLOPT_HTTP_TRANSFER_DECODING @tab boolean
+@item expect-100-timeout-ms @tab CURLOPT_EXPECT_100_TIMEOUT_MS @tab integer
+@item pipewait @tab CURLOPT_PIPEWAIT @tab boolean
+@item stream-wait @tab CURLOPT_STREAM_WEIGHT @tab integer
 
 @item SMTP OPTIONS
 @item mail-from @tab CURLOPT_MAIL_FROM @tab string
 @item mail-rcpt @tab CURLOPT_MAIL_RCPT @tab slist
+@item mail-auth @tab CURLOPT_MAIL_AUTH @tab string
 
 @item TFTP OPTIONS
 @item tftp-blksize @tab CURLOPT_TFTP_BLKSIZE @tab integer
+@item tftp-no-options @tab CURLOPT_TFTP_NO_OPTIONS @tab boolean
 
 @item FTP OPTIONS
 @item ftpport @tab CURLOPT_FTPPORT @tab string
 @item quote @tab CURLOPT_QUOTE @tab slist
 @item postquote @tab CURLOPT_POSTQUOTE @tab slist
 @item prequote @tab CURLOPT_PREQUOTE @tab slist
-@item dirlistonly, @tab CURLOPT_DIRLISTONLY @tab boolean
+@c @item dirlistonly, @tab CURLOPT_DIRLISTONLY @tab boolean
 @item append @tab CURLOPT_APPEND @tab boolean
 @item ftp-use-eprt @tab CURLOPT_FTP_USE_EPRT @tab boolean
 @item ftp-use-epsv @tab CURLOPT_FTP_USE_EPSV @tab boolean
@@ -633,10 +649,12 @@ integer@footnote{@xref{Integer Constants for ftpsslauth}.}
 @item infilesize @tab CURLOPT_INFILESIZE @tab integer
 @item infilesize-large @tab CURLOPT_INFILESIZE_LARGE @tab biginteger
 @item upload @tab CURLOPT_UPLOAD @tab boolean
+@item upload-buffersize @tab CURLOPT_UPLOAD_BUFFERSIZE @tab integer
 @item maxfilesize @tab CURLOPT_MAXFILESIZE @tab integer
 @item maxfilesize-large @tab CURLOPT_MAXFILESIZE_LARGE @tab biginteger
 @item timecondition @tab CURLOPT_TIMECONDITION @tab integer
 @item timevalue @tab CURLOPT_TIMEVALUE @tab integer
+@item timevalue-large @tab CURLOPT_TIMEVALUE_LARGE @tab biginteger
 
 @item CONNECTION OPTIONS
 @item timeout @tab CURLOPT_TIMEOUT @tab integer
@@ -655,22 +673,42 @@ integer@footnote{@xref{Integer Constants for ftpsslauth}.}
 @item connect-only @tab CURLOPT_CONNECT_ONLY @tab boolean
 @item use-ssl @tab CURLOPT_USE_SSL @tab integer@footnote{@xref{Integer Constants for use-ssl}.}
 @item resolve @tab CURLOPT_RESOLVE @tab slist
+@item dns-interface @tab CURLOPT_DNS_INTERFACE @tab string
+@item dns-local-ip4 @tab CURLOPT_DNS_LOCAL_IP4 @tab string
+@item dns-local-ip6 @tab CURLOPT_DNS_LOCAL_IP6 @tab string
 @item dns-servers @tab CURLOPT_DNS_SERVERS @tab string
+@item dns-shuffle-addresses @tab CURLOPT_DNS_SHUFFLE_ADDRESSES @tab boolean
 @item accepttimeout-ms @tab CURLOPT_ACCEPTTIMEOUT_MS @tab integer
+@item happy-eyeballs-timeout-ms @tab CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS @tab integer
+@item upkeep-interval-ms @tab CURLOPT_UPKEEP_INTERVAL_MS @tab integer)
 
 @item SSL AND SECURITY OPTIONS
 @item sslcert @tab CURLOPT_SSLCERT @tab string
+@item proxy-sslcert @tab CURLOPT_PROXY_SSLCERT @tab string
 @item sslcerttype @tab CURLOPT_SSLCERTTYPE @tab string
+@item proxy-sslcerttype @tab CURLOPT_PROXY_SSLCERTTYPE @tab string
 @item sslkey @tab CURLOPT_SSLKEY @tab string
+@item proxy-sslkey @tab CURLOPT_PROXY_SSLKEY @tab string
 @item sslkeytype @tab CURLOPT_SSLKEYTYPE @tab string
+@item proxy-sslkeytype @tab CURLOPT_PROXY_SSLKEYTYPE @tab string
 @item keypasswd @tab CURLOPT_KEYPASSWD @tab string
+@item proxy-keypasswd @tab CURLOPT_PROXY_KEYPASSWD @tab string
+@item ssl-enable-alpn @tab CURLOPT_SSL_ENABLE_ALPN @tab boolean
+@item ssl-enable-npn @tab CURLOPT_SSL_ENABLE_ALPN @tab boolean
 @item sslengine @tab CURLOPT_SSLENGINE @tab string
 @item sslengine-default @tab CURLOPT_SSLENGINE_DEFAULT @tab boolean
+@item ssl-falsestart @tab CURLOPT_SSL_FALSESTART @tab boolean
 @item sslversion @tab CURLOPT_SSLVERSION @tab integer@footnote{@xref{Integer Constants for sslversion}.}
+@item proxy-sslversion @tab CURLOPT_PROXY_SSLVERSION @tab integer@footnote{@xref{Integer Constants for sslversion}.}
+@item ssl-verifyhost @tab CURLOPT_SSL_VERIFYHOST @tab boolean
+@item proxy-ssl-verifyhost @tab CURLOPT_SSL_VERIFYHOST @tab boolean
 @item ssl-verifypeer @tab CURLOPT_SSL_VERIFYPEER @tab boolean
+@item proxy-ssl-verifypeer @tab CURLOPT_PROXY_SSL_VERIFYPEER @tab boolean
 @item cainfo @tab CURLOPT_CAINFO @tab string
+@item proxy-cainfo @tab CURLOPT_PROXY_CAINFO @tab string
 @item issuercert @tab CURLOPT_ISSUERCERT @tab string
 @item capath @tab CURLOPT_CAPATH @tab string
+@item proxy-capath @tab CURLOPT_PROXY_CAPATH @tab string
 @item crlfile @tab CURLOPT_CRLFILE @tab string
 @item ssl-verifyhost @tab CURLOPT_SSL_VERIFYHOST @tab integer
 @item certinfo @tab CURLOPT_CERTINFO @tab boolean
@@ -712,20 +750,16 @@ integer-valued constants defined.
 An integer that is possibly longer than a @code{long} integer.
 
 @item string
-A string.  In Guile-1.8, the string is transmitted as 8-bit data with
-no encoding specified.  In Guile-2.0, the scheme string is converted
-to a C string encoded in the current locale.
+A string.  The scheme string is converted to a C string encoded in the
+current locale.
 
 @item bytevector
-On Guile-1.8, a string that contains 8-bit data.  It may contain NULL
-characters.  In Guile-2.0, either a bytevector or a string that only
+Either a bytevector or a string that only
 contains the Unicode code points U+0000 through U+00FF.
 
 @item slist
-A list containing zero or more strings.  In Guile-1.8, the string is
-transmitted as 8-bit data with no encoding specified.  In Guile-2.0,
-the scheme string is converted to a C string encoded in the current
-locale.
+A list containing zero or more strings. The scheme string is converted
+to a C string encoded in the current locale.
 
 @item httppost
 A list containing data that will be used for an HTTP Post operation.
@@ -794,33 +828,35 @@ The following list of integer constants can be used for the
 @code{protocols} and @code{redir-protocols} options.
 
 @flushleft
-  CURLPROTO_HTTP,
-  CURLPROTO_HTTPS,
-  CURLPROTO_FTP,
-  CURLPROTO_FTPS,
-  CURLPROTO_SCP,
-  CURLPROTO_SFTP,
-  CURLPROTO_TELNET,
-  CURLPROTO_LDAP,
-  CURLPROTO_LDAPS,
+  CURLPROTO_ALL,
   CURLPROTO_DICT,
   CURLPROTO_FILE,
-  CURLPROTO_TFTP,
+  CURLPROTO_FTP,
+  CURLPROTO_FTPS,
+  CURLPROTO_GOPHER,
+  CURLPROTO_HTTP,
+  CURLPROTO_HTTPS,
   CURLPROTO_IMAP,
   CURLPROTO_IMAPS,
+  CURLPROTO_LDAP,
+  CURLPROTO_LDAPS,
   CURLPROTO_POP3,
   CURLPROTO_POP3S,
+  CURLPROTO_RTMP,
+  CURLPROTO_RTMPE,
+  CURLPROTO_RTMPS,
+  CURLPROTO_RTMPT,
+  CURLPROTO_RTMPTE,
+  CURLPROTO_RTMPTS,
+  CURLPROTO_RTSP,
+  CURLPROTO_SCP,
+  CURLPROTO_SFTP,
+  CURLPROTO_SMB,
+  CURLPROTO_SMBS,
   CURLPROTO_SMTP,
   CURLPROTO_SMTPS,
-  CURLPROTO_RTSP,
-  CURLPROTO_RTMP,
-  CURLPROTO_RTMPT,
-  CURLPROTO_RTMPE,
-  CURLPROTO_RTMPTE,
-  CURLPROTO_RTMPS,
-  CURLPROTO_RTMPTS,
-  CURLPROTO_GOPHER,
-  CURLPROTO_ALL
+  CURLPROTO_TELNET,
+  CURLPROTO_TFTP
 @end flushleft
 
 @node Integer Constants for proxytype, Integer Constants for netrc, Integer Constants for protocols, Option Data Types
@@ -830,10 +866,11 @@ The following list of integer constants can be used for the
 
 @flushleft
 CURLPROXY_HTTP,
+CURLPROXY_HTTPS,
 CURLPROXY_HTTP_1_0,
 CURLPROXY_SOCKS4,
-CURLPROXY_SOCKS5,
 CURLPROXY_SOCKS4A,
+CURLPROXY_SOCKS5,
 CURLPROXY_SOCKS5_HOSTNAME
 @end flushleft
 
@@ -857,7 +894,8 @@ The following list of integer constants can be used with the
 CURLAUTH_BASIC,
 CURLAUTH_DIGEST,
 CURLAUTH_DIGEST_IE,
-CURLAUTH_GSSNEGOTIATE,
+CURLAUTH_BEARER,
+CURLAUTH_NEGOTIATE,
 CURLAUTH_NTLM,
 CURLAUTH_NTLM_WB,
 CURLAUTH_ANY,
@@ -866,13 +904,6 @@ CURLAUTH_ONLY
 @end flushleft
 
 @node Integer Constants for tlsauth-type, Integer Constants for postredir, Integer Constants for httpauth, Option Data Types
-@subsubsection Integer Constants for tlsauth-type
-The following integer constant can be used with the
-@code{tlsauth-type} option.
-
-@flushleft
-CURL_TLSAUTH_SRP
-@end flushleft
 
 @node Integer Constants for postredir, Integer Constants for http-version, Integer Constants for tlsauth-type, Option Data Types
 @subsubsection Integer Constants for postredir
@@ -893,7 +924,10 @@ The following list integer constants can be used with the
 @flushleft
 CURL_HTTP_VERSION_NONE,
 CURL_HTTP_VERSION_1_0,
-CURL_HTTP_VERSION_1_1
+CURL_HTTP_VERSION_1_1,
+CURL_HTTP_VERSION_2_0,
+CURL_HTTP_VERSION_2TLS,
+CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE
 @end flushleft
 
 @node Integer Constants for ftpsslauth, Integer Constants for ftp-ssl-ccc, Integer Constants for http-version, Option Data Types
@@ -956,6 +990,15 @@ The following list integer constants can be used with the
 @flushleft
 CURL_SSLVERSION_DEFAULT,
 CURL_SSLVERSION_TLSv1,
+CURL_SSLVERSION_TLSv1_0,
+CURL_SSLVERSION_TLSv1_1,
+CURL_SSLVERSION_TLSv1_2,
+CURL_SSLVERSION_TLSv1_3,
+CURL_SSLVERSION_MAX_DEFAULT,
+CURL_SSLVERSION_MAX_TLSv1_0,
+CURL_SSLVERSION_MAX_TLSv1_1,
+CURL_SSLVERSION_MAX_TLSv1_2,
+CURL_SSLVERSION_MAX_TLSv1_3,
 CURL_SSLVERSION_SSLv2,
 CURL_SSLVERSION_SSLv3,
 @end flushleft
@@ -1011,93 +1054,95 @@ CURHSSH_AUTH_ANY
 @section Error Codes
 There is a set of named integer-value constants for the error codes.
 @table @code
-@item CURLE_OK
-@item CURLE_UNSUPPORTED_PROTOCOL
-@item CURLE_FAILED_INIT
-@item CURLE_URL_MALFORMAT
-@item CURLE_COULDNT_RESOLVE_PROXY
-@item CURLE_COULDNT_RESOLVE_HOST
-@item CURLE_COULDNT_CONNECT
-@item CURLE_FTP_WEIRD_SERVER_REPLY
-@item CURLE_REMOTE_ACCESS_DENIED
-@item CURLE_FTP_ACCEPT_FAILED
-@item CURLE_FTP_WEIRD_PASS_REPLY
-@item CURLE_FTP_ACCEPT_TIMEOUT
-@item CURLE_FTP_WEIRD_PASV_REPLY
-@item CURLE_FTP_WEIRD_227_FORMAT
-@item CURLE_FTP_CANT_GET_HOST
-@item CURLE_FTP_COULDNT_SET_TYPE
-@item CURLE_PARTIAL_FILE
-@item CURLE_FTP_COULDNT_RETR_FILE
-@item CURLE_FTP_QUOTE_ERROR
-@item CURLE_HTTP_RETURNED_ERROR
-@item CURLE_WRITE_ERROR
-@item CURLE_UPLOAD_FAILED
-@item CURLE_READ_ERROR
-@item CURLE_OUT_OF_MEMORY
-@item CURLE_OPERATION_TIMEDOUT
-@item CURLE_FTP_PORT_FAILED
-@item CURLE_FTP_COULDNT_USE_REST
+@item     CURLE_OK
+@item     CURLE_UNSUPPORTED_PROTOCOL
+@item     CURLE_FAILED_INIT
+@item     CURLE_URL_MALFORMAT
+@item     CURLE_NOT_BUILT_IN
+@item     CURLE_COULDNT_RESOLVE_PROXY
+@item     CURLE_COULDNT_RESOLVE_HOST
+@item     CURLE_COULDNT_CONNECT
+@item     CURLE_FTP_WEIRD_SERVER_REPLY
+@item     CURLE_REMOTE_ACCESS_DENIED
+@item     CURLE_FTP_ACCEPT_FAILED
+@item     CURLE_FTP_WEIRD_PASS_REPLY
+@item     CURLE_FTP_ACCEPT_TIMEOUT
+@item     CURLE_FTP_WEIRD_PASV_REPLY
+@item     CURLE_FTP_WEIRD_227_FORMAT
+@item     CURLE_FTP_CANT_GET_HOST
+@item     CURLE_HTTP2
+@item     CURLE_FTP_COULDNT_SET_TYPE
+@item     CURLE_PARTIAL_FILE
+@item     CURLE_FTP_COULDNT_RETR_FILE
+@item     CURLE_FTP_QUOTE_ERROR
+@item     CURLE_HTTP_RETURNED_ERROR
+@item     CURLE_WRITE_ERROR
+@item     CURLE_UPLOAD_FAILED
+@item     CURLE_READ_ERROR
+@item     CURLE_OUT_OF_MEMORY
+@item     CURLE_OPERATION_TIMEDOUT
+@item     CURLE_FTP_PORT_FAILED
+@item     CURLE_FTP_COULDNT_USE_REST
 @end table
 
 .
 
-@table @code
-@item CURLE_RANGE_ERROR
-@item CURLE_HTTP_POST_ERROR
-@item CURLE_SSL_CONNECT_ERROR
-@item CURLE_BAD_DOWNLOAD_RESUME
-@item CURLE_FILE_COULDNT_READ_FILE
-@item CURLE_LDAP_CANNOT_BIND
-@item CURLE_LDAP_SEARCH_FAILED
-@item CURLE_FUNCTION_NOT_FOUND
-@item CURLE_ABORTED_BY_CALLBACK
-@item CURLE_BAD_FUNCTION_ARGUMENT
-@item CURLE_INTERFACE_FAILED
-@item CURLE_TOO_MANY_REDIRECTS
-@item CURLE_UNKNOWN_TELNET_OPTION
-@item CURLE_TELNET_OPTION_SYNTAX
-@item CURLE_PEER_FAILED_VERIFICATION
-@item CURLE_GOT_NOTHING
-@item CURLE_SSL_ENGINE_NOTFOUND
-@item CURLE_SSL_ENGINE_SETFAILED
-@item CURLE_SEND_ERROR
-@item CURLE_RECV_ERROR
-@item CURLE_SSL_CERTPROBLEM
-@item CURLE_SSL_CIPHER
-@item CURLE_SSL_CACERT
-@item CURLE_BAD_CONTENT_ENCODING
-@end table
-
-.
 
 @table @code
-@item CURLE_LDAP_INVALID_URL
-@item CURLE_FILESIZE_EXCEEDED
-@item CURLE_USE_SSL_FAILED
-@item CURLE_SEND_FAIL_REWIND
-@item CURLE_SSL_ENGINE_INITFAILED
-@item CURLE_LOGIN_DENIED
-@item CURLE_TFTP_NOTFOUND
-@item CURLE_TFTP_PERM
-@item CURLE_REMOTE_DISK_FULL
-@item CURLE_TFTP_ILLEGAL
-@item CURLE_TFTP_UNKNOWNID
-@item CURLE_REMOTE_FILE_EXISTS
-@item CURLE_TFTP_NOSUCHUSER
-@item CURLE_CONV_FAILED
-@item CURLE_CONV_REQD
-@item CURLE_SSL_CACERT_BADFILE
-@item CURLE_REMOTE_FILE_NOT_FOUND
-@item CURLE_SSH
-@item CURLE_SSL_SHUTDOWN_FAILED
-@item CURLE_AGAIN
-@item CURLE_SSL_CRL_BADFILE
-@item CURLE_SSL_ISSUER_ERROR
-@item CURLE_FTP_PRET_FAILED
-@item CURLE_RTSP_CSEQ_ERROR
-@item CURLE_FTP_BAD_FILE_LIST
-@item CURLE_CHUNK_FAILED
+@item     CURLE_RANGE_ERROR
+@item     CURLE_HTTP_POST_ERROR
+@item     CURLE_SSL_CONNECT_ERROR
+@item     CURLE_BAD_DOWNLOAD_RESUME
+@item     CURLE_FILE_COULDNT_READ_FILE
+@item     CURLE_LDAP_CANNOT_BIND
+@item     CURLE_LDAP_SEARCH_FAILED
+@item     CURLE_FUNCTION_NOT_FOUND
+@item     CURLE_ABORTED_BY_CALLBACK
+@item     CURLE_BAD_FUNCTION_ARGUMENT
+@item     CURLE_INTERFACE_FAILED
+@item     CURLE_TOO_MANY_REDIRECTS
+@item     CURLE_UNKNOWN_OPTION
+@item     CURLE_TELNET_OPTION_SYNTAX
+@item     CURLE_GOT_NOTHING
+@item     CURLE_SSL_ENGINE_NOTFOUND
+@item     CURLE_SSL_ENGINE_SETFAILED
+@item     CURLE_SEND_ERROR
+@item     CURLE_RECV_ERROR
+@item     CURLE_SSL_CERTPROBLEM
+@item     CURLE_SSL_CIPHER
+@item     CURLE_PEER_FAILED_VERIFICATION
+@item     CURLE_BAD_CONTENT_ENCODING
+@item     CURLE_LDAP_INVALID_URL
+@item     CURLE_FILESIZE_EXCEEDED
+@item     CURLE_USE_SSL_FAILED
+@item     CURLE_SEND_FAIL_REWIND
+@item     CURLE_SSL_ENGINE_INITFAILED
+@item     CURLE_LOGIN_DENIED
+@item     CURLE_TFTP_NOTFOUND
+@item     CURLE_TFTP_PERM
+@item     CURLE_REMOTE_DISK_FULL
+@item     CURLE_TFTP_ILLEGAL
+@item     CURLE_TFTP_UNKNOWNID
+@item     CURLE_REMOTE_FILE_EXISTS
+@item     CURLE_TFTP_NOSUCHUSER
+@item     CURLE_CONV_FAILED
+@item     CURLE_CONV_REQD
+@item     CURLE_SSL_CACERT_BADFILE
+@item     CURLE_REMOTE_FILE_NOT_FOUND
+@item     CURLE_SSH
+@item     CURLE_SSL_SHUTDOWN_FAILED
+@item     CURLE_AGAIN
+@item     CURLE_SSL_CRL_BADFILE
+@item     CURLE_SSL_ISSUER_ERROR
+@item     CURLE_FTP_PRET_FAILED
+@item     CURLE_RTSP_CSEQ_ERROR
+@item     CURLE_FTP_BAD_FILE_LIST
+@item     CURLE_CHUNK_FAILED
+@item     CURLE_NO_CONNECTION_AVAILABLE
+@item     CURLE_SSL_PINNEDPUBKEYNOTMATCH
+@item     CURLE_SSL_INVALIDCERTSTATUS
+@item     CURLE_HTTP2_STREAM
+@item     CURLE_RECURSIVE_API_CALL
 @end table
 
 @node Index,  , Reference, Top

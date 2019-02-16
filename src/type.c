@@ -315,35 +315,25 @@ _scm_convert_to_slist (SCM x)
 int
 _scm_can_convert_to_byte_data (SCM x)
 {
-#if SCM_MAJOR_VERSION == 1
-  if (scm_is_string (x))
+  int i, n;
+  int c;
+  
+  if (scm_is_bytevector (x))
     return 1;
-  else
-    return 0;
-#else
-  {
-    int i, n;
-    int c;
-
-    if (scm_is_bytevector (x))
+  else if (scm_is_string (x))
+    {
+      n = scm_c_string_length (x);
+      if (n == 0)
+        return 1;		/* Empty string */
+      for (i = 0; i < n; i ++)
+        {
+          c = SCM_C_STRING_REF (x, i);
+          if (c > 255)
+            return 0;
+        }
       return 1;
-    else if (scm_is_string (x))
-      {
-	n = scm_c_string_length (x);
-	if (n == 0)
-	  return 1;		/* Empty string */
-	for (i = 0; i < n; i ++)
-	  {
-	    c = SCM_C_STRING_REF (x, i);
-	    if (c > 255)
-	      return 0;
-	  }
-	return 1;
-      }
-  }
-    /* else */
-    return 0;
-#endif
+    }
+  return 0;
 }
 
 /* For Guile-1.8, returns the memory location of the chars of a
@@ -352,9 +342,6 @@ _scm_can_convert_to_byte_data (SCM x)
 uint8_t *
 _scm_convert_to_byte_data (SCM x, size_t *len)
 {
-#if SCM_MAJOR_VERSION == 1
-  return (uint8_t *) scm_to_locale_stringn (x, len);
-#else
   if (scm_is_string (x))
     {
       size_t i;
@@ -387,7 +374,6 @@ _scm_convert_to_byte_data (SCM x, size_t *len)
         }
       return buf;
     }
-#endif
 }
 
 
