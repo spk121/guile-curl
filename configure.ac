@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script
 
-# Copyright 20011, 2013, 2014, 2016, 2017, 2019 Michael L Gran
+# Copyright 20011, 2013, 2014, 2016, 2017, 2019, 2021 Michael L Gran
 
 # This file is part of guile-curl.
 
@@ -78,7 +78,7 @@ AC_MSG_RESULT([$CURL_LDFLAGS])
 AC_SUBST(CURL_CFLAGS)
 AC_SUBST(CURL_LDFLAGS)
 
-GUILE_PKG([2.2 2.0])
+GUILE_PKG([3.0])
 GUILE_PROGS
 GUILE_FLAGS
 GUILE_SITE_DIR
