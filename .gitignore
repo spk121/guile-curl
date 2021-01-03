@@ -1,9 +1,12 @@
-.sc*
-*~
 #*
+*.gz
+*.info
+*~
 .#*
+.sc*
 /GNUmakefile
 /maint.mk
+INSTALL
 Makefile
 Makefile.in
 aclocal.m4
@@ -47,5 +50,6 @@ src/.libs/
 src/Makefile
 src/Makefile.in
 stamp-h1
+test/.deps
 test/Makefile
 test/Makefile.in
