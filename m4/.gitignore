@@ -11,3 +11,5 @@
 /lib-link.m4
 /lib-prefix.m4
 /visibility.m4
+/host-cpu-c-abi.m4
+/zzgnulib.m4
