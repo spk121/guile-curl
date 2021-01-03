@@ -41,6 +41,8 @@ EXTRA_DIST = \
 	ChangeLog \
 	m4/gnulib-cache.m4 \
 	build-aux/texinfo.tex \
+	build-aux/ar-lib build-aux/compile build-aux/missing build-aux/depcomp \
+	build-aux/test-driver \
 	GNUmakefile \
 	maint.mk \
 	cfg.mk
