@@ -10,6 +10,8 @@ aclocal.m4
 autom4te.cache/
 build-aux/Makefile
 build-aux/Makefile.in
+build-aux/ar-lib
+build-aux/compile
 build-aux/config.guess
 build-aux/config.sub
 build-aux/depcomp
@@ -17,6 +19,7 @@ build-aux/install-sh
 build-aux/ltmain.sh
 build-aux/mdate-sh
 build-aux/missing
+build-aux/test-driver
 build-aux/texinfo.tex
 config.h
 config.h.in
