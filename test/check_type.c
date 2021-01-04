@@ -1,6 +1,6 @@
 /* Test driver for type functions for guile-curl
 
-   Copyright (c) 2014 Michael L. Gran
+   Copyright (c) 2014, 2021 Michael L. Gran
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ int test_equalp_handle(void)
 {
   SCM handle = cl_easy_init();
   SCM ret = equalp_handle(handle, handle);
-  return (ret == SCM_BOOL_T);
+  return (scm_is_true (ret));
 }
 
 int test_not_equalp_handle(void)
@@ -48,7 +48,7 @@ int test_not_equalp_handle(void)
   SCM handle1 = cl_easy_init();
   SCM handle2 = cl_easy_init();
   SCM ret = equalp_handle(handle1, handle2);
-  return (ret == SCM_BOOL_F);
+  return (scm_is_false (ret));
 }
 
 int test_not_free_handle(void)
