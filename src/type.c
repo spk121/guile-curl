@@ -1,6 +1,6 @@
 /* Type helper functions for guile-curl
 
-   Copyright (c) 2011, 2013, 2014, 2016 Michael L. Gran
+   Copyright (c) 2011, 2013, 2014, 2016, 2021 Michael L. Gran
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -59,8 +59,6 @@ _scm_from_handle (handle_post_t *x)
 {
   SCM s_handle;
 
-  SCM_CRITICAL_SECTION_START;
-
   assert (x != NULL);
 
   SCM_NEWSMOB (s_handle, handle_tag, x);
@@ -83,7 +81,6 @@ _scm_from_handle (handle_post_t *x)
       fprintf (stderr, "\t telnetoptions %p\n", x->telnetoptions);
       fflush (stderr);
     }
-  SCM_CRITICAL_SECTION_END;
 
   return (s_handle);
 }
@@ -96,7 +93,6 @@ equalp_handle (SCM x1, SCM x2)
   CURL *handle1;
   CURL *handle2;
 
-  SCM_CRITICAL_SECTION_START;
   handle1 = (handle_post_t *) SCM_SMOB_DATA (x1);
   handle2 = (handle_post_t *) SCM_SMOB_DATA (x2);
 
@@ -106,15 +102,12 @@ equalp_handle (SCM x1, SCM x2)
     ret = SCM_BOOL_F;
   else
     ret = SCM_BOOL_T;
-  SCM_CRITICAL_SECTION_END;
   return ret;
 }
 
 size_t
 gc_free_handle (SCM handle)
 {
-  SCM_CRITICAL_SECTION_START;
-
   handle_post_t *x = _scm_to_handle (handle);
 
   if (0)
@@ -195,8 +188,6 @@ gc_free_handle (SCM handle)
       x = NULL;
       SCM_SET_SMOB_DATA(handle, NULL);
     }
-  SCM_CRITICAL_SECTION_END;
-
   return 0;
 }
 
