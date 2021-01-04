@@ -20,7 +20,7 @@
 ##################
 # Package info
 AC_PREREQ([2.64])
-AC_INIT([guile_curl],[0.6],[spk121@yahoo.com])
+AC_INIT([guile_curl],[0.7],[spk121@yahoo.com])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([gnu std-options -Wall])
 AC_PROG_CC_C99
@@ -78,7 +78,7 @@ AC_MSG_RESULT([$CURL_LDFLAGS])
 AC_SUBST(CURL_CFLAGS)
 AC_SUBST(CURL_LDFLAGS)
 
-GUILE_PKG([3.0])
+GUILE_PKG([3.0 2.2])
 GUILE_PROGS
 GUILE_FLAGS
 GUILE_SITE_DIR
