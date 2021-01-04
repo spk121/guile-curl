@@ -24,7 +24,7 @@ jobs:
     - name: bootstrap
       run: ./bootstrap
     - name: configure
-      run: ./configure --with-gnu-filesystem-hierarchy --prefix=`pwd`/dist
+      run: ./configure --with-gnu-filesystem-hierarchy --enable-hardening --prefix=`pwd`/dist
     - name: make
       run: make
     - name: make check
