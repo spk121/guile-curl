@@ -1,4 +1,4 @@
-# Copyright (C) 2011, 2013, 2014 Michael L. Gran
+# Copyright (C) 2011, 2013, 2014, 2021 Michael L. Gran
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@ TESTS_ENVIRONMENT = LIBGUILE_CURL_MAJOR=$(LIBGUILE_CURL_MAJOR)
 # Scheme-based tests
 
 TEST_EXTENSIONS = .scm
+AM_TESTS_ENVIRONMENT = GUILE_AUTO_COMPILE=0; export GUILE_AUTO_COMPILE;
 SCM_LOG_COMPILER = ${top_builddir}/libtool \
     -dlopen ${top_builddir}/src/libguile-curl.la \
     --mode=execute guile
