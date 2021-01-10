@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script
 
-# Copyright 20011, 2013, 2014, 2016, 2017, 2019, 2021 Michael L Gran
+# Copyright 2001, 2013, 2014, 2016, 2017, 2019, 2021 Michael L Gran
 
 # This file is part of guile-curl.
 
@@ -20,9 +20,10 @@
 ##################
 # Package info
 AC_PREREQ([2.64])
-AC_INIT([guile_curl],[0.7],[spk121@yahoo.com])
+AC_INIT([guile_curl],[0.8],[spk121@yahoo.com])
 AC_CONFIG_AUX_DIR([build-aux])
-AM_INIT_AUTOMAKE([gnu std-options -Wall])
+AM_INIT_AUTOMAKE([no-dependencies subdir-objects -Wall])
+PKG_PROG_PKG_CONFIG
 AC_PROG_CC_C99
 gl_EARLY
 AC_CONFIG_SRCDIR([config.h.in])
@@ -33,7 +34,7 @@ gl_INIT
 ##################
 # Set some version constants
 LIBGUILE_CURL_MAJOR=2
-LIBGUILE_CURL_INTERFACE="2:0:1"
+LIBGUILE_CURL_INTERFACE="2:1:0"
 AC_SUBST(LIBGUILE_CURL_MAJOR)
 AC_SUBST(LIBGUILE_CURL_INTERFACE)
 
@@ -42,23 +43,22 @@ AC_SUBST(LIBGUILE_CURL_INTERFACE)
 AC_CANONICAL_HOST
 AC_PROG_INSTALL
 AM_PROG_AR
-LT_INIT
-dnl LT_INIT([dlopen disable-fast-install win32-dll])
+LT_INIT([disable-fast-install win32-dll disable-static shared])
 AC_PROG_MKDIR_P
 
 
 ##################
 # Initial guess of platform specific options
-case $host in
-     *-*-cygwin)
-	[enable_etex_fix=yes] ;;
-     *-*-linux*)
-	[enable_etex_fix=no] ;;
-     *)
-	[enable_etex_fix=no] ;;
-esac
 
-AM_CONDITIONAL([ETEX_FIX], [test "$enable_etex_fix" = yes])
+AS_CASE([$host_os],
+        [mingw*], [building_dll=yes;dll_version_info=no],
+        [cygwin*], [building_dll=yes;dll_version_info=yes],
+        [pw32*], [building_dll=yes;dll_version_info=yes],
+        [cegcc*], [building_dll=yes;dll_version_info=yes],
+        [building_dll=no;dll_version_info=yes])
+
+AM_CONDITIONAL([BUILDING_DLL], [test "$building_dll" = yes])
+AM_CONDITIONAL([DLL_VERSION_INFO], [test "$dll_version_info" = yes])
 
 ##################
 # Check for libraries
@@ -75,6 +75,16 @@ guileextensiondir=${libdir}/guile/$GUILE_EFFECTIVE_VERSION/extensions
 AC_SUBST([guilemoduledir])
 AC_SUBST([guileobjectdir])
 AC_SUBST([guileextensiondir])
+
+AC_ARG_ENABLE([guild],
+              [AS_HELP_STRING([--disable-guild],
+                              [don't compile guile sources])],
+              [AS_CASE(["${enableval}"],
+                       [yes], [guild=true],
+                       [no], [guild=false],
+                       [AC_MSG_ERROR([bad value ${enableval} for --enable-guild])])],
+              [guild=true])
+AM_CONDITIONAL([GUILD], [test x$guild = xtrue])
 
 
 ##################
@@ -135,14 +145,7 @@ AS_IF([test "x$enable_hardening" = xyes],
 
 ##################
 #  Output
-AC_CONFIG_FILES([Makefile
-                src/Makefile
-                doc/Makefile
-		        lib/Makefile
-                test/Makefile
-                m4/Makefile
-                build-aux/Makefile])
-
+AC_CONFIG_FILES([Makefile lib/Makefile])
 AC_OUTPUT
 
 if test "$guilemoduledir" != "$GUILE_SITE"; then

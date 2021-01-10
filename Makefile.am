@@ -1,6 +1,6 @@
 ## Process this file with automake to produce Makefile.in
 
-# Copyright (C) 2011, 2013 Michael L. Gran
+# Copyright (C) 2011, 2013, 2021 Michael L. Gran
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,21 +15,141 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-SUBDIRS = \
-	src \
-	m4 \
-	doc \
-	lib \
-	test \
-	build-aux
-
 ACLOCAL_AMFLAGS = -I m4 --install
 
-# Gnulib
-distclean-local: clean-GNUmakefile
-clean-GNUmakefile:
-	test '$(srcdir)' = . || rm -f $(top_builddir)/GNUmakefile
+#################
+#  Directories  #
+#################
+
+exampledir = $(datadir)/doc/guile-curl
+guilesitedir = $(datadir)/guile/site/$(GUILE_EFFECTIVE_VERSION)
+guileextensiondir = $(libdir)/guile/$(GUILE_EFFECTIVE_VERSION)/extensions
+
+#################
+#   Top Level   #
+#################
+
+#################
+# Documentation #
+#################
+
+info_TEXINFOS = doc/guile-curl.texi
+guile_curl_TEXINFOS = doc/ex_http_simple_get.scm \
+	doc/ex_http_simple_get_utf8.scm \
+	doc/ex_http_web_response.scm
+
+###################
+#  libguile-curl  #
+###################
+
+guileextension_LTLIBRARIES = libguile-curl.la
+
+libguile_curl_la_c_sources = \
+	src/const.c \
+	src/type.c \
+	src/func.c \
+	src/main.c
+
+libguile_curl_la_internal_headers = \
+	src/visibility.h \
+	src/const.h \
+	src/type.h \
+	src/func.h
+
+libguile_curl_la_SOURCES = \
+  $(libguile_curl_la_internal_headers) \
+  $(libguile_curl_la_c_sources)
+
+AM_CFLAGS = \
+	$(CURL_CFLAGS) \
+	$(GUILE_CFLAGS)
+
+ETAGS_ARGS = src/curl.scm
+
+libguile_curl_la_LDFLAGS = \
+ -version-info $(LIBGUILE_CURL_INTERFACE) \
+ -export-symbols-regex '^cl_'
+
+libguile_curl_la_LIBADD = $(CURL_LIBS) $(GUILE_LIBS)
+
+if BUILDING_DLL
+AM_CFLAGS += -DCL_DLL -DCL_DLL_EXPORTS
+libguile_curl_la_LDFLAGS += -no-undefined
+endif
+if !DLL_VERSION_INFO
+libguile_curl_la_LDFLAGS += -avoid-version
+endif
+
+#################
+# Guile Modules #
+#################
+
+dist_guilesite_DATA = \
+ src/curl.scm
+
+if GUILD
+guileobject_DATA = \
+  $(dist_guilesite_DATA:%.scm=%.go)
+
+GUILEC_FLAGS = \
+ -O2 \
+ -Warity-mismatch \
+ -Wformat \
+ -Wmacro-use-before-definition \
+ -Wunbound-variable \
+ --load-path=$(abs_srcdir)/module \
+ --load-path=$(abs_builddir)/module
+
+.scm.go:
+	GUILE_AUTO_COMPILE=0 \
+	LTDL_LIBRARY_PATH=$(abs_builddir)/.libs \
+	$(GUILD) compile --target="$(host)" $(GUILEC_FLAGS) \
+	-o "$@" "$<"
+endif
+
+#################
+#     Tests     #
+#################
+
+TEST_EXTENSIONS = .scm
+
+TESTS_LTDLOPEN = -dlopen ${top_builddir}/src/libguile-curl.la
+TESTS = \
+  test/setopt.scm \
+  test/stress.scm
+
+SCM_LOG_DRIVER = \
+  $(top_builddir)/libtool $(TESTS_LTDLOPEN) --mode=execute \
+  $(GUILE) --no-auto-compile $(top_srcdir)/build-aux/test-driver.scm
+
+LOG_COMPILER = ${top_builddir}/libtool \
+    -dlopen ${top_builddir}/src/libguile-curl.la \
+    --mode=execute
+
+check_PROGRAMS = check_type
+
+check_type_SOURCES = test/check_type.c
+
+check_type_LDFLAGS = \
+	-L$(top_builddir)/src -lguile-curl \
+	$(CURL_LDFLAGS) \
+	$(GUILE_LDFLAGS)
+
+TESTS += check_type
+
+test: check
+
+#################
+#   Variables   #
+#################
+
+CLEANFILES = \
+  doc/guile-gi.dvi \
+  examples/resources/test.gresource \
+  $(guileobject_DATA) $(pkgguileobject_DATA) $(scriptguileobject_DATA) \
+  $(BUILT_SOURCES) \
+  $(check_DATA) \
+  *.log
 
 EXTRA_DIST = \
 	AUTHORS \
@@ -40,9 +160,12 @@ EXTRA_DIST = \
 	TODO \
 	ChangeLog \
 	m4/gnulib-cache.m4 \
+    m4/guile.m4 \
 	build-aux/texinfo.tex \
 	build-aux/ar-lib build-aux/compile build-aux/missing build-aux/depcomp \
 	build-aux/test-driver \
 	GNUmakefile \
 	maint.mk \
 	cfg.mk
+
+SUFFIXES =
