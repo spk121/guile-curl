@@ -34,7 +34,7 @@ guileextensiondir = $(libdir)/guile/$(GUILE_EFFECTIVE_VERSION)/extensions
 #################
 
 info_TEXINFOS = doc/guile-curl.texi
-guile_curl_TEXINFOS = doc/ex_http_simple_get.scm \
+dist_example_DATA = doc/ex_http_simple_get.scm \
 	doc/ex_http_simple_get_utf8.scm \
 	doc/ex_http_web_response.scm
 
@@ -112,7 +112,7 @@ endif
 
 TEST_EXTENSIONS = .scm
 
-TESTS_LTDLOPEN = -dlopen ${top_builddir}/src/libguile-curl.la
+TESTS_LTDLOPEN = -dlopen ${abs_top_builddir}/src/libguile-curl.la
 TESTS = \
   test/setopt.scm \
   test/stress.scm
@@ -124,18 +124,16 @@ SCM_LOG_DRIVER = \
    -L $(abs_builddir)/module \
    $(top_srcdir)/build-aux/test-driver.scm
 
-LOG_DRIVER = LD_PRELOAD=${top_builddir}/src/.libs/libguile-curl.so \
-   $(top_srcdir)/build-aux/test-driver
-
+LOG_DRIVER = \
+  $(top_srcdir)/build-aux/test-driver
 
 check_PROGRAMS = check_type
 
-check_type_SOURCES = test/check_type.c
-
-check_type_LDFLAGS = \
-	-L${abs_top_builddir}/src/.libs -lguile-curl \
-	$(CURL_LIBS) \
-	$(GUILE_LIBS)
+check_type_SOURCES = \
+	test/check_type.c \
+	$(src_libguile_curl_la_SOURCES)
+check_type_CFLAGS = $(CURL_CFLAGS) $(GUILE_CFLAGS)
+check_type_LDFLAGS = $(CURL_LIBS) $(GUILE_LIBS)
 
 TESTS += check_type
 
@@ -161,13 +159,11 @@ EXTRA_DIST = \
 	COPYING \
 	TODO \
 	ChangeLog \
-	m4/gnulib-cache.m4 \
     m4/guile.m4 \
 	build-aux/texinfo.tex \
-	build-aux/ar-lib build-aux/compile build-aux/missing build-aux/depcomp \
-	build-aux/test-driver \
-	GNUmakefile \
-	maint.mk \
-	cfg.mk
+	build-aux/ar-lib build-aux/compile build-aux/missing \
+	build-aux/test-driver build-aux/test-driver.scm \
+	$(TESTS)
+
 
 SUFFIXES =
