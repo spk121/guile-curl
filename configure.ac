@@ -25,11 +25,9 @@ AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([no-dependencies subdir-objects -Wall])
 PKG_PROG_PKG_CONFIG
 AC_PROG_CC_C99
-gl_EARLY
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
-gl_INIT
 
 ##################
 # Set some version constants
@@ -156,7 +154,7 @@ fi
 
 ##################
 #  Output
-AC_CONFIG_FILES([Makefile lib/Makefile])
+AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 
 if test "$guilemoduledir" != "$GUILE_SITE"; then
