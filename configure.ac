@@ -140,6 +140,17 @@ AS_IF([test "x$enable_hardening" = xyes],
 ##################
 # Check for library functions
 
+AC_MSG_CHECKING(whether curl/curl.h declares CURLOPT_DOH_URL)
+AC_CACHE_VAL(cl_cv_have_curlopt_doh_url,
+  [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <curl/curl.h>]],
+                                      [[CURLoption a = CURLOPT_DOH_URL;]])],
+  [cl_cv_have_curlopt_doh_url=yes],
+  [cl_cv_have_curlopt_doh_url=no])])
+AC_MSG_RESULT($cl_cv_have_curlopt_doh_url)
+if test $cl_cv_have_curlopt_doh_url = yes; then
+  AC_DEFINE([HAVE_CURLOPT_DOH_URL], 1, [Define if CURLOPT_DOH_URL is declared in curl.h.])
+fi
+
 ##################
 # Check for system services
 

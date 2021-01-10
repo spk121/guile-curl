@@ -42,23 +42,23 @@ guile_curl_TEXINFOS = doc/ex_http_simple_get.scm \
 #  libguile-curl  #
 ###################
 
-guileextension_LTLIBRARIES = libguile-curl.la
+guileextension_LTLIBRARIES = src/libguile-curl.la
 
-libguile_curl_la_c_sources = \
+src_libguile_curl_la_c_sources = \
 	src/const.c \
 	src/type.c \
 	src/func.c \
 	src/main.c
 
-libguile_curl_la_internal_headers = \
+src_libguile_curl_la_internal_headers = \
 	src/visibility.h \
 	src/const.h \
 	src/type.h \
 	src/func.h
 
-libguile_curl_la_SOURCES = \
-  $(libguile_curl_la_internal_headers) \
-  $(libguile_curl_la_c_sources)
+src_libguile_curl_la_SOURCES = \
+  $(src_libguile_curl_la_internal_headers) \
+  $(src_libguile_curl_la_c_sources)
 
 AM_CFLAGS = \
 	$(CURL_CFLAGS) \
@@ -66,18 +66,17 @@ AM_CFLAGS = \
 
 ETAGS_ARGS = src/curl.scm
 
-libguile_curl_la_LDFLAGS = \
- -version-info $(LIBGUILE_CURL_INTERFACE) \
- -export-symbols-regex '^cl_'
+src_libguile_curl_la_LDFLAGS = \
+ -version-info $(LIBGUILE_CURL_INTERFACE)
 
-libguile_curl_la_LIBADD = $(CURL_LIBS) $(GUILE_LIBS)
+src_libguile_curl_la_LIBADD = $(CURL_LIBS) $(GUILE_LIBS)
 
 if BUILDING_DLL
 AM_CFLAGS += -DCL_DLL -DCL_DLL_EXPORTS
-libguile_curl_la_LDFLAGS += -no-undefined
+src_libguile_curl_la_LDFLAGS += -no-undefined
 endif
 if !DLL_VERSION_INFO
-libguile_curl_la_LDFLAGS += -avoid-version
+src_libguile_curl_la_LDFLAGS += -avoid-version
 endif
 
 #################
@@ -85,7 +84,7 @@ endif
 #################
 
 dist_guilesite_DATA = \
- src/curl.scm
+ module/curl.scm
 
 if GUILD
 guileobject_DATA = \
@@ -102,7 +101,7 @@ GUILEC_FLAGS = \
 
 .scm.go:
 	GUILE_AUTO_COMPILE=0 \
-	LTDL_LIBRARY_PATH=$(abs_builddir)/.libs \
+	LTDL_LIBRARY_PATH=$(abs_builddir)/src/.libs \
 	$(GUILD) compile --target="$(host)" $(GUILEC_FLAGS) \
 	-o "$@" "$<"
 endif
@@ -120,20 +119,23 @@ TESTS = \
 
 SCM_LOG_DRIVER = \
   $(top_builddir)/libtool $(TESTS_LTDLOPEN) --mode=execute \
-  $(GUILE) --no-auto-compile $(top_srcdir)/build-aux/test-driver.scm
+  $(GUILE) --no-auto-compile \
+   -L $(abs_srcdir)/module \
+   -L $(abs_builddir)/module \
+   $(top_srcdir)/build-aux/test-driver.scm
 
-LOG_COMPILER = ${top_builddir}/libtool \
-    -dlopen ${top_builddir}/src/libguile-curl.la \
-    --mode=execute
+LOG_DRIVER = LD_PRELOAD=${top_builddir}/src/.libs/libguile-curl.so \
+   $(top_srcdir)/build-aux/test-driver
+
 
 check_PROGRAMS = check_type
 
 check_type_SOURCES = test/check_type.c
 
 check_type_LDFLAGS = \
-	-L$(top_builddir)/src -lguile-curl \
-	$(CURL_LDFLAGS) \
-	$(GUILE_LDFLAGS)
+	-L${abs_top_builddir}/src/.libs -lguile-curl \
+	$(CURL_LIBS) \
+	$(GUILE_LIBS)
 
 TESTS += check_type
 
