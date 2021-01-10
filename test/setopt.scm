@@ -17,6 +17,8 @@
 
 (use-modules (curl) (srfi srfi-64))
 
+(false-if-exception (delete-file "cookie.txt"))
+
 (test-begin "setopt")
 (test-assert "curl-easy-init returns a handle"
   (curl-easy-handle? (curl-easy-init)))
@@ -95,4 +97,5 @@
 (test-assert "'ignore-content-length #t" (check-setopt 'ignore-content-length #t))
 (test-assert "'http-content-decoding #t" (check-setopt 'http-content-decoding #t))
 (test-assert "'http-transfer-decoding #t" (check-setopt 'http-transfer-decoding #t))
+(false-if-exception (delete-file "cookie.txt"))
 (test-end "setopt")
