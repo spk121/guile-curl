@@ -163,6 +163,7 @@ EXTRA_DIST = \
 	build-aux/texinfo.tex \
 	build-aux/ar-lib build-aux/compile build-aux/missing \
 	build-aux/test-driver build-aux/test-driver.scm \
+	build-aux/config.rpath \
 	$(TESTS)
 
 
