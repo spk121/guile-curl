@@ -75,6 +75,7 @@
             CURL_NETRC_REQUIRED
 
             CURLAUTH_BASIC
+            CURLAUTH_BEARER
             CURLAUTH_DIGEST
             CURLAUTH_DIGEST_IE
             CURLAUTH_NEGOTIATE
@@ -315,14 +316,11 @@
             CURLE_REMOTE_FILE_NOT_FOUND
             CURLE_SSH
             CURLE_SSL_SHUTDOWN_FAILED
+            CURLE_RECURSIVE_API_CALL
             ))
 
 (eval-when (expand load eval)
-  (load-extension "libguile-curl" "cl_init")
-  ;; These functions may not exist depending on the
-  ;; compile time options
-  (when (defined? 'CURLAUTH_BEARER)    (export CURLAUTH_BEARER))
-  (when (defined? 'CURLE_RECURSIVE_API_CALL) (export CURLE_RECURSIVE_API_CALL)))
+  (load-extension "libguile-curl" "cl_init"))
 
 (define (c-bool x)
   (if x
@@ -394,9 +392,6 @@ It does not change live connections, the Session ID cache, the DNS
 cache, the cookies or the shared."
   (%curl-easy-reset handle))
 
-(define-syntax-rule (DZ variable)
-  (if (defined? 'variable) variable #f))
-
 (define symbol-options
   `(
     ;; BEHAVIOR OPTIONS
@@ -426,14 +421,14 @@ cache, the cookies or the shared."
     (socks5-gssapi-service ,CURLOPT_SOCKS5_GSSAPI_SERVICE string)
     (socks5-gssapi-nec ,CURLOPT_SOCKS5_GSSAPI_NEC boolean)
     (proxy-service-name ,CURLOPT_PROXY_SERVICE_NAME string)
-    (haproxyprotocol ,(DZ CURLOPT_HAPROXYPROTOCOL) integer)
+    (haproxyprotocol ,CURLOPT_HAPROXYPROTOCOL integer)
     (service-name ,CURLOPT_SERVICE_NAME string)
     (interface ,CURLOPT_INTERFACE string)
     (localport ,CURLOPT_LOCALPORT integer)
     (localportrange ,CURLOPT_LOCALPORTRANGE integer)
     (dns-cache-timeout ,CURLOPT_DNS_CACHE_TIMEOUT integer)
     ;; dns-use-global-cache is deprecated
-    (doh-url ,(DZ CURLOPT_DOH_URL) string)
+    (doh-url ,CURLOPT_DOH_URL string)
     (buffersize ,CURLOPT_BUFFERSIZE integer)
     (port ,CURLOPT_PORT integer)
     (tcp-fastopen ,CURLOPT_TCP_FASTOPEN boolean)
@@ -466,7 +461,7 @@ cache, the cookies or the shared."
     (proxyauth ,CURLOPT_PROXYAUTH integer)
     (sasl-ir ,CURLOPT_SASL_IR boolean)
     (xoauth2-bearer ,CURLOPT_XOAUTH2_BEARER string)
-    (disallow-username-in-url ,(DZ CURLOPT_DISALLOW_USERNAME_IN_URL) boolean)
+    (disallow-username-in-url ,CURLOPT_DISALLOW_USERNAME_IN_URL boolean)
 
     ;; HTTP OPTIONS
     (autoreferer ,CURLOPT_AUTOREFERER boolean)
@@ -496,7 +491,7 @@ cache, the cookies or the shared."
     (httpget ,CURLOPT_HTTPGET boolean)
     (request-target ,CURLOPT_REQUEST_TARGET string)
     (http-version ,CURLOPT_HTTP_VERSION integer)
-    (http09-allowed ,(DZ CURLOPT_HTTP09_ALLOWED) boolean)
+    (http09-allowed ,CURLOPT_HTTP09_ALLOWED boolean)
     (ignore-content-length ,CURLOPT_IGNORE_CONTENT_LENGTH boolean)
     (http-content-decoding ,CURLOPT_HTTP_CONTENT_DECODING boolean)
     (http-transfer-decoding ,CURLOPT_HTTP_TRANSFER_DECODING boolean)
@@ -555,12 +550,12 @@ cache, the cookies or the shared."
     (infilesize ,CURLOPT_INFILESIZE integer)
     (infilesize-large ,CURLOPT_INFILESIZE_LARGE biginteger)
     (upload ,CURLOPT_UPLOAD boolean)
-    (upload-buffersize ,(DZ CURLOPT_UPLOAD_BUFFERSIZE) integer)
+    (upload-buffersize ,CURLOPT_UPLOAD_BUFFERSIZE integer)
     (maxfilesize ,CURLOPT_MAXFILESIZE integer)
     (maxfilesize-large ,CURLOPT_MAXFILESIZE_LARGE biginteger)
     (timecondition ,CURLOPT_TIMECONDITION integer)
     (timevalue ,CURLOPT_TIMEVALUE integer)
-    (timevalue-large ,(DZ CURLOPT_TIMEVALUE_LARGE) biginteger)
+    (timevalue-large ,CURLOPT_TIMEVALUE_LARGE biginteger)
 
     ;; CONNECTION OPTIONS
     (timeout ,CURLOPT_TIMEOUT integer)
@@ -582,11 +577,11 @@ cache, the cookies or the shared."
     (dns-interface ,CURLOPT_DNS_INTERFACE string)
     (dns-local-ip4 ,CURLOPT_DNS_LOCAL_IP4 string)
     (dns-local-ip6 ,CURLOPT_DNS_LOCAL_IP6 string)
-    (dns-shuffle-addresses ,(DZ CURLOPT_DNS_SHUFFLE_ADDRESSES) boolean)
+    (dns-shuffle-addresses ,CURLOPT_DNS_SHUFFLE_ADDRESSES boolean)
     (dns-servers ,CURLOPT_DNS_SERVERS string)
     (accepttimeout-ms ,CURLOPT_ACCEPTTIMEOUT_MS integer)
-    (happy-eyeballs-timeout-ms ,(DZ CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS) integer)
-    (upkeep-interval-ms ,(DZ CURLOPT_UPKEEP_INTERVAL_MS) integer)
+    (happy-eyeballs-timeout-ms ,CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS integer)
+    (upkeep-interval-ms ,CURLOPT_UPKEEP_INTERVAL_MS integer)
 
     ;; SSL and SECURITY OPTIONS
     (sslcert ,CURLOPT_SSLCERT string)
@@ -636,9 +631,6 @@ cache, the cookies or the shared."
     (new-file-perms ,CURLOPT_NEW_FILE_PERMS integer)
     (new-directory-perms ,CURLOPT_NEW_DIRECTORY_PERMS integer)
     (telnetoptions ,CURLOPT_TELNETOPTIONS slist)
-
-    ;; FAKE OPTIONS
-    (fake ,(DZ FAKE_OPTION) boolean)
     ))
 
 (define (curl-easy-setopt handle option arg)
