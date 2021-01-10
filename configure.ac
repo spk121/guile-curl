@@ -62,27 +62,11 @@ AM_CONDITIONAL([ETEX_FIX], [test "$enable_etex_fix" = yes])
 
 ##################
 # Check for libraries
-
-AC_PATH_PROG(CURL_CONFIG,curl-config)
-if test "$CURL_CONFIG" = "" ; then
-  AC_MSG_ERROR([curl-config required but not found])
-fi
-AC_SUBST(CURL_CONFIG)
-
-AC_MSG_CHECKING([libcurl compile flags])
-CURL_CFLAGS="`curl-config --cflags`"
-AC_MSG_RESULT([$CURL_CFLAGS])
-AC_MSG_CHECKING([libcurl link flags])
-CURL_LDFLAGS="`$CURL_CONFIG --libs`"
-AC_MSG_RESULT([$CURL_LDFLAGS])
-AC_SUBST(CURL_CFLAGS)
-AC_SUBST(CURL_LDFLAGS)
-
+PKG_CHECK_MODULES(CURL, [libcurl])
 GUILE_PKG([3.0 2.2])
 GUILE_PROGS
 GUILE_FLAGS
 GUILE_SITE_DIR
-
 
 dnl Installation directories for .scm and .go files.
 guilemoduledir="${datarootdir}/guile/site/$GUILE_EFFECTIVE_VERSION"
