@@ -338,32 +338,52 @@ the ASCII character code of the hex digit 0123456789ABCDEF"
    (else
     (error "out of range"))))
 
-(define (u8->encoded-u8-triplet x)
-  "Converts the u8 integer X into a list of three integers
-that are the ASCII character codes of PERCENT_SIGN +
-HEXADECIMAL + HEXADECIMAL"
-  (list 37              ; PERCENT SIGN
-        (num->ascii-hex-num (quotient x 16))
-        (num->ascii-hex-num (remainder x 16))))
+(define (needs-escape x)
+  (if (or
+       (= x 36)            ; #\$
+       (and (>= x 39) (<= x 57))   ; #\` to #\9
+       (and (>= x 65) (<= x 90))   ; #\A to #\Z
+       (= x 95)            ; #\_
+       (and (>= x 97) (<= x 122))) ; #\a to #\z
+      #f
+      #t))
 
 (define (bv->url-encoded-bv bv)
   "Creates a bytevector that contains a URL-encoded representation
 of the original bytevector"
-  (u8-list->bytevector
-   (fold
-    (lambda (x prev)
-      (cond
-       ((or (= x 33)            ; #\!
-            (= x 36)            ; #\$
-            (and (>= x 39) (<= x 57))   ; #\` to #\9
-            (and (>= x 65) (<= x 90))   ; #\A to #\Z
-            (= x 95)            ; #\_
-            (and (>= x 97) (<= x 122))) ; #\a to #\z
-        (append prev (list x)))
-       (else
-        (append prev (u8->encoded-u8-triplet x)))))
-    '()
-    (bytevector->u8-list bv))))
+  ;; Compute the length of the new bytevector
+  (let* ((len (bytevector-length bv))
+         (new-len
+          (let loop ((i 0)
+                     (n 0))
+            (if (< i len)
+                (if (needs-escape (bytevector-u8-ref bv i))
+                    (loop (1+ i) (+ 3 n))
+                    ;; else
+                    (loop (1+ i) (+ 1 n)))
+                ;; else
+                n))))
+
+    (let ((bv2 (make-bytevector new-len 0)))
+
+      (let loop ((i 0)
+                 (j 0))
+        (if (< i len)
+            (let ((x (bytevector-u8-ref bv i)))
+              (if (needs-escape x)
+                  (begin
+                    (bytevector-u8-set! bv2 j 37) ; PERCENT SIGN
+                    (bytevector-u8-set! bv2 (1+ j)
+                                        (num->ascii-hex-num (quotient x 16)))
+                    (bytevector-u8-set! bv2 (+ 2 j)
+                                        (num->ascii-hex-num (remainder x 16)))
+                    (loop (1+ i)
+                          (+ 3 j)))
+                  ;; else
+                  (begin
+                    (bytevector-u8-set! bv2 j x)
+                    (loop (1+ i) (1+ j)))))))
+      bv2)))
 
 (define (curl-easy-init)
   "Returns a curl handle that you must use as input to other functions.

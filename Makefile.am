@@ -116,6 +116,7 @@ TEST_EXTENSIONS = .scm
 
 TESTS_LTDLOPEN = -dlopen ${abs_top_builddir}/src/libguile-curl.la
 TESTS = \
+  test/bytevectors.scm \
   test/setopt.scm \
   test/stress.scm
 
@@ -164,7 +165,8 @@ EXTRA_DIST = \
 	build-aux/ar-lib build-aux/compile build-aux/missing \
 	build-aux/test-driver build-aux/test-driver.scm \
 	build-aux/config.rpath \
-	$(TESTS)
+	$(TESTS) \
+	test/profile.scm
 
 
 SUFFIXES =
