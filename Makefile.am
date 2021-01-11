@@ -87,6 +87,8 @@ dist_guilesite_DATA = \
  module/curl.scm
 
 if GUILD
+$(top_builddir)/module/curl.go: $(top_builddir)/src/libguile-curl.la
+
 guileobject_DATA = \
   $(dist_guilesite_DATA:%.scm=%.go)
 
