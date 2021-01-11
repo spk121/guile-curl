@@ -22,7 +22,7 @@
 AC_PREREQ([2.64])
 AC_INIT([guile_curl],[0.8],[spk121@yahoo.com])
 AC_CONFIG_AUX_DIR([build-aux])
-AM_INIT_AUTOMAKE([no-dependencies subdir-objects -Wall])
+AM_INIT_AUTOMAKE([no-dependencies subdir-objects -Wall foreign])
 PKG_PROG_PKG_CONFIG
 AC_PROG_CC_C99
 AC_CONFIG_SRCDIR([config.h.in])
