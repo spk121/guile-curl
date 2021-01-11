@@ -1,3 +1,15 @@
+For Release 0.8 - Jan 11, 2021
+
+    - Eliminate all traces of gnulib
+    - Use srfi-64 for test scripts
+    - Avoid recursive automake
+    - Simplify build somewhat
+    - When CURL constants and enums are not present, the Guile versions
+      will be #f, instead of undefined now.
+    - Use pkg-config instead of curl-config to gather information
+      about the libcurl install
+    - Remove ChangeLog
+    
 For Release 0.7 - Jan 1, 2021
 
     - Eliminate Guile 2.0 support
