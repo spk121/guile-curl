@@ -158,8 +158,7 @@ EXTRA_DIST = \
 	README \
 	COPYING \
 	TODO \
-	ChangeLog \
-    m4/guile.m4 \
+	m4/guile.m4 \
 	build-aux/texinfo.tex \
 	build-aux/ar-lib build-aux/compile build-aux/missing \
 	build-aux/test-driver build-aux/test-driver.scm \
