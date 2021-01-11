@@ -150,13 +150,15 @@ if test "$guilemoduledir" != "$GUILE_SITE"; then
    # Guile has a different prefix than this module
    AC_MSG_WARN([]
    [The Guile modules will be installed in '${guilemoduledir}'.]
-   [You will have to adjust the `GUILE_LOAD_PATH' environment]
+   [This Guile expects them in ${GUILE_SITE}.]
+   [If these differ, you may have to adjust the `GUILE_LOAD_PATH' environment]
    [variable.])
 fi
 
 if test "x$GUILE_EXTENSION" != "x"; then
 if test "$guileextensiondir" != "$GUILE_EXTENSION"; then
    AC_MSG_WARN([]
-   [The Guile extensions will be installed in ${guileextensiondir}.])
+   [The Guile extensions will be installed in ${guileextensiondir}.]
+   [This Guile expects them in ${GUILE_EXTENSION}.])
 fi
 fi
