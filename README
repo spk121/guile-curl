@@ -7,8 +7,7 @@ you'll need to run 'autoreconf -vi'.  There is a 'bootstrap' script
 but it is just a call to autoreconf
 
 This is an autotools build, so usually building is a "./configure &&
-make && make install" sort of thing.  For the boilerplate information
-on how to install a GNU package from source, check INSTALL.
+make && make install" sort of thing.
 
 For information on how to use it, there is a manual in the doc/
 directory.
