@@ -3,8 +3,8 @@ client-side URL transfers, like requesting documents from http or ftp
 servers.  It is based on the libcurl library.
 
 If trying to build this from the repository instead of a tarball,
-you'll need to run 'autoreconf -vi'.  There is a 'bootstrap' script
-but it is just a call to autoreconf
+you'll need to run 'autoreconf -vi'.  There is a 'bootstrap' script,
+but, it is just a call to 'autoreconf'.
 
 This is an autotools build, so usually building is a "./configure &&
 make && make install" sort of thing.

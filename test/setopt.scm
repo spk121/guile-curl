@@ -98,4 +98,5 @@
 (test-assert "'http-content-decoding #t" (check-setopt 'http-content-decoding #t))
 (test-assert "'http-transfer-decoding #t" (check-setopt 'http-transfer-decoding #t))
 (false-if-exception (delete-file "cookie.txt"))
+
 (test-end "setopt")
