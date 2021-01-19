@@ -40,12 +40,9 @@
   (let* ((start-time (times))
          (ret (thunk))
          (end-time (times)))
-    ;; (write (utf8->string ret)) (newline)
-    (format #t "clock: ~A, utime: ~A, cutime ~A, cstime ~A~%"
+    (format #t "clock: ~A, utime: ~A~%"
             (- (tms:clock end-time) (tms:clock start-time))
-            (- (tms:utime end-time) (tms:utime start-time))
-            (- (tms:cutime end-time) (tms:cutime start-time))
-            (- (tms:cstime end-time) (tms:cstime start-time)))))
+            (- (tms:utime end-time) (tms:utime start-time)))))
 
 (define (test-bv-thunk bv N)
   (lambda ()
