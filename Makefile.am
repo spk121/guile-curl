@@ -77,6 +77,9 @@ src_libguile_curl_la_LIBADD = $(CURL_LIBS) $(GUILE_LIBS)
 if BUILDING_DLL
 AM_CFLAGS += -DCL_DLL -DCL_DLL_EXPORTS
 src_libguile_curl_la_LDFLAGS += -no-undefined
+# For MinGW, force the dll to be installed in $(guileextensiondir)
+# instead of $(guileextensiondir)/../bin
+src_libguile_curl_la_LDFLAGS += -bindir $(DESTDIR)$(guileextensiondir)
 endif
 if !DLL_VERSION_INFO
 src_libguile_curl_la_LDFLAGS += -avoid-version
