@@ -38,6 +38,9 @@ dist_example_DATA = doc/ex_http_simple_get.scm \
 	doc/ex_http_simple_get_utf8.scm \
 	doc/ex_http_web_response.scm
 
+# In make distcheck, avoid building a doc format that requires TeX.
+AM_DISTCHECK_DVI_TARGET = html
+
 ###################
 #  libguile-curl  #
 ###################
