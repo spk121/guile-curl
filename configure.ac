@@ -19,12 +19,12 @@
 
 ##################
 # Package info
-AC_PREREQ([2.64])
+AC_PREREQ([2.71])
 AC_INIT([guile_curl],[0.9],[spk121@yahoo.com])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([no-dependencies subdir-objects -Wall foreign])
 PKG_PROG_PKG_CONFIG
-AC_PROG_CC_C99
+AC_PROG_CC
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
