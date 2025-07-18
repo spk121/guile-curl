@@ -50,7 +50,7 @@ AC_PROG_MKDIR_P
 
 AS_CASE([$host_os],
         [mingw*], [building_dll=yes;dll_version_info=no],
-        [cygwin*], [building_dll=yes;dll_version_info=yes],
+        [cygwin*], [building_dll=yes;dll_version_info=no],
         [pw32*], [building_dll=yes;dll_version_info=yes],
         [cegcc*], [building_dll=yes;dll_version_info=yes],
         [building_dll=no;dll_version_info=yes])
