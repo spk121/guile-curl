@@ -22,6 +22,7 @@
   #:export (
             curl-easy-handle?
             curl-easy-init
+            curl-easy-getinfo
             curl-easy-setopt
             curl-easy-perform
             curl-easy-cleanup
@@ -152,6 +153,73 @@
             CURLSSH_AUTH_KEYBOARD
             CURLSSH_AUTH_ANY
 
+            CURLINFO_ACTIVESOCKET
+            CURLINFO_APPCONNECT_TIME
+            CURLINFO_APPCONNECT_TIME_T
+            CURLINFO_CAINFO
+            CURLINFO_CAPATH
+            ;; CURLINFO_CERTINFO
+            CURLINFO_CONDITION_UNMET
+            CURLINFO_CONNECT_TIME
+            CURLINFO_CONNECT_TIME_T
+            CURLINFO_CONN_ID
+            CURLINFO_CONTENT_LENGTH_DOWNLOAD_T
+            CURLINFO_CONTENT_LENGTH_UPLOAD_T
+            CURLINFO_COOKIELIST
+            CURLINFO_EARLYDATA_SENT_T
+            CURLINFO_EFFECTIVE_METHOD
+            CURLINFO_EFFECTIVE_URL
+            CURLINFO_FILETIME
+            CURLINFO_FILETIME_T
+            CURLINFO_FTP_ENTRY_PATH
+            CURLINFO_HEADER_SIZE
+            CURLINFO_HTTPAUTH_AVAIL
+            CURLINFO_HTTPAUTH_USED
+            CURLINFO_HTTP_CONNECTCODE
+            CURLINFO_HTTP_VERSION
+            CURLINFO_LOCAL_IP
+            CURLINFO_LOCAL_PORT
+            CURLINFO_NAMELOOKUP_TIME
+            CURLINFO_NAMELOOKUP_TIME_T
+            CURLINFO_NUM_CONNECTS
+            CURLINFO_OS_ERRNO
+            CURLINFO_POSTTRANSFER_TIME_T
+            CURLINFO_PRETRANSFER_TIME
+            CURLINFO_PRETRANSFER_TIME_T
+            CURLINFO_PRIMARY_IP
+            CURLINFO_PRIMARY_PORT
+            CURLINFO_PROXYAUTH_AVAIL
+            CURLINFO_PROXYAUTH_USED
+            CURLINFO_PROXY_ERROR
+            CURLINFO_PROXY_SSL_VERIFYRESULT
+            CURLINFO_QUEUE_TIME_T
+            CURLINFO_REDIRECT_COUNT
+            CURLINFO_REDIRECT_TIME
+            CURLINFO_REDIRECT_TIME_T
+            CURLINFO_REDIRECT_URL
+            CURLINFO_REFERER
+            CURLINFO_REQUEST_SIZE
+            CURLINFO_RESPONSE_CODE
+            CURLINFO_RETRY_AFTER
+            CURLINFO_RTSP_CLIENT_CSEQ
+            CURLINFO_RTSP_CSEQ_RECV
+            CURLINFO_RTSP_SERVER_CSEQ
+            CURLINFO_RTSP_SESSION_ID
+            CURLINFO_SCHEME
+            CURLINFO_SIZE_DOWNLOAD_T
+            CURLINFO_SIZE_UPLOAD_T
+            CURLINFO_SPEED_DOWNLOAD_T
+            CURLINFO_SPEED_UPLOAD_T
+            CURLINFO_SSL_ENGINES
+            CURLINFO_SSL_VERIFYRESULT
+            CURLINFO_STARTTRANSFER_TIME
+            CURLINFO_STARTTRANSFER_TIME_T
+            CURLINFO_TLS_SSL_PTR
+            CURLINFO_TOTAL_TIME
+            CURLINFO_TOTAL_TIME_T
+            CURLINFO_USED_PROXY
+            CURLINFO_XFER_ID
+            
             CURLE_OK
             CURLE_UNSUPPORTED_PROTOCOL
             CURLE_FAILED_INIT
@@ -317,6 +385,42 @@
             CURLE_SSH
             CURLE_SSL_SHUTDOWN_FAILED
             CURLE_RECURSIVE_API_CALL
+
+            CURLPX_OK
+            CURLPX_BAD_ADDRESS_TYPE
+            CURLPX_BAD_VERSION
+            CURLPX_CLOSED
+            CURLPX_GSSAPI
+            CURLPX_GSSAPI_PERMSG
+            CURLPX_GSSAPI_PROTECTION
+            CURLPX_IDENTD
+            CURLPX_IDENTD_DIFFER
+            CURLPX_LONG_HOSTNAME
+            CURLPX_LONG_PASSWD
+            CURLPX_LONG_USER
+            CURLPX_NO_AUTH
+            CURLPX_RECV_ADDRESS
+            CURLPX_RECV_AUTH
+            CURLPX_RECV_CONNECT
+            CURLPX_RECV_REQACK
+            CURLPX_REPLY_ADDRESS_TYPE_NOT_SUPPORTED
+            CURLPX_REPLY_COMMAND_NOT_SUPPORTED
+            CURLPX_REPLY_CONNECTION_REFUSED
+            CURLPX_REPLY_GENERAL_SERVER_FAILURE
+            CURLPX_REPLY_HOST_UNREACHABLE
+            CURLPX_REPLY_NETWORK_UNREACHABLE
+            CURLPX_REPLY_NOT_ALLOWED
+            CURLPX_REPLY_TTL_EXPIRED
+            CURLPX_REPLY_UNASSIGNED
+            CURLPX_REQUEST_FAILED
+            CURLPX_RESOLVE_HOST
+            CURLPX_SEND_AUTH
+            CURLPX_SEND_CONNECT
+            CURLPX_SEND_REQUEST
+            CURLPX_UNKNOWN_FAIL
+            CURLPX_UNKNOWN_MODE
+            CURLPX_USER_REJECTED
+
             ))
 
 (eval-when (expand load eval)
@@ -694,6 +798,86 @@ Returns #t on success and #f on failure."
             (error (format #f "wrong type arg: ~a" arg)))))
         ;; else
         (error (format #f "unknown option: ~a" option)))))
+
+(define getinfo-options
+  `(
+    (activesocket . ,CURLINFO_ACTIVESOCKET)
+    (appconnect-time . ,CURLINFO_APPCONNECT_TIME)
+    (appconnect-time-t . ,CURLINFO_APPCONNECT_TIME_T)
+    (cainfo . ,CURLINFO_CAINFO)
+    (capath . ,CURLINFO_CAPATH)
+    ;; (certinfo . ,CURLINFO_CERTINFO)
+    (condition-unmet . ,CURLINFO_CONDITION_UNMET)
+    (connect-time . ,CURLINFO_CONNECT_TIME)
+    (connect-time-t . ,CURLINFO_CONNECT_TIME_T)
+    (conn-id . ,CURLINFO_CONN_ID)
+    (content-length-download-t . ,CURLINFO_CONTENT_LENGTH_DOWNLOAD_T)
+    (content-length-upload-t . ,CURLINFO_CONTENT_LENGTH_UPLOAD_T)
+    (cookielist . ,CURLINFO_COOKIELIST)
+    (earlydata-sent-t . ,CURLINFO_EARLYDATA_SENT_T)
+    (effective-method . ,CURLINFO_EFFECTIVE_METHOD)
+    (effective-url . ,CURLINFO_EFFECTIVE_URL)
+    (filetime . ,CURLINFO_FILETIME)
+    (filetime-t . ,CURLINFO_FILETIME_T)
+    (ftp-entry-path . ,CURLINFO_FTP_ENTRY_PATH)
+    (header-size . ,CURLINFO_HEADER_SIZE)
+    (httpauth-avail . ,CURLINFO_HTTPAUTH_AVAIL)
+    (httpauth-used . ,CURLINFO_HTTPAUTH_USED)
+    (http-connectcode . ,CURLINFO_HTTP_CONNECTCODE)
+    (http-version . ,CURLINFO_HTTP_VERSION)
+    (local-ip . ,CURLINFO_LOCAL_IP)
+    (local-port . ,CURLINFO_LOCAL_PORT)
+    (namelookup-time . ,CURLINFO_NAMELOOKUP_TIME)
+    (namelookup-time-t . ,CURLINFO_NAMELOOKUP_TIME_T)
+    (num-connects . ,CURLINFO_NUM_CONNECTS)
+    (os-errno . ,CURLINFO_OS_ERRNO)
+    (posttransfer-time-t . ,CURLINFO_POSTTRANSFER_TIME_T)
+    (pretransfer-time . ,CURLINFO_PRETRANSFER_TIME)
+    (pretransfer-time-t . ,CURLINFO_PRETRANSFER_TIME_T)
+    (primary-ip . ,CURLINFO_PRIMARY_IP)
+    (primary-port . ,CURLINFO_PRIMARY_PORT)
+    (proxyauth-avail . ,CURLINFO_PROXYAUTH_AVAIL)
+    (proxyauth-used . ,CURLINFO_PROXYAUTH_USED)
+    (proxy-error . ,CURLINFO_PROXY_ERROR)
+    (proxy-ssl-verifyresult . ,CURLINFO_PROXY_SSL_VERIFYRESULT)
+    (queue-time-t . ,CURLINFO_QUEUE_TIME_T)
+    (redirect-count . ,CURLINFO_REDIRECT_COUNT)
+    (redirect-time . ,CURLINFO_REDIRECT_TIME)
+    (redirect-time-t . ,CURLINFO_REDIRECT_TIME_T)
+    (redirect-url . ,CURLINFO_REDIRECT_URL)
+    (referer . ,CURLINFO_REFERER)
+    (request-size . ,CURLINFO_REQUEST_SIZE)
+    (response-code . ,CURLINFO_RESPONSE_CODE)
+    (retry-after . ,CURLINFO_RETRY_AFTER)
+    (rtsp-client-cseq . ,CURLINFO_RTSP_CLIENT_CSEQ)
+    (rtsp-cseq-recv . ,CURLINFO_RTSP_CSEQ_RECV)
+    (rtsp-server-cseq . ,CURLINFO_RTSP_SERVER_CSEQ)
+    (rtsp-session-id . ,CURLINFO_RTSP_SESSION_ID)
+    (scheme . ,CURLINFO_SCHEME)
+    (size-download-t . ,CURLINFO_SIZE_DOWNLOAD_T)
+    (size-upload-t . ,CURLINFO_SIZE_UPLOAD_T)
+    (speed-download-t . ,CURLINFO_SPEED_DOWNLOAD_T)
+    (speed-upload-t . ,CURLINFO_SPEED_UPLOAD_T)
+    (ssl-engines . ,CURLINFO_SSL_ENGINES)
+    (ssl-verifyresult . ,CURLINFO_SSL_VERIFYRESULT)
+    (starttransfer-time . ,CURLINFO_STARTTRANSFER_TIME)
+    (starttransfer-time-t . ,CURLINFO_STARTTRANSFER_TIME_T)
+    ;; (tls-ssl-ptr . ,CURLINFO_TLS_SSL_PTR)
+    (total-time . ,CURLINFO_TOTAL_TIME)
+    (total-time-t . ,CURLINFO_TOTAL_TIME_T)
+    (used-proxy . ,CURLINFO_USED_PROXY)
+    (xfer-id . ,CURLINFO_XFER_ID)))
+
+(define (curl-easy-getinfo handle option)
+  "This function returns information about the current handle
+in accordance with the given operation.
+It usually returns #f on a recoverable error; check curl-error-code
+or curl-error-string for more information."
+  (let ((value (assq-ref getinfo-options option)))
+    (if value
+        (%curl-easy-getinfo handle value)
+        ;; else
+        (error (format #f "unknown option: ~a" option)))))        
 
 (define* (curl-easy-perform handle #:optional (bytevector? #f) (header? #f))
   "This function is called after the init and all the curl-easy-setopt

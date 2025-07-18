@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script
 
-# Copyright 2001, 2013, 2014, 2016, 2017, 2019, 2021 Michael L Gran
+# Copyright 2001, 2013, 2014, 2016, 2017, 2019, 2021, 2025 Michael L Gran
 
 # This file is part of guile-curl.
 
@@ -20,7 +20,7 @@
 ##################
 # Package info
 AC_PREREQ([2.71])
-AC_INIT([guile_curl],[0.9],[spk121@yahoo.com])
+AC_INIT([guile_curl],[0.10],[spk121@yahoo.com])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([no-dependencies subdir-objects -Wall foreign])
 PKG_PROG_PKG_CONFIG
@@ -32,7 +32,7 @@ AC_CONFIG_MACRO_DIR([m4])
 ##################
 # Set some version constants
 LIBGUILE_CURL_MAJOR=2
-LIBGUILE_CURL_INTERFACE="2:1:0"
+LIBGUILE_CURL_INTERFACE="2:2:0"
 AC_SUBST(LIBGUILE_CURL_MAJOR)
 AC_SUBST(LIBGUILE_CURL_INTERFACE)
 

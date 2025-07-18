@@ -1,5 +1,8 @@
 TODO
 
+** update to libcurl v8.x
 ** httppost needs multiple file sections
 ** httppost needs content headers
-** wrap curl_easy_getinfo
+** handle CURLINFO_TLS_SSL_PTR
+** handle CURLINFO_CERTINFO
+** test and document curl_easy_getinfo
