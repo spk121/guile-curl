@@ -124,7 +124,8 @@ TESTS_LTDLOPEN = -dlopen ${abs_top_builddir}/src/libguile-curl.la
 TESTS = \
   test/bytevectors.scm \
   test/setopt.scm \
-  test/stress.scm
+  test/stress.scm \
+  test/getinfo.scm
 
 SCM_LOG_DRIVER = \
   $(top_builddir)/libtool $(TESTS_LTDLOPEN) --mode=execute \
