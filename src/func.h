@@ -1,6 +1,6 @@
 /* Constants for guile-curl
 
-   Copyright (c) 2011, 2013 Michael L. Gran
+   Copyright (c) 2011, 2013, 2025 Michael L. Gran
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 
 SCM DLL_PUBLIC cl_easy_init (void);
 SCM DLL_PUBLIC cl_easy_getopt (SCM handle, SCM label, SCM val);
+SCM DLL_PUBLIC cl_easy_getinfo (SCM handle, SCM option);
 SCM DLL_PUBLIC cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big);
 SCM DLL_PUBLIC cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag);
 SCM DLL_PUBLIC cl_easy_cleanup (SCM handle);

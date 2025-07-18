@@ -1,6 +1,6 @@
 /* Functions for guile-curl
 
-   Copyright (c) 2011, 2013, 2014, 2016 Michael L. Gran
+   Copyright (c) 2011, 2013, 2014, 2016, 2025 Michael L. Gran
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 #include <curl/curl.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdint.h>
 #include "type.h"
 #include "func.h"
 
@@ -69,6 +70,7 @@ SCM DLL_PUBLIC cl_easy_init ()
       fprintf (stderr, "\t      prequote %p\n", hp->prequote);
       fprintf (stderr, "\t       resolve %p\n", hp->resolve);
       fprintf (stderr, "\t telnetoptions %p\n", hp->telnetoptions);
+      fprintf (stderr, "\t     transfers %d\n", hp->transfers);
       fflush (stderr);
     }
 
@@ -208,7 +210,7 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
       if (c_option == CURLOPT_READDATA)
         {
           curl_easy_setopt (c_handle->handle, CURLOPT_READFUNCTION, read_callback);
-          code = curl_easy_setopt (c_handle->handle, CURLOPT_READDATA, SCM2PTR (param));          
+          code = curl_easy_setopt (c_handle->handle, CURLOPT_READDATA, SCM2PTR (param));
         }
     }
   else
@@ -226,6 +228,210 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
 
   return SCM_UNSPECIFIED;
 }
+
+SCM DLL_PUBLIC
+cl_easy_getinfo (SCM handle, SCM option)
+{
+  handle_post_t *c_handle;
+  CURLoption c_option;
+  CURLcode code = CURLE_UNSUPPORTED_PROTOCOL;
+
+  SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "curl-easy-getinfo");
+  SCM_ASSERT (scm_is_integer (option), option, SCM_ARG2, "curl-easy-getinfo");
+
+  c_handle = _scm_to_handle (handle);
+  c_option = (CURLoption) scm_to_int (option);
+
+  if (c_handle->transfers < 1)
+    scm_misc_error ("curl-easy-getinfo",
+                    "cannot retrieve information before performing an operation",
+                    SCM_EOL);
+
+  if (c_option == CURLINFO_ACTIVESOCKET)
+    {
+      curl_socket_t c_sockfd;
+      code = curl_easy_getinfo(c_handle->handle, c_option, &c_sockfd);
+      if (code == CURLE_OK && c_sockfd != CURL_SOCKET_BAD)
+#ifdef _WIN32
+        return scm_from_unsigned_int (c_sockfd);
+#else
+      return scm_from_int (c_sockfd);
+#endif
+      else
+        {
+          error_code = code;
+          return SCM_BOOL_F;
+        }
+    }
+  else if ((c_option == CURLINFO_APPCONNECT_TIME_T)
+           || (c_option == CURLINFO_CONNECT_TIME_T)
+#ifdef CURLINFO_CONN_ID
+           || (c_option == CURLINFO_CONN_ID)
+#endif
+           || (c_option == CURLINFO_CONTENT_LENGTH_DOWNLOAD_T)
+           || (c_option == CURLINFO_CONTENT_LENGTH_UPLOAD_T)
+           || (c_option == CURLINFO_FILETIME_T)
+           || (c_option == CURLINFO_NAMELOOKUP_TIME_T)
+#ifdef CURLINFO_POSTTRANSFER_TIME_T
+           || (c_option == CURLINFO_POSTTRANSFER_TIME_T)
+#endif
+           || (c_option == CURLINFO_PRETRANSFER_TIME_T)
+#ifdef CURLINFO_QUEUE_TIME_T
+           || (c_option == CURLINFO_QUEUE_TIME_T)
+#endif
+           || (c_option == CURLINFO_REDIRECT_TIME_T)
+           || (c_option == CURLINFO_RETRY_AFTER)
+           || (c_option == CURLINFO_SIZE_DOWNLOAD_T)
+           || (c_option == CURLINFO_SIZE_UPLOAD_T)
+           || (c_option == CURLINFO_SPEED_DOWNLOAD_T)
+           || (c_option == CURLINFO_STARTTRANSFER_TIME_T)
+           || (c_option == CURLINFO_TOTAL_TIME_T)
+           )
+    {
+      curl_off_t c_val;
+      code = curl_easy_getinfo (c_handle->handle, c_option, &c_val);
+      if (code == CURLE_OK)
+        {
+          if (sizeof (curl_off_t) == 4)
+            return scm_from_int32 (c_val);
+          else if (sizeof (curl_off_t) == 8)
+            return scm_from_int64 (c_val);
+          else
+            {
+              error_code = code;
+              return SCM_BOOL_F;
+            }
+        }
+    }
+  else if ((c_option == CURLINFO_CONDITION_UNMET)
+           || (c_option == CURLINFO_FILETIME)
+           || (c_option == CURLINFO_HEADER_SIZE)
+           || (c_option == CURLINFO_HTTPAUTH_AVAIL)
+#ifdef CURLINFO_HTTPAUTH_USED
+           || (c_option == CURLINFO_HTTPAUTH_USED)
+#endif
+           || (c_option == CURLINFO_HTTP_CONNECTCODE)
+           || (c_option == CURLINFO_HTTP_VERSION)
+           || (c_option == CURLINFO_LOCAL_PORT)
+           || (c_option == CURLINFO_NUM_CONNECTS)
+           || (c_option == CURLINFO_OS_ERRNO)
+           || (c_option == CURLINFO_PRIMARY_PORT)
+           || (c_option == CURLINFO_PROXYAUTH_AVAIL)
+#ifdef CURLINFO_PROXYAUTH_USED
+           || (c_option == CURLINFO_PROXYAUTH_USED)
+#endif
+           || (c_option == CURLINFO_PROXY_ERROR)
+           || (c_option == CURLINFO_PROXY_SSL_VERIFYRESULT)
+           || (c_option == CURLINFO_REDIRECT_COUNT)
+           || (c_option == CURLINFO_REQUEST_SIZE)
+           || (c_option == CURLINFO_RESPONSE_CODE)
+           || (c_option == CURLINFO_RTSP_CLIENT_CSEQ)
+           || (c_option == CURLINFO_RTSP_CSEQ_RECV)
+           || (c_option == CURLINFO_RTSP_SERVER_CSEQ)
+           || (c_option == CURLINFO_SSL_VERIFYRESULT)
+#ifdef CURLINFO_USED_PROXY
+           || (c_option == CURLINFO_USED_PROXY)
+#endif
+#ifdef CURLINFO_XFER_ID
+           || (c_option == CURLINFO_XFER_ID)
+#endif
+           )
+    {
+      long c_val;
+      code = curl_easy_getinfo (c_handle->handle, c_option, &c_val);
+      if (code == CURLE_OK)
+        return scm_from_long(c_val);
+      else
+        {
+          error_code = code;
+          return SCM_BOOL_F;
+        }
+    }
+  else if ((c_option == CURLINFO_COOKIELIST)
+           || (c_option == CURLINFO_SSL_ENGINES))
+    {
+      struct curl_slist *c_cookies;
+      code = curl_easy_getinfo (c_handle->handle, c_option, &c_cookies);
+      if (code == CURLE_OK)
+        {
+          struct curl_slist *c_each;
+          SCM lst = SCM_EOL;
+          c_each = c_cookies;
+
+          while (c_each)
+            {
+              lst = scm_cons (scm_from_utf8_string (c_each->data), lst);
+              c_each = c_each->next;
+            }
+          curl_slist_free_all (c_cookies);
+          return scm_reverse(lst);
+        }
+      else
+        {
+          error_code = code;
+          return SCM_BOOL_F;
+        }
+    }
+  else if (0
+#ifdef CURLINFO_CAINFO
+	   || (c_option == CURLINFO_CAINFO)
+#endif
+#ifdef CURLINFO_CAPATH
+           || (c_option == CURLINFO_CAPATH)
+#endif
+           || (c_option == CURLINFO_EFFECTIVE_METHOD)
+           || (c_option == CURLINFO_EFFECTIVE_URL)
+           || (c_option == CURLINFO_FTP_ENTRY_PATH)
+           || (c_option == CURLINFO_LOCAL_IP)
+           || (c_option == CURLINFO_PRIMARY_IP)
+           || (c_option == CURLINFO_REDIRECT_URL)
+           || (c_option == CURLINFO_REFERER)
+           || (c_option == CURLINFO_RTSP_SESSION_ID)
+           || (c_option == CURLINFO_SCHEME)
+           )
+    {
+      char *c_str = NULL;
+      code = curl_easy_getinfo (c_handle->handle, c_option, &c_str);
+      if (code == CURLE_OK)
+        {
+          if (c_str == NULL)
+            return scm_from_utf8_string ("");
+          return scm_from_utf8_string (c_str);
+        }
+      else
+        {
+          error_code = code;
+          return SCM_BOOL_F;
+        }
+    }
+  else if ((c_option == CURLINFO_APPCONNECT_TIME)
+           || (c_option == CURLINFO_CONNECT_TIME)
+           || (c_option == CURLINFO_NAMELOOKUP_TIME)
+           || (c_option == CURLINFO_PRETRANSFER_TIME)
+           || (c_option == CURLINFO_STARTTRANSFER_TIME)
+           || (c_option == CURLINFO_REDIRECT_TIME)
+           || (c_option == CURLINFO_TOTAL_TIME)
+           )
+    {
+      double c_val;
+      code = curl_easy_getinfo (c_handle->handle, c_option, &c_val);
+      if (code == CURLE_OK)
+        return scm_from_double (c_val);
+      else
+        {
+          error_code = code;
+          return SCM_BOOL_F;
+        }
+    }
+  else
+    scm_error (SCM_BOOL_F,
+               "curl-easy-getinfo",
+               "unimplemented option type",
+               SCM_BOOL_F,
+               SCM_BOOL_F);
+  return SCM_BOOL_F;
+}
+
 
 SCM DLL_PUBLIC
 cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag)
@@ -253,11 +459,11 @@ cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag)
     data = scm_c_make_string (0, SCM_MAKE_CHAR('\n'));
   header_sf.scm = data;
 
-  if (scm_is_true (headerflag)) 
+  if (scm_is_true (headerflag))
   {
     curl_easy_setopt (c_handle->handle, CURLOPT_HEADERFUNCTION, write_callback);
     curl_easy_setopt (c_handle->handle, CURLOPT_HEADERDATA, &header_sf);
-    curl_easy_setopt (c_handle->handle, CURLOPT_ERRORBUFFER, error_string);    
+    curl_easy_setopt (c_handle->handle, CURLOPT_ERRORBUFFER, error_string);
   }
 
   curl_easy_setopt (c_handle->handle, CURLOPT_WRITEFUNCTION, write_callback);
@@ -272,7 +478,10 @@ cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag)
       return (SCM_BOOL_F);
     }
 
-  if (scm_is_true (headerflag)) 
+  if (c_handle->transfers < INT_MAX)
+      c_handle->transfers ++;
+
+  if (scm_is_true (headerflag))
     return (scm_list_2 (header_sf.scm, body_sf.scm));
 
   return (body_sf.scm);
@@ -490,6 +699,7 @@ cl_init_func ()
   if (first)
     {
       scm_c_define_gsubr ("%curl-easy-init", 0, 0, 0, cl_easy_init);
+      scm_c_define_gsubr ("%curl-easy-getinfo", 2, 0, 0, cl_easy_getinfo);
       scm_c_define_gsubr ("%curl-easy-setopt", 4, 0, 0, cl_easy_setopt);
       scm_c_define_gsubr ("%curl-easy-perform", 3, 0, 0, cl_easy_perform);
       scm_c_define_gsubr ("%curl-easy-cleanup", 1, 0, 0, cl_easy_cleanup);

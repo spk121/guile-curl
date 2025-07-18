@@ -36,6 +36,7 @@ typedef struct handle_post_tag
   struct curl_slist *prequote;
   struct curl_slist *resolve;
   struct curl_slist *telnetoptions;
+  int transfers;
 } handle_post_t;
 
 void DLL_PUBLIC cl_init_type (void);

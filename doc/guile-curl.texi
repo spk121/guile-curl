@@ -1,7 +1,7 @@
 \input texinfo @c -*- Mode: texinfo; Fillcolumn: 70; -*-
 @c %**start of header
 
-@c Copyright @copyright{} 2007, 2011, 2013, 2014, 2019 Michael L. Gran
+@c Copyright @copyright{} 2007, 2011, 2013, 2014, 2019, 2025 Michael L. Gran
 
 @c Permission is hereby granted, free of charge, to any person obtaining a
 @c copy of these software and associated documentation files (the
@@ -45,10 +45,10 @@ This manual is for @code{guile-curl}, a Guile net client library,
 provides bindings for the underlying libcurl library, which provides
 functionality for accessing files via urls.
 
-Copyright @copyright{} 2007, 2011, 2013, 2014, 2019 Michael L. Gran
+Copyright @copyright{} 2007, 2011, 2013, 2014, 2019, 2025 Michael L. Gran
 
 Includes portions of the libcurl documentation, which is Copyright
-@copyright{} 1998 - 2018 Daniel Stenberg, et al.
+@copyright{} 1998 - 2015 Daniel Stenberg, et al.
 @end copying
 
 @dircategory The Algorithmic Language Scheme
@@ -99,10 +99,10 @@ Fetching from an HTTP server
 Reference
 
 * Procedures::
-* Options::
+* Options for setopt::
 * Error Codes::
 
-Options
+Options for setopt
 
 * Option Table::
 * Option Data Types::
@@ -171,7 +171,7 @@ the Latin-1 encoding.
 Let's begin with the most familiar case: fetching data from
 a webserver.
 
-Guile 2.0 already has a nice set of functions to handle fetching from
+Guile 3.0 already has a nice set of functions to handle fetching from
 an HTTP server, so there is no need to use this library for simple use
 cases like this. But @code{guile-curl} may still be of value if you
 are trying to use @code{https} or POST or other more complicated HTTP
@@ -328,12 +328,12 @@ requested the HTML document as a bytevector, the
 
 @menu
 * Procedures::
-* Options::
+* Options for setopt::
 * Error Codes::
 @end menu
 
 
-@node Procedures, Options, Reference, Reference
+@node Procedures, Options for setopt, Reference, Reference
 @section Procedures
 
 These are the procedures provided by the library.
@@ -426,13 +426,14 @@ file <curl/curl.h>.
 @end deffn
 
 @deffn Procedure curl-easy-setopt handle option info
+
 This procedure sets the options for this @var{handle} that will
 describe what will happen when @code{curl-easy-perform} is called.  At
 a minimum, @code{curl-easy-setopt} must be called at least once per
 handle to set the @code{url} option.  @var{option} is a symbol name of
 an option, and @var{info} is additional information needed for the
-option.  @xref{Options}, for a table of options and their associated
-required type.
+option.  @xref{Options for setopt}, for a table of options and their
+associated required type.
 
 @quotation important
 Options for a handle are not cleared after @code{curl-easy-perform} is
@@ -444,8 +445,110 @@ This may throw an error if @var{handle} is already closed or if
 @var{option} is not the correct type.
 @end deffn
 
-@node Options, Error Codes, Procedures, Reference
-@section Options
+@deffn Procedure curl-easy-getinfo handle option
+This procedure will extract internal information from a curl handle.
+The @var{option} is an symbol that indicates the value to be
+returned. The returned value is either the requested value or
+is @code{#f} on error.
+
+You must execute an operation on a handle with
+@code{curl-easy-perform} before @code{curl-easy-getinfo} can be called
+on that handle.
+
+@quotation important
+Care must be taken not do disrupt internal values managed by
+curl. For example, this procedure can return a file descriptor which
+is managed by curl and should not be closed.
+@end quotation
+
+This may throw an error if @var{handle} is already closed or has not
+yet been used to perform an operation.  Also, it may thrown an error
+if @var{option} is not available for the version of curl being used.
+@end deffn
+
+The @code{curl-easy-getinfo} procedure takes one of the option
+symbols give in the first column of the table below. These symbols
+are shorthand for the underlying CURL option given in the 2nd column.
+
+Note that whether these options are available is dependent on the
+version of curl being used.  To verify that a particular option is
+available, check that the defined constant is not @code{#f}.  For
+example, to ensure the the @code{'xfer-id} option is available, check
+that the @code{CURLINFO_XFER_ID} evaluates to an integer.
+
+@multitable @columnfractions .25 .55 .25
+@headitem Option Symbol @tab C Library Name @tab Output Type
+
+@item activesocket @tab CURLINFO_ACTIVESOCKET @tab integer file descriptor
+@item appconnect-time @tab CURLINFO_APPCONNECT_TIME @tab real seconds
+@item appconnect-time-t @tab CURLINFO_APPCONNECT_TIME_T @tab integer microseconds
+@item cainfo @tab CURLINFO_CAINFO @tab string
+@item capath @tab CURLINFO_CAPATH @tab string
+@c @item certinfo @tab CURLINFO_CERTINFO @tab integer
+@item condition-unmet @tab CURLINFO_CONDITION_UNMET @tab integer 1 or zero
+@item connect-time @tab CURLINFO_CONNECT_TIME @tab real seconds
+@item connect-time-t @tab CURLINFO_CONNECT_TIME_T @tab integer microseconds
+@item conn-id @tab CURLINFO_CONN_ID @tab integer
+@item content-length-download-t @tab CURLINFO_CONTENT_LENGTH_DOWNLOAD_T @tab integer
+@item content-length-upload-t @tab CURLINFO_CONTENT_LENGTH_UPLOAD_T @tab integer
+@item cookielist @tab CURLINFO_COOKIELIST @tab list of strings
+@item earlydata-sent-t @tab CURLINFO_EARLYDATA_SENT_T @tab integer bytes
+@item effective-method @tab CURLINFO_EFFECTIVE_METHOD @tab string
+@item effective-url @tab CURLINFO_EFFECTIVE_URL @tab string
+@item filetime @tab CURLINFO_FILETIME @tab integer
+@item filetime-t @tab CURLINFO_FILETIME_T @tab integer
+@item ftp-entry-path @tab CURLINFO_FTP_ENTRY_PATH @tab string
+@item header-size @tab CURLINFO_HEADER_SIZE @tab integer
+@item httpauth-avail @tab CURLINFO_HTTPAUTH_AVAIL @tab bitfield of CURLAUTH constants @xref{Integer Constants for httpauth}
+@item httpauth-used @tab CURLINFO_HTTPAUTH_USED @tab bitfield of CURLAUTH constants @xref{Integer Constants for httpauth}
+@item http-connectcode @tab CURLINFO_HTTP_CONNECTCODE @tab integer
+@item http-version @tab CURLINFO_HTTP_VERSION @tab integer of CURL_HTTP_VERSION constants @xref{Integer Constants for http-version}
+@item local-ip @tab CURLINFO_LOCAL_IP @tab string
+@item local-port @tab CURLINFO_LOCAL_PORT @tab integer
+@item namelookup-time @tab CURLINFO_NAMELOOKUP_TIME @tab real seconds
+@item namelookup-time-t @tab CURLINFO_NAMELOOKUP_TIME_T @tab integer microseconds
+@item num-connects @tab CURLINFO_NUM_CONNECTS @tab integer
+@item os-errno @tab CURLINFO_OS_ERRNO @tab integer
+@item posttransfer-time-t @tab CURLINFO_POSTTRANSFER_TIME_T @tab integer microseconds
+@item pretransfer-time @tab CURLINFO_PRETRANSFER_TIME @tab real seconds
+@item pretransfer-time-t @tab CURLINFO_PRETRANSFER_TIME_T @tab integer microseconds
+@item primary-ip @tab CURLINFO_PRIMARY_IP @tab string
+@item primary-port @tab CURLINFO_PRIMARY_PORT @tab integer
+@item proxyauth-avail @tab CURLINFO_PROXYAUTH_AVAIL @tab bitfield of CURLAUTH constants
+@item proxyauth-used @tab CURLINFO_PROXYAUTH_USED @tab bitfield of CURLAUTH constants
+@item proxy-error @tab CURLINFO_PROXY_ERROR @tab integer of a CURLPX constant
+@item proxy-ssl-verifyresult @tab CURLINFO_PROXY_SSL_VERIFYRESULT @tab integer
+@item queue-time-t @tab CURLINFO_QUEUE_TIME_T @tab integer microseconds
+@item redirect-count @tab CURLINFO_REDIRECT_COUNT @tab integer
+@item redirect-time @tab CURLINFO_REDIRECT_TIME @tab real seconds
+@item redirect-time-t @tab CURLINFO_REDIRECT_TIME_T @tab integer microseconds
+@item redirect-url @tab CURLINFO_REDIRECT_URL @tab string
+@item referer @tab CURLINFO_REFERER @tab string
+@item request-size @tab CURLINFO_REQUEST_SIZE @tab integer
+@item response-code @tab CURLINFO_RESPONSE_CODE @tab integer
+@item retry-after @tab CURLINFO_RETRY_AFTER @tab integer
+@item rtsp-client-cseq @tab CURLINFO_RTSP_CLIENT_CSEQ @tab integer CSeq
+@item rtsp-cseq-recv @tab CURLINFO_RTSP_CSEQ_RECV @tab integer CSeq
+@item rtsp-server-cseq @tab CURLINFO_RTSP_SERVER_CSEQ @tab integer CSeq
+@item rtsp-session-id @tab CURLINFO_RTSP_SESSION_ID @tab string
+@item scheme @tab CURLINFO_SCHEME @tab string
+@item size-download-t @tab CURLINFO_SIZE_DOWNLOAD_T @tab integer
+@item size-upload-t @tab CURLINFO_SIZE_UPLOAD_T @tab integer
+@item speed-download-t @tab CURLINFO_SPEED_DOWNLOAD_T @tab integer microseconds
+@item speed-upload-t @tab CURLINFO_SPEED_UPLOAD_T @tab integer microseconds
+@item ssl-engines @tab CURLINFO_SSL_ENGINES @tab list of strings
+@item ssl-verifyresult @tab CURLINFO_SSL_VERIFYRESULT @tab integer
+@item starttransfer-time @tab CURLINFO_STARTTRANSFER_TIME @tab real seconds
+@item starttransfer-time-t @tab CURLINFO_STARTTRANSFER_TIME_T @tab integer microseconds
+@c tls-ssl-ptr
+@item total-time @tab CURLINFO_TOTAL_TIME @tab real seconds
+@item total-time-t @tab CURLINFO_TOTAL_TIME_T @tab integer microseconds
+@item used-proxy @tab CURLINFO_USED_PROXY @tab integer form of boolean
+@item xfer-id @tab CURLINFO_XFER_ID @tab integer ID
+@end multitable
+
+@node Options for setopt, Error Codes, Procedures, Reference
+@section Options for setopt
 
 The options that can be set by @code{curl-easy-setopt} are listed in
 this section.  For a much better an explanation of what each of these
@@ -458,7 +561,7 @@ you should have since it is required to compile this package.
 * Option Data Types::
 @end menu
 
-@node Option Table, Option Data Types, Options, Options
+@node Option Table, Option Data Types, Options for setopt, Options for setopt
 @subsection Option Table
 
 The table describes the options and the type of info expected for each
@@ -734,7 +837,7 @@ CURLOPT_SSH_HOST_PUBLIC_KEY_MD5 @tab string
 @item telnetoptions @tab CURLOPT_TELNETOPTIONS @tab slist
 @end multitable
 
-@node Option Data Types,  , Option Table, Options
+@node Option Data Types,  , Option Table, Options for setopt
 @subsection Option Data Types
 In the options table there are several possible types listed for the
 option info argument:
@@ -1045,8 +1148,7 @@ CURLSSH_AUTH_KEYBOARD,
 CURHSSH_AUTH_ANY
 @end flushleft
 
-
-@node Error Codes,  , Options, Reference
+@node Error Codes,  , Options for setopt, Reference
 @section Error Codes
 There is a set of named integer-value constants for the error codes.
 @table @code

@@ -79,6 +79,7 @@ _scm_from_handle (handle_post_t *x)
       fprintf (stderr, "\t      prequote %p\n", x->prequote);
       fprintf (stderr, "\t       resolve %p\n", x->resolve);
       fprintf (stderr, "\t telnetoptions %p\n", x->telnetoptions);
+      fprintf (stderr, "\t     transfers %d\n", x->transfers);
       fflush (stderr);
     }
 
@@ -123,6 +124,7 @@ gc_free_handle (SCM handle)
       fprintf (stderr, "\t      prequote %p\n", x->prequote);
       fprintf (stderr, "\t       resolve %p\n", x->resolve);
       fprintf (stderr, "\t telnetoptions %p\n", x->telnetoptions);
+      fprintf (stderr, "\t     transfers %d\n", x->transfers);
       fflush (stderr);
     }
 
@@ -179,6 +181,7 @@ gc_free_handle (SCM handle)
           curl_slist_free_all (x->telnetoptions);
           x->telnetoptions = NULL;
         }
+      x->transfers = 0;
       if (x->handle != NULL)
         {
           curl_easy_cleanup (x->handle);
