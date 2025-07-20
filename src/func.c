@@ -61,7 +61,6 @@ SCM DLL_PUBLIC cl_easy_init ()
     {
       fprintf (stderr, "Allocating <#handle %p>\n", hp);
       fprintf (stderr, "\t        handle %p\n", hp->handle);
-      fprintf (stderr, "\t      httppost %p\n", hp->httppost);
       fprintf (stderr, "\t    httpheader %p\n", hp->httpheader);
       fprintf (stderr, "\thttp200aliases %p\n", hp->http200aliases);
       fprintf (stderr, "\t     mail_rcpt %p\n", hp->mail_rcpt);
@@ -194,16 +193,8 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
         code = curl_easy_setopt (c_handle->handle, c_option, sl);
 
     }
-  else if (_scm_can_convert_to_httppost (param))
+  else if (c_option == CURLOPT_MIMEPOST)
     {
-      if (c_option == CURLOPT_HTTPPOST)
-        {
-          struct curl_httppost *p;
-          p = _scm_convert_to_httppost (param);
-          free (c_handle->httppost);
-          c_handle->httppost = p;
-          code = curl_easy_setopt (c_handle, CURLOPT_HTTPPOST, p);
-        }
     }
   else if (scm_is_true (scm_input_port_p (param)))
     {
@@ -628,33 +619,6 @@ xstrlen (const char *s)
   return strlen (s);
 }
 
-static void
-print_httppost (struct curl_httppost *hp)
-{
-  struct curl_httppost *p = hp;
-  int i = 0;
-  while (p != NULL)
-    {
-      fprintf (stderr, "\t\t%d: name: ", i);
-      print_mem (p->name, p->namelength);
-      fprintf (stderr, "\n\t\t   contents: ");
-      print_mem (p->contents, p->contentslength);
-      fprintf (stderr, "\n\t\t   buffer: ");
-      print_mem (p->buffer, p->bufferlength);
-      fprintf (stderr, "\n\t\t   contenttype: ");
-      print_mem (p->contenttype, xstrlen (p->contenttype));
-      fprintf (stderr, "\n\t\t   contentheader: ");
-      print_slist (p->contentheader);
-      fprintf (stderr, "\n\t\t   showfilename: ");
-      print_mem (p->showfilename, xstrlen (p->showfilename));
-      fprintf (stderr, "\n\t\t   flags: 0x%lx", p->flags);
-      fprintf (stderr, "\n");
-      i++;
-      p = p->next;
-    }
-}
-
-
 SCM DLL_PUBLIC
 cl_dump_handle (SCM handle)
 {
@@ -668,8 +632,6 @@ cl_dump_handle (SCM handle)
   fprintf (stderr, "\t    postfields %p\n", hp->postfields);
   fprintf (stderr, "\t postfieldsize %zu\n", hp->postfieldsize);
   print_mem (hp->postfields, hp->postfieldsize);
-  fprintf (stderr, "\t      httppost %p\n", hp->httppost);
-  print_httppost (hp->httppost);
   fprintf (stderr, "\t    httpheader %p\n", hp->httpheader);
   print_slist (hp->httpheader);
   fprintf (stderr, "\thttp200aliases %p\n", hp->http200aliases);

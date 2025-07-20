@@ -27,7 +27,6 @@ typedef struct handle_post_tag
   uint8_t *postfields;
   size_t postfieldsize;
   // curl_off_t postfieldsize_large;
-  struct curl_httppost *httppost;
   struct curl_slist *httpheader;
   struct curl_slist *http200aliases;
   struct curl_slist *mail_rcpt;
@@ -53,7 +52,5 @@ int _scm_can_convert_to_slist (SCM x);
 struct curl_slist *_scm_convert_to_slist (SCM x);
 int _scm_can_convert_to_byte_data (SCM x);
 uint8_t *_scm_convert_to_byte_data (SCM x, size_t *len);
-int _scm_can_convert_to_httppost (SCM x);
-struct curl_httppost *_scm_convert_to_httppost (SCM x);
 
 #endif

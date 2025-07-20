@@ -1,6 +1,6 @@
 ;; -*- Mode: scheme; -*-
 
-;;; Copyright (C) 2011, 2013, 2014, 2019, 2021 Michael L. Gran
+;;; Copyright (C) 2011, 2013, 2014, 2019, 2021, 2025 Michael L. Gran
 
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
@@ -601,7 +601,6 @@ cache, the cookies or the shared."
     (postfieldsize ,CURLOPT_POSTFIELDSIZE integer)
     (postfieldsize-large ,CURLOPT_POSTFIELDSIZE_LARGE biginteger)
     (copypostfields ,CURLOPT_COPYPOSTFIELDS bytevector)
-    (httppost ,CURLOPT_HTTPPOST httppost)
     (referer ,CURLOPT_REFERER string)
     (useragent ,CURLOPT_USERAGENT string)
     (httpheader ,CURLOPT_HTTPHEADER slist)

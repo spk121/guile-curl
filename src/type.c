@@ -70,7 +70,6 @@ _scm_from_handle (handle_post_t *x)
       fprintf (stderr, "Making <#handle %p>\n", x);
       fprintf (stderr, "\t        handle %p\n", x->handle);
       fprintf (stderr, "\t    postfields %p\n", x->postfields);
-      fprintf (stderr, "\t      httppost %p\n", x->httppost);
       fprintf (stderr, "\t    httpheader %p\n", x->httpheader);
       fprintf (stderr, "\thttp200aliases %p\n", x->http200aliases);
       fprintf (stderr, "\t     mail_rcpt %p\n", x->mail_rcpt);
@@ -115,7 +114,6 @@ gc_free_handle (SCM handle)
     {
       fprintf (stderr, "Freeing <#handle %p>\n", x);
       fprintf (stderr, "\t        handle %p\n", x->handle);
-      fprintf (stderr, "\t      httppost %p\n", x->httppost);
       fprintf (stderr, "\t    httpheader %p\n", x->httpheader);
       fprintf (stderr, "\thttp200aliases %p\n", x->http200aliases);
       fprintf (stderr, "\t     mail_rcpt %p\n", x->mail_rcpt);
@@ -135,11 +133,6 @@ gc_free_handle (SCM handle)
           free (x->postfields);
           x->postfields = NULL;
           x->postfieldsize = 0;
-        }
-      if (x->httppost != NULL)
-        {
-          curl_formfree (x->httppost);
-          x->httppost = NULL;
         }
       if (x->httpheader != NULL)
         {
@@ -370,37 +363,18 @@ _scm_convert_to_byte_data (SCM x, size_t *len)
     }
 }
 
-
-/* Each entry in an http post is a list of 2 to 4 elements.
-   1. name - string
-   2. data - byte data
-   3. mime - string, optional
-   4. filename - string, optional
 */
 static int
-_scm_can_convert_to_httppost_entry (SCM x)
 {
   size_t n;
 
   if (!SCM_IS_LIST(x))
-    return 0;
-  n = SCM_C_LIST_LENGTH(x);
-  if (n < 2 || n > 4)
-    return 0;
-  if (!scm_is_string (SCM_C_LIST_REF(x, 0)))
-    return 0;
-  if (!_scm_can_convert_to_byte_data (SCM_C_LIST_REF(x, 1)))
-    return 0;
-  if (n == 3 && !scm_is_string (SCM_C_LIST_REF(x, 2)))
-    return 0;
-  if (n == 4 && !scm_is_string (SCM_C_LIST_REF(x, 3)))
     return 0;
 
   return 1;
 }
 
 int
-_scm_can_convert_to_httppost (SCM x)
 {
   int i, n;
   SCM elt;
@@ -414,69 +388,15 @@ _scm_can_convert_to_httppost (SCM x)
   for (i = 0; i < n; i ++)
     {
       elt = SCM_C_LIST_REF(x, i);
-      if (!_scm_can_convert_to_httppost_entry (elt))
-	return 0;
     }
   return 1;
 }
 
-struct curl_httppost *
-_scm_convert_to_httppost (SCM x)
 {
-  struct curl_httppost *post = NULL;
-  struct curl_httppost *last = NULL;
-  size_t j,m,n;
 
-  n = SCM_C_LIST_LENGTH (x);
-  for (j = 0; j < n; j ++)
     {
-      char *name = NULL, *mime = NULL, *filename = NULL;
-      uint8_t *contents = NULL;
-      size_t name_len, contents_len;
-
-      SCM elt = SCM_C_LIST_REF (x, j);
-      m = SCM_C_LIST_LENGTH (elt);
-
-      name = scm_to_locale_stringn (SCM_C_LIST_REF (elt, 0), &name_len);
-      contents = _scm_convert_to_byte_data (SCM_C_LIST_REF (elt, 1),
-					    &contents_len);
-      if (m >= 3)
-	mime = scm_to_locale_string (SCM_C_LIST_REF (elt, 2));
-      if (m == 4)
-	filename = scm_to_locale_string (SCM_C_LIST_REF (elt, 3));
-      if (m == 2)
-	curl_formadd (&post, &last,
-		      CURLFORM_PTRNAME, name,
-		      CURLFORM_NAMELENGTH, name_len,
-		      CURLFORM_PTRCONTENTS, contents,
-		      CURLFORM_CONTENTSLENGTH, contents_len,
-		      CURLFORM_END);
-      else if (m == 3)
-	{
-	  curl_formadd (&post, &last,
-			CURLFORM_PTRNAME, name,
-			CURLFORM_NAMELENGTH, name_len,
-			CURLFORM_PTRCONTENTS, contents,
-			CURLFORM_CONTENTSLENGTH, contents_len,
-			CURLFORM_CONTENTTYPE, mime,
-			CURLFORM_END);
-	  free (mime);
-	}
-      else if (m == 4)
-	{
-	  curl_formadd (&post, &last,
-			CURLFORM_PTRNAME, name,
-			CURLFORM_NAMELENGTH, name_len,
-			CURLFORM_PTRCONTENTS, contents,
-			CURLFORM_CONTENTSLENGTH, contents_len,
-			CURLFORM_CONTENTTYPE, mime,
-			CURLFORM_FILENAME, filename,
-			CURLFORM_END);
-	  free (mime);
-	  free (filename);
-	}
+      curl_mimepart *part;
     }
-  return post;
 }
 
 void DLL_PUBLIC
