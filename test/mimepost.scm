@@ -84,8 +84,8 @@
                                                     ("filename=\"test.txt\"" #t)
                                                     ("Content-Type: text/plain" #t)
                                                     ("content" #t))))))))
-            
-      
+
+
       (for-each (lambda (test-case)
                   (let* ((name (car test-case))
                          (props (cdr test-case))
@@ -96,7 +96,7 @@
                          (extra-val (if setup
                                         (setup)
                                         #f)))
-                    
+
                     (test-group (symbol->string name)
                                 (curl-easy-setopt handle 'url url)
                                 (curl-easy-setopt handle 'verbose #t)
@@ -106,13 +106,13 @@
                                               (test-assert (format #f "response contains ~s" (car check))
                                                 (string-contains response (car check))))
                                             checks))
-                                
+
                                 (if cleanup
                                     (cleanup extra-val)))))
                 test-cases))
-    
+
     (test-group "filedata"
-                
+
                 (with-temp-file
                  (lambda (name port)
                    (display "filecontent" port)
@@ -122,7 +122,9 @@
                    (curl-easy-setopt handle 'mimepost
                                      `(((name . "file")
                                         (filedata . ,name))))
-                   (let ((response (utf8->string (curl-easy-perform handle #f #f))))
+                   (let* ((raw (curl-easy-perform handle #f #f))
+                          (response (if (string? raw) raw (utf8->string raw))))
+
                      (test-assert "response contains name=\"file\""
                        (string-contains response "name=\"file\""))
                      (test-assert (format #f "response contains filename=~S" (basename name))
@@ -130,26 +132,26 @@
                                         (format #f "filename=~S" (basename name))))
                      (test-assert "response contains filecontent"
                        (string-contains response "filecontent"))))))
-    
+
     ;; Common getinfo tests after one perform
     (test-group "curl-easy-getinfo"
                 (test-equal "HTTP Version"
                   CURL_HTTP_VERSION_1_1
                   (curl-easy-getinfo handle 'http-version))
-                
+
                 (test-equal "HTTP response code"
                   200
                   (curl-easy-getinfo handle 'response-code))
-                
+
                 (test-assert "Total time"
                   (number? (curl-easy-getinfo handle 'total-time)))
-                
+
                 (test-assert "Content length"
                   (number? (curl-easy-getinfo handle 'content-length-download-t)))
-                
+
                 (test-assert "Active socket"
                   (number? (curl-easy-getinfo handle 'activesocket))))
-    
+
     ;; Cleanup
     (curl-easy-cleanup handle)))
 
