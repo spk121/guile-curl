@@ -675,7 +675,7 @@ integer@footnote{@xref{Integer Constants for postredir}.}
 @c @item postfieldsize @tab CURLOPT_POSTFIELDSIZE @tab integer
 @c @item postfieldsize-large @tab CURLOPT_POSTFIELDSIZE_LARGE @tab biginteger
 @c @item copypostfields @tab CURLOPT_COPYPOSTFIELDS @tab bytevector
-@item httppost @tab CURLOPT_HTTPPOST @tab httppost
+@item mimepost @tab CURLOPT_MIMEPOST @tab mimepost
 @item referer @tab CURLOPT_REFERER @tab string
 @item useragent @tab CURLOPT_USERAGENT @tab string
 @item httpheader @tab CURLOPT_HTTPHEADER @tab
@@ -863,32 +863,99 @@ contains the Unicode code points U+0000 through U+00FF.
 A list containing zero or more strings. The scheme string is converted
 to a C string encoded in the current locale.
 
-@item httppost
-A list containing data that will be used for an HTTP Post operation.
-Obviously, this is only for handles for which the @code{url} option is
-set to an HTTP URL that will accept a Post operation.
+@item mimepost
+This is a list of association lists, where each association list
+contains one section of MIME post data.  Obviously, this is only for
+handles for which the @code{url} option is set to an scheme that will
+accept a POST operation, such as IMAP, HTTP, or SMTP.
 
-The @var{httppost} data is a list of one or more HTTP Post elements.
-The HTTP Post elements will be passed to the server in the order in
+The @var{mimepost} data is a list of one or more MIME Post elements.
+The MIME POST elements will be passed to the server in the order in
 which they appear in the list.
 
-Each HTTP Post element it itself a list.  The list has two required
-and two optional arguments.
+Each MIME POST part is itself an association list.  The association
+list can contain the following key/value pairs. The key is a @code{car}
+of a pair and is a symbol.  The value is the @code{cdr} of a pair, and its
+type is dependent on the specific key.
 
-@enumerate
-@item Name of the element [required @code{string}]
-@item Contents of the element [required @code{bytevector}]
-@item The mime type for this element [optional @code{string}]
-@item The filename of this element [optional @code{string}]
-@end enumerate
+@table @code
+@item name
+A string. It is the name of the MIME subpart. Each
+MIME subpart must have a name.
+@item type
+A string. This is MIME part's content type such as ``image/png''. If a type
+is not provided, a default MIME type will be determined by context, when
+possible.
+@item data
+A string or bytevector. This sets the MIME part's body content to be the
+contents of the string or bytevector. When given as a string, the string
+is interpreted in the UTF-8 encoding.
+@item filename
+A string. This sets a MIME part's remote filename. When the remote
+filename is set, content data is processed as a file, whatever then part's
+content source. A part's remote filename is transmitted to the server in the
+associated Content-Disposition generated header.
+@item filedata
+A string. This sets the MIME part's body content to be the content
+read from a local file of a given filename.
+@item encoder
+A string. This sets the MIME part's encode and content transfer encoding.
+When set, the part's content is encoded according to the pertaining scheme,
+and a corresponding ``Content-Transfer-Encoding'' header is added to the part.
+Supported encoding schemes are @code{binary}, @code{8bit}, @code{7bit} where
+the data is unchanged but will fail if a byte is not a 7-bit error,
+@code{base64}, and @code{quoted-printable} which is for ASCII data only.
 
-The @code{string} and @code{bytevector} types are as described above.
+Note that if the original data is already encoded in such a scheme, this
+option should not be used. Instead add a ``Content-Transfer-Encoding'' header
+with the @code{headers} key.
+@item headers
+A list of strings. Sets a MIME part's custom headers. Each string
+should have the form of a MIME custom header string, such as
+``Custom-Header: example''.
+@item port
+A datasize and a Guile input port.  This sets the MIME part's body
+data from the contents of a Guile input port, such as a string or file
+port. Due to limitations of the interface, the length of the contents in bytes
+to be sent must be known in advance and provided.
 
-@quotation important
-The format of this data structure will change in the next version
-@end quotation
+If the length provided is less than or equal to the total data available
+by the port, this will only send as many bytes as specified by the length.
+If the length provided is greater than the total data available by the port,
+the result is unspecified but includes the possibility that the operation
+may hang.
 
+See examples below.
 @end table
+@end table
+
+Here are some examples for the use of MIME data.
+
+Sending a file:
+@lisp
+(curl-easy-setopt handle 'mimepost
+  '(((name . "file")
+     (filedata . "image.png"))))
+(curl-easy-perform handle #f #f)
+@end lisp
+
+Sending multiple parts where the contents are specified directly:
+@lisp
+(curl-easy-setopt handle 'mimepost
+  '(((name . "count")
+     (data . "12345"))
+    ((name . "firstname")
+     (data . "Adam"))))
+@end lisp
+
+Sending the contents of a port. Note that the length of the output in
+bytes must be provided. In this example, the string `portdata' will be
+sent, which is 8 bytes.
+@lisp
+(curl-easy-setopt handle 'mimepost
+  `(((name . "portdata")
+     (port 8 ,(open-input-string "portdata")))))
+@end lisp
 
 @menu
 * Postfields::
