@@ -52,8 +52,8 @@
    (run-server simple-handler 'http `(#:port ,port))))
 
 (define (test-curl-mime-post)
-  (let ((port 8080)
-        (url "http://localhost:8080")
+  (let ((port 8088)
+        (url "http://localhost:8088")
         (handle (curl-easy-init)))
     (start-web-server port)
     (usleep 1000000)
@@ -85,12 +85,11 @@
                                                     ("Content-Type: text/plain" #t)
                                                     ("content" #t))))))))
 
-
       (for-each (lambda (test-case)
                   (let* ((name (car test-case))
                          (props (cdr test-case))
                          (setup (assoc-ref props 'setup))
-                         (mimedata (assoc-ref props 'mimedata))
+                          (mimedata (assoc-ref props 'mimedata))
                          (checks (assoc-ref props 'checks))
                          (cleanup (assoc-ref props 'cleanup))
                          (extra-val (if setup
@@ -104,7 +103,7 @@
                                 (let ((response (curl-easy-perform handle #f #f)))
                                   (for-each (lambda (check)
                                               (test-assert (format #f "response contains ~s" (car check))
-                                                (string-contains response (car check))))
+                                                (string-contains (pk 'substring1 response) (pk 'substring2 (car check)))))
                                             checks))
 
                                 (if cleanup
@@ -119,6 +118,7 @@
                    (force-output port)
                    (curl-easy-setopt handle 'url url)
                    (curl-easy-setopt handle 'verbose #t)
+                   (curl-easy-setopt handle 'port 8088)
                    (curl-easy-setopt handle 'mimepost
                                      `(((name . "file")
                                         (filedata . ,name))))
