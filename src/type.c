@@ -666,6 +666,7 @@ _scm_convert_to_mime_part (curl_mimepart *part, SCM alist)
           code = curl_mime_data_cb (part, datasize, read_scm_port, seek_scm_port, free_scm_port, mime_port);
           if (code != CURLE_OK)
             scm_misc_error ("%list->mime-part", "failed to set MIME part callbacks for Scheme ports", SCM_EOL);
+          scm_gc_protect_object (mime_port->port);
         }
       else
           scm_misc_error ("%list->mime-part", "unknown MIME part: ~S", scm_list_1 (scm_car (entry)));
@@ -728,6 +729,7 @@ free_scm_port (void *arg)
     return;
 
   p = (mime_port_t *) arg;
+  scm_gc_unprotect_object (p->port);
   free (p->buffer);
   p->buffer = NULL;
   free (p);
