@@ -570,7 +570,11 @@ _scm_convert_to_mime_part (curl_mimepart *part, SCM alist)
           code = curl_mime_filedata (part, filename);
           free (filename);
           if (code != CURLE_OK)
-            scm_misc_error ("%list->mime-part", "failed to set MIME part filedata: ~A", scm_list_1 (scm_cdr (entry)));
+            {
+              SCM cerr = scm_from_utf8_string (curl_easy_strerror (code));
+              scm_misc_error ("%list->mime-part", "failed to set MIME part filedata: ~A: ~A",
+                              scm_list_2 (cerr, scm_cdr (entry)));
+            }
         }
       else if (strcmp (key, "encoder") == 0)
         {

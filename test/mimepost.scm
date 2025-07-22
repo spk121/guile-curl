@@ -20,11 +20,24 @@
              (ice-9 threads)
              (rnrs bytevectors)
              (curl)
-             ;; (ice-9 ports)
-             ;; (ice-9 exceptions)
              )
 
 (test-begin "mime-post")
+
+(define (with-temp-file proc)
+  (let* ((tmpdir (or (getenv "TMPDIR")
+                     (getenv "TEMP")
+                     "/tmp"))
+         (name (string-append tmpdir "/mimepost-test.XXXXXX"))
+         (port (mkstemp! name)))
+    (let ((res (with-throw-handler
+                #t
+                (lambda ()
+                  (proc name port))
+                (lambda _
+                  (delete-file name)))))
+      (delete-file name)
+      res)))
 
 ;; Define a simple web server handler that echoes the request body for POST
 (define (simple-handler request request-body)
@@ -45,24 +58,6 @@
     (start-web-server port)
     (usleep 1000000)
 
-    ;; Wait for the server to start by polling with a simple GET
-    #; (let loop ((tries 20))
-      (if (zero? tries)
-          (test-error "Server failed to start")
-          ;; else
-          (when (with-exception-handler
-                    (lambda (ex)
-                      #f)
-                  (lambda ()
-                    (let ((h (curl-easy-init)))
-                      (curl-easy-setopt h 'url url)
-                      (let ((response (curl-easy-perform h #f #f)))
-                        (curl-easy-cleanup h)
-                        (string=? response "Hello, Guile!"))))
-                  #:unwind? #t)
-            (begin (usleep 50000)
-                   (loop (1- tries))))))
-      
     ;; Test cases
     (let* ((test-cases
             `((simple-text . ((mimedata . (((name . "numbers")
@@ -81,17 +76,6 @@
                                             ("12345" #t)
                                             ("name=\"letters\"" #t)
                                             ("abcde" #t)))))
-              (file-data . ((setup . ,(lambda ()
-                                        (let* ((tmpport (open-file "temp.txt" "w")))
-                                          (display "filecontent" tmpport)
-                                          (force-output tmpport)
-                                          (port-filename tmpport))))
-                            (mimedata . (((name . "file")
-                                          (filedata . "test.txt"))))
-                            (cleanup . ,(lambda (filename)
-                                          (delete-file "test.txt")))
-                            (checks . (("name=\"file\"" #t)
-                                       ("filecontent" #t)))))              
               (with-type-and-filename . ((mimedata . (((name . "file")
                                                        (data . "content")
                                                        (type . "text/plain")
@@ -116,12 +100,7 @@
                     (test-group (symbol->string name)
                                 (curl-easy-setopt handle 'url url)
                                 (curl-easy-setopt handle 'verbose #t)
-                                (curl-easy-setopt handle 'mimepost
-                                                  (if extra-val
-                                                      ;;(subst mimedata filename extra-val) ; pseudo
-                                                      (pk 'zzz mimedata)
-                                                      mimedata
-                                                      ))
+                                (curl-easy-setopt handle 'mimepost mimedata)
                                 (let ((response (curl-easy-perform handle #f #f)))
                                   (for-each (lambda (check)
                                               (test-assert (format #f "response contains ~s" (car check))
@@ -130,7 +109,27 @@
                                 
                                 (if cleanup
                                     (cleanup extra-val)))))
-                  test-cases))
+                test-cases))
+    
+    (test-group "filedata"
+                
+                (with-temp-file
+                 (lambda (name port)
+                   (display "filecontent" port)
+                   (force-output port)
+                   (curl-easy-setopt handle 'url url)
+                   (curl-easy-setopt handle 'verbose #t)
+                   (curl-easy-setopt handle 'mimepost
+                                     `(((name . "file")
+                                        (filedata . ,name))))
+                   (let ((response (utf8->string (curl-easy-perform handle #f #f))))
+                     (test-assert "response contains name=\"file\""
+                       (string-contains response "name=\"file\""))
+                     (test-assert (format #f "response contains filename=~S" (basename name))
+                       (string-contains response
+                                        (format #f "filename=~S" (basename name))))
+                     (test-assert "response contains filecontent"
+                       (string-contains response "filecontent"))))))
     
     ;; Common getinfo tests after one perform
     (test-group "curl-easy-getinfo"
