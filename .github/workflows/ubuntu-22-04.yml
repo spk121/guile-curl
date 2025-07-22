@@ -14,7 +14,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: env
-      run: export LANG=C.UTF-8 TERM=dumb VERBOSE=true DEBIAN_FRONTEND=noninteractive TZ=America/Los_Angeles
+      run: export LANG=C.UTF-8 TERM=dumb VERBOSE=true DEBIAN_FRONTEND=noninteractive COLUMNS=1000 TZ=America/Los_Angeles
     - name: install packages
       run: sudo apt-get install -y curl libcurl4-openssl-dev guile-3.0-dev gnulib texlive
     - name: look for guile
