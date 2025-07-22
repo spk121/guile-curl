@@ -195,6 +195,8 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
     }
   else if (c_option == CURLOPT_MIMEPOST)
     {
+        curl_mime *m = _scm_convert_to_mime(c_handle->handle, param);
+        code = curl_easy_setopt(c_handle->handle, CURLOPT_MIMEPOST, m);
     }
   else if (scm_is_true (scm_input_port_p (param)))
     {

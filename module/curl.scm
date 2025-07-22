@@ -754,6 +754,7 @@ cache, the cookies or the shared."
     (new-file-perms ,CURLOPT_NEW_FILE_PERMS integer)
     (new-directory-perms ,CURLOPT_NEW_DIRECTORY_PERMS integer)
     (telnetoptions ,CURLOPT_TELNETOPTIONS slist)
+    (mimepost ,CURLOPT_MIMEPOST mime)
     ))
 
 (define (curl-easy-setopt handle option arg)
@@ -791,7 +792,12 @@ Returns #t on success and #f on failure."
            ((and (eq? type 'input-port)
                  (input-port? arg))
             (%curl-easy-setopt handle option arg #f))
-           ((not (member type '(integer boolean string biginteger slist httppost bytevector)))
+           ((eq? type 'mime)
+            ;; MIME has its own unique format of nested association lists.
+            ;; It is complicated, so it isn't pre-checked. It is check
+            ;; during execution of setopt.
+            (%curl-easy-setopt handle option arg #f))
+           ((not (member type '(integer boolean string biginteger slist httppost bytevector mime)))
             (error (format #f "unimplemented type: ~a" type)))
            (else
             (error (format #f "wrong type arg: ~a" arg)))))
@@ -876,7 +882,7 @@ or curl-error-string for more information."
     (if value
         (%curl-easy-getinfo handle value)
         ;; else
-        (error (format #f "unknown option: ~a" option)))))        
+        (error (format #f "unknown option: ~a" option)))))
 
 (define* (curl-easy-perform handle #:optional (bytevector? #f) (header? #f))
   "This function is called after the init and all the curl-easy-setopt

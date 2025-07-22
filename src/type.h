@@ -1,6 +1,6 @@
 /* Constants for guile-curl
 
-   Copyright (c) 2011, 2013 Michael L. Gran
+   Copyright (c) 2011, 2013, 2025 Michael L. Gran
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -52,5 +52,7 @@ int _scm_can_convert_to_slist (SCM x);
 struct curl_slist *_scm_convert_to_slist (SCM x);
 int _scm_can_convert_to_byte_data (SCM x);
 uint8_t *_scm_convert_to_byte_data (SCM x, size_t *len);
+int _scm_can_convert_to_mimepost (SCM x);
+struct curl_mime *_scm_convert_to_mime (CURL *curl, SCM x);
 
 #endif
