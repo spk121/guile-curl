@@ -29,6 +29,14 @@ jobs:
       run: make
     - name: make check
       run: make check
+    - name: Upload test logs if failed
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-logs
+        path: |
+          *.log
+          test/*.log
     - name: make install
       run: make install
     - name: make distcheck
