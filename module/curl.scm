@@ -305,6 +305,20 @@
             CURLE_HTTP2_STREAM
 
             CURLE_OK
+            CURLE_WEIRD_SERVER_REPLY
+            CURLE_QUOTE_ERROR
+            CURLE_SETOPT_OPTION_SYNTAX
+            CURLE_RTSP_SESSION_ERROR
+            CURLE_AUTH_ERROR
+            CURLE_HTTP3
+            CURLE_QUIC_CONNECT_ERROR
+            CURLE_PROXY
+            CURLE_SSL_CLIENTCERT
+            CURLE_UNRECOVERABLE_POLL
+            CURLE_TOO_LARGE
+            CURLE_ECH_REQUIRED
+
+            CURLE_OK
             CURLE_UNSUPPORTED_PROTOCOL
             CURLE_FAILED_INIT
             CURLE_URL_MALFORMAT

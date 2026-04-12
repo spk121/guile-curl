@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script
 
-# Copyright 2001, 2013, 2014, 2016, 2017, 2019, 2021, 2025 Michael L Gran
+# Copyright 2001, 2013, 2014, 2016, 2017, 2019, 2021, 2025, 2026 Michael L Gran
 
 # This file is part of guile-curl.
 
@@ -20,7 +20,7 @@
 ##################
 # Package info
 AC_PREREQ([2.71])
-AC_INIT([guile_curl],[0.10],[spk121@yahoo.com])
+AC_INIT([guile_curl],[0.11],[spk121@yahoo.com])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([no-dependencies subdir-objects -Wall foreign])
 PKG_PROG_PKG_CONFIG
@@ -97,7 +97,20 @@ AC_CHECK_HEADERS([libguile.h], ,
 
 AC_CHECK_DECLS([CURLOPT_PROTOCOLS_STR,
                 CURLOPT_REDIR_PROTOCOLS_STR,
-                CURLINFO_TEXT],
+                CURLINFO_TEXT,
+                CURLE_WEIRD_SERVER_REPLY,
+                CURLE_QUOTE_ERROR,
+                CURLE_SETOPT_OPTION_SYNTAX,
+                CURLE_RTSP_SESSION_ERROR,
+                CURLE_RECURSIVE_API_CALL,
+                CURLE_AUTH_ERROR,
+                CURLE_HTTP3,
+                CURLE_QUIC_CONNECT_ERROR,
+                CURLE_PROXY,
+                CURLE_SSL_CLIENTCERT,
+                CURLE_UNRECOVERABLE_POLL,
+                CURLE_TOO_LARGE,
+                CURLE_ECH_REQUIRED],
                [], [],
                [[#include <curl/curl.h>]])
 CPPFLAGS="$tmp_CPPFLAGS"
