@@ -94,6 +94,12 @@ AC_CHECK_HEADER([curl/curl.h], ,
                 [AC_MSG_ERROR([<curl.h> was not found])])
 AC_CHECK_HEADERS([libguile.h], ,
                  [AC_MSG_ERROR([<libguile.h> was not found])])
+
+AC_CHECK_DECLS([CURLOPT_PROTOCOLS_STR,
+                CURLOPT_REDIR_PROTOCOLS_STR,
+                CURLINFO_TEXT],
+               [], [],
+               [[#include <curl/curl.h>]])
 CPPFLAGS="$tmp_CPPFLAGS"
 
 ##################

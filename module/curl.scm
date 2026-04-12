@@ -1,6 +1,6 @@
 ;; -*- Mode: scheme; -*-
 
-;;; Copyright (C) 2011, 2013, 2014, 2019, 2021, 2025 Michael L. Gran
+;;; Copyright (C) 2011, 2013, 2014, 2019, 2021, 2025, 2026 Michael L. Gran
 
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
@@ -173,6 +173,7 @@
             CURLINFO_FILETIME_T
             CURLINFO_FTP_ENTRY_PATH
             CURLINFO_HEADER_SIZE
+            CURLINFO_TEXT
             CURLINFO_HTTPAUTH_AVAIL
             CURLINFO_HTTPAUTH_USED
             CURLINFO_HTTP_CONNECTCODE
@@ -532,7 +533,9 @@ cache, the cookies or the shared."
     (url ,CURLOPT_URL string)
     (path-as-is ,CURLOPT_PATH_AS_IS boolean)
     (protocols ,CURLOPT_PROTOCOLS integer)
+    (protocols-str ,CURLOPT_PROTOCOLS_STR string)
     (redir-protocols ,CURLOPT_REDIR_PROTOCOLS integer)
+    (redir-protocols-str ,CURLOPT_REDIR_PROTOCOLS_STR string)
     (default-protocol ,CURLOPT_DEFAULT_PROTOCOL string)
     (proxy ,CURLOPT_PROXY string)
     (pre-proxy ,CURLOPT_PRE_PROXY string)
