@@ -56,3 +56,7 @@ stamp-h1
 test/.deps
 test/Makefile
 test/Makefile.in
+*.trs
+*.log
+*.exe
+

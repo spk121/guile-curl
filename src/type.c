@@ -17,6 +17,7 @@
 #define _GNU_SOURCE
 #include <config.h>
 #include <assert.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <libguile.h>
@@ -34,8 +35,8 @@ static scm_t_bits handle_tag;
 typedef struct mime_port_t
 {
   SCM port;
-  int size;
-  int position;
+  curl_off_t size;
+  curl_off_t position;
 } mime_port_t;
 
 int print_handle (SCM x, SCM port, scm_print_state *pstate);
@@ -57,9 +58,9 @@ _scm_is_handle (SCM x)
   if (SCM_SMOB_PREDICATE (handle_tag, x))
     {
       if ((handle_post_t *) SCM_SMOB_DATA (x) != (handle_post_t *) NULL)
-	return 1;
+        return 1;
       else
-	return 0;
+        return 0;
     }
   else
     return 0;
@@ -259,12 +260,12 @@ _scm_can_convert_to_slist (SCM x)
 
   n = SCM_C_LIST_LENGTH(x);
   if (n == 0)
-    return 1;			/* Empty slist */
+    return 1;                   /* Empty slist */
   for (i = 0; i < n; i ++)
     {
       elt = SCM_C_LIST_REF (x, i);
       if (!scm_is_string (elt))
-	return 0;
+        return 0;
     }
   return 1;
 }
@@ -333,7 +334,7 @@ _scm_can_convert_to_byte_data (SCM x)
     {
       n = scm_c_string_length (x);
       if (n == 0)
-        return 1;		/* Empty string */
+        return 1;               /* Empty string */
       for (i = 0; i < n; i ++)
         {
           c = SCM_C_STRING_REF (x, i);
@@ -447,12 +448,21 @@ _scm_can_convert_to_mimepost_entry (SCM x)
         }
       else if (scm_is_true (scm_eq_p (key, scm_from_utf8_symbol ("port"))))
         {
+          int64_t datasize_i64;
+          curl_off_t datasize;
+
           if (scm_to_int (scm_length (entry)) != 3)
             return 0;
           if (scm_is_false (scm_integer_p (scm_cadr (entry))))
             return 0;
-          if (scm_to_int (scm_cadr (entry)) < 0)
+
+          datasize_i64 = scm_to_int64 (scm_cadr (entry));
+          if (datasize_i64 < 0)
             return 0;
+          datasize = (curl_off_t) datasize_i64;
+          if ((int64_t) datasize != datasize_i64)
+            return 0;
+
           if (scm_is_false (scm_input_port_p (scm_caddr (entry))))
             return 0;
         }
@@ -473,7 +483,7 @@ _scm_can_convert_to_mimepost (SCM x)
 
   n = SCM_C_LIST_LENGTH(x);
   if (n == 0)
-    return 0;			/* Empty post is invalid */
+    return 0;                   /* Empty post is invalid */
   for (i = 0; i < n; i ++)
     {
       elt = SCM_C_LIST_REF(x, i);
@@ -563,14 +573,23 @@ _scm_convert_to_mime_part (curl_mimepart *part, SCM alist)
           CURLcode code;
 
           if (name_found)
-            scm_misc_error ("%list->mime-part", "duplicate MIME part field: name", SCM_EOL);
+            {
+              free (key);
+              scm_misc_error ("%list->mime-part", "duplicate MIME part field: name", SCM_EOL);
+            }
           if (scm_is_false (scm_string_p (scm_cdr (entry))))
-            scm_wrong_type_arg_msg ("%list->mime-part", 0, scm_cdr (entry), "string");
+            {
+              free (key);
+              scm_wrong_type_arg_msg ("%list->mime-part", 0, scm_cdr (entry), "string");
+            }
           name = scm_to_utf8_stringn (scm_cdr (entry), &name_len);
           code = curl_mime_name (part, name);
           free (name);
           if (code != CURLE_OK)
-            scm_misc_error ("%list->mime-part", "failed to set MIME part name: ~A", scm_list_1 (scm_cdr (entry)));
+            {
+              free (key);
+              scm_misc_error ("%list->mime-part", "failed to set MIME part name: ~A", scm_list_1 (scm_cdr (entry)));
+            }
           name_found = 1;
         }
       else if (strcmp (key, "type") == 0)
@@ -580,14 +599,23 @@ _scm_convert_to_mime_part (curl_mimepart *part, SCM alist)
           CURLcode code;
 
           if (type_found)
-            scm_misc_error ("%list->mime-part", "duplicate MIME part field: type", SCM_EOL);
+            {
+              free (key);
+              scm_misc_error ("%list->mime-part", "duplicate MIME part field: type", SCM_EOL);
+            }
           if (scm_is_false (scm_string_p (scm_cdr (entry))))
-            scm_wrong_type_arg_msg ("%list->mime-part", 0, scm_cdr (entry), "string");
+            {
+              free (key);
+              scm_wrong_type_arg_msg ("%list->mime-part", 0, scm_cdr (entry), "string");
+            }
           type = scm_to_utf8_stringn (scm_cdr (entry), &type_len);
           code = curl_mime_type (part, type);
           free (type);
           if (code != CURLE_OK)
-            scm_misc_error ("%list->mime-part", "failed to set MIME part type: ~A", scm_list_1 (scm_cdr (entry)));
+            {
+              free (key);
+              scm_misc_error ("%list->mime-part", "failed to set MIME part type: ~A", scm_list_1 (scm_cdr (entry)));
+            }
           type_found = 1;
         }
       else if (strcmp (key, "data") == 0)
@@ -598,12 +626,21 @@ _scm_convert_to_mime_part (curl_mimepart *part, SCM alist)
           CURLcode code;
 
           if (data_found)
-            scm_misc_error ("%list->mime-part", "duplicate MIME part field: data", SCM_EOL);
+            {
+              free (key);
+              scm_misc_error ("%list->mime-part", "duplicate MIME part field: data", SCM_EOL);
+            }
           if (filedata_found || port_found)
-            scm_misc_error ("%list->mime-part", "MIME part content must specify exactly one of data, filedata, or port", SCM_EOL);
+            {
+              free (key);
+              scm_misc_error ("%list->mime-part", "MIME part content must specify exactly one of data, filedata, or port", SCM_EOL);
+            }
           sdata = scm_cdr (entry);
           if (scm_is_false (scm_string_p (sdata)) && scm_is_false (scm_bytevector_p (sdata)))
-            scm_wrong_type_arg_msg ("%list->mime-part", 0, sdata, "string or bytevector");
+            {
+              free (key);
+              scm_wrong_type_arg_msg ("%list->mime-part", 0, sdata, "string or bytevector");
+            }
           if (scm_is_true (scm_string_p (sdata)))
             {
               data = scm_to_utf8_stringn (sdata, &data_len);
@@ -613,7 +650,10 @@ _scm_convert_to_mime_part (curl_mimepart *part, SCM alist)
           else
             code = curl_mime_data (part, SCM_BYTEVECTOR_CONTENTS (sdata), SCM_BYTEVECTOR_LENGTH (sdata));
           if (code != CURLE_OK)
-            scm_misc_error ("%list->mime-part", "failed to set MIME part data: ~A", scm_list_1 (scm_cdr (entry)));
+            {
+              free (key);
+              scm_misc_error ("%list->mime-part", "failed to set MIME part data: ~A", scm_list_1 (scm_cdr (entry)));
+            }
           data_found = 1;
         }
       else if (strcmp (key, "filename") == 0)
@@ -623,14 +663,23 @@ _scm_convert_to_mime_part (curl_mimepart *part, SCM alist)
           CURLcode code;
 
           if (filename_found)
-            scm_misc_error ("%list->mime-part", "duplicate MIME part field: filename", SCM_EOL);
+            {
+              free (key);
+              scm_misc_error ("%list->mime-part", "duplicate MIME part field: filename", SCM_EOL);
+            }
           if (scm_is_false (scm_string_p (scm_cdr (entry))))
-            scm_wrong_type_arg_msg ("%list->mime-part", 0, scm_cdr (entry), "string");
+            {
+              free (key);
+              scm_wrong_type_arg_msg ("%list->mime-part", 0, scm_cdr (entry), "string");
+            }
           filename = scm_to_utf8_stringn (scm_cdr (entry), &filename_len);
           code = curl_mime_filename (part, filename);
           free (filename);
           if (code != CURLE_OK)
-            scm_misc_error ("%list->mime-part", "failed to set MIME part filename: ~A", scm_list_1 ( scm_cdr (entry)));
+            {
+              free (key);
+              scm_misc_error ("%list->mime-part", "failed to set MIME part filename: ~A", scm_list_1 ( scm_cdr (entry)));
+            }
           filename_found = 1;
         }
       else if (strcmp (key, "filedata") == 0)
@@ -640,11 +689,20 @@ _scm_convert_to_mime_part (curl_mimepart *part, SCM alist)
           CURLcode code;
 
           if (filedata_found)
-            scm_misc_error ("%list->mime-part", "duplicate MIME part field: filedata", SCM_EOL);
+            {
+              free (key);
+              scm_misc_error ("%list->mime-part", "duplicate MIME part field: filedata", SCM_EOL);
+            }
           if (data_found || port_found)
-            scm_misc_error ("%list->mime-part", "MIME part content must specify exactly one of data, filedata, or port", SCM_EOL);
+            {
+              free (key);
+              scm_misc_error ("%list->mime-part", "MIME part content must specify exactly one of data, filedata, or port", SCM_EOL);
+            }
           if (scm_is_false (scm_string_p (scm_cdr (entry))))
-            scm_wrong_type_arg_msg ("%list->mime-part", 0, scm_cdr (entry), "string");
+            {
+              free (key);
+              scm_wrong_type_arg_msg ("%list->mime-part", 0, scm_cdr (entry), "string");
+            }
           filename = scm_to_utf8_stringn (scm_cdr (entry), &filename_len);
           code = curl_mime_filedata (part, filename);
           free (filename);
@@ -663,14 +721,23 @@ _scm_convert_to_mime_part (curl_mimepart *part, SCM alist)
           CURLcode code;
 
           if (encoder_found)
-            scm_misc_error ("%list->mime-part", "duplicate MIME part field: encoder", SCM_EOL);
+            {
+              free (key);
+              scm_misc_error ("%list->mime-part", "duplicate MIME part field: encoder", SCM_EOL);
+            }
           if (scm_is_false (scm_string_p (scm_cdr (entry))))
-            scm_wrong_type_arg_msg ("%list->mime-part", 0, scm_cdr (entry), "string");
+            {
+              free (key);
+              scm_wrong_type_arg_msg ("%list->mime-part", 0, scm_cdr (entry), "string");
+            }
           encoder = scm_to_utf8_stringn (scm_cdr (entry), &encoder_len);
           code = curl_mime_encoder (part, encoder);
           free (encoder);
           if (code != CURLE_OK)
-            scm_misc_error ("%list->mime-part", "failed to set MIME part encoder: ~A", scm_list_1 (scm_cdr (entry)));
+            {
+              free (key);
+              scm_misc_error ("%list->mime-part", "failed to set MIME part encoder: ~A", scm_list_1 (scm_cdr (entry)));
+            }
           encoder_found = 1;
         }
       else if (strcmp (key, "headers") == 0)
@@ -684,16 +751,25 @@ _scm_convert_to_mime_part (curl_mimepart *part, SCM alist)
           CURLcode code;
 
           if (headers_found)
-            scm_misc_error ("%list->mime-part", "duplicate MIME part field: headers", SCM_EOL);
+            {
+              free (key);
+              scm_misc_error ("%list->mime-part", "duplicate MIME part field: headers", SCM_EOL);
+            }
           sheaders = scm_cdr (entry);
           if (scm_is_false (scm_list_p (sheaders)))
-            scm_wrong_type_arg_msg ("%list->mime-part", 0, sheaders, "list");
+            {
+              free (key);
+              scm_wrong_type_arg_msg ("%list->mime-part", 0, sheaders, "list");
+            }
           headers_len = scm_to_int (scm_length (sheaders));
           for (h = 0; h < headers_len; h ++)
             {
               shdr = scm_list_ref (sheaders, scm_from_int (h));
               if (scm_is_false (scm_string_p (shdr)))
-                scm_wrong_type_arg_msg ("%list->mime-part", 0, shdr, "string");
+                {
+                  free (key);
+                  scm_wrong_type_arg_msg ("%list->mime-part", 0, shdr, "string");
+                }
             }
 
           // Convert a scheme list to a curl slist
@@ -714,52 +790,98 @@ _scm_convert_to_mime_part (curl_mimepart *part, SCM alist)
           /* Let libcurl own the header list for this MIME part. */
           code = curl_mime_headers (part, headers, 1);
           if (code != CURLE_OK)
-            scm_misc_error ("%list->mime-part", "failed to set MIME part headers: ~A", scm_list_1 (sheaders));
+            {
+              free (key);
+              curl_slist_free_all (headers);
+              scm_misc_error ("%list->mime-part", "failed to set MIME part headers: ~A", scm_list_1 (sheaders));
+            }
           headers_found = 1;
         }
       else if (strcmp (key, "port") == 0)
         {
           // We use the curl_mime_data_cb to handle ports.
           SCM sport, sdatasize;
-          int datasize;
+          int64_t datasize_i64;
+          curl_off_t datasize;
           CURLcode code;
           mime_port_t *mime_port;
 
           if (port_found)
-            scm_misc_error ("%list->mime-part", "duplicate MIME part field: port", SCM_EOL);
+            {
+              free (key);
+              scm_misc_error ("%list->mime-part", "duplicate MIME part field: port", SCM_EOL);
+            }
           if (data_found || filedata_found)
-            scm_misc_error ("%list->mime-part", "MIME part content must specify exactly one of data, filedata, or port", SCM_EOL);
+            {
+              free (key);
+              scm_misc_error ("%list->mime-part", "MIME part content must specify exactly one of data, filedata, or port", SCM_EOL);
+            }
           if (scm_to_int (scm_length (entry)) != 3)
-            scm_wrong_type_arg_msg ("%list->mime-part", 0, entry, "list of 3 elements");
-          if (scm_is_false (scm_number_p (scm_cadr (entry))))
-            scm_wrong_type_arg_msg ("%list->mime-part", 0, scm_cadr (entry), "integer");
+            {
+              free (key);
+              scm_wrong_type_arg_msg ("%list->mime-part", 0, entry, "list of 3 elements");
+            }
+          if (scm_is_false (scm_integer_p (scm_cadr (entry))))
+            {
+              free (key);
+              scm_wrong_type_arg_msg ("%list->mime-part", 0, scm_cadr (entry), "integer");
+            }
           if (scm_is_false (scm_input_port_p (scm_caddr (entry))))
-            scm_wrong_type_arg_msg ("%list->mime-part", 0, scm_caddr (entry), "input port");
+            {
+              free (key);
+              scm_wrong_type_arg_msg ("%list->mime-part", 0, scm_caddr (entry), "input port");
+            }
           sdatasize = scm_cadr (entry);
           sport = scm_caddr (entry);
-          datasize = scm_to_int (sdatasize);
-          if (datasize < 0)
-            scm_wrong_type_arg_msg ("%list->mime-part", 0, sdatasize, "non-negative integer");
+            datasize_i64 = scm_to_int64 (sdatasize);
+            if (datasize_i64 < 0)
+            {
+              free (key);
+              scm_wrong_type_arg_msg ("%list->mime-part", 0, sdatasize, "non-negative integer");
+            }
+            datasize = (curl_off_t) datasize_i64;
+            if ((int64_t) datasize != datasize_i64)
+              {
+                free (key);
+                scm_wrong_type_arg_msg ("%list->mime-part", 0, sdatasize,
+                                        "integer representable as curl_off_t");
+              }
 
           mime_port = malloc (sizeof (mime_port_t));
           if (mime_port == NULL)
-            scm_misc_error ("%list->mime-part", "out of memory", SCM_EOL);
+            {
+              free (key);
+              scm_misc_error ("%list->mime-part", "out of memory", SCM_EOL);
+            }
           mime_port->port = sport;
           mime_port->size = datasize;
           mime_port->position = 0;
           code = curl_mime_data_cb (part, datasize, read_scm_port, NULL, free_scm_port, mime_port);
           if (code != CURLE_OK)
-            scm_misc_error ("%list->mime-part", "failed to set MIME part callbacks for Scheme ports", SCM_EOL);
+            {
+              free (key);
+              free (mime_port);
+              scm_misc_error ("%list->mime-part", "failed to set MIME part callbacks for Scheme ports", SCM_EOL);
+            }
           scm_gc_protect_object (mime_port->port);
           port_found = 1;
         }
       else
-          scm_misc_error ("%list->mime-part", "unknown MIME part: ~S", scm_list_1 (scm_car (entry)));
+        {
+          free (key);
+          scm_misc_error ("%list->mime-part", "unknown MIME part: ~S",
+                          scm_list_1 (scm_car (entry)));
+        }
+      free (key);
     }
   if (!name_found)
-    scm_misc_error ("%list->mime-part", "missing required MIME part field: name", SCM_EOL);
+    scm_misc_error ("%list->mime-part",
+                    "missing required MIME part field: name", SCM_EOL);
   if (!(data_found || filedata_found || port_found))
-    scm_misc_error ("%list->mime-part", "missing required MIME part content (data, filedata, or port)", SCM_EOL);
+    scm_misc_error ("%list->mime-part",
+                    "missing required MIME part content (data, filedata, or port)",
+                    SCM_EOL);
+
   return;
 }
 
@@ -767,6 +889,7 @@ static size_t
 read_scm_port (char *buffer, size_t size, size_t nitems, void *arg)
 {
   mime_port_t *p;
+  curl_off_t remaining;
   size_t to_read;
   size_t n;
 
@@ -777,12 +900,13 @@ read_scm_port (char *buffer, size_t size, size_t nitems, void *arg)
   to_read = size * nitems;
   if (p->position >= p->size)
     return 0;
-  if ((size_t) (p->size - p->position) < to_read)
-    to_read = (size_t) (p->size - p->position);
+  remaining = p->size - p->position;
+  if ((curl_off_t) to_read > remaining)
+    to_read = (size_t) remaining;
   n = scm_c_read (p->port, buffer, to_read);
   if (n == 0)
     return 0;
-  p->position += (int) n;
+  p->position += (curl_off_t) n;
   return n;
 }
 

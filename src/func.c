@@ -83,6 +83,8 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
   CURLoption c_option;
   CURLcode code = CURLE_UNSUPPORTED_PROTOCOL;
 
+  if (scm_is_false (option))
+    scm_error (SCM_BOOL_F, "cl-easy-setopt", "invalid option", SCM_BOOL_F, SCM_BOOL_F);
   SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "curl-easy-setopt");
   SCM_ASSERT (scm_is_integer (option), option, SCM_ARG2, "curl-easy-setopt");
 
