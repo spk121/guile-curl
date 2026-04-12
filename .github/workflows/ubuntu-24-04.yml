@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
     - name: env
       run: export LANG=C.UTF-8 TERM=dumb VERBOSE=true DEBIAN_FRONTEND=noninteractive COLUMNS=1000 TZ=America/Los_Angeles
     - name: install packages
@@ -31,7 +31,7 @@ jobs:
       run: make check
     - name: Upload test logs if failed
       if: failure()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: test-logs
         path: |
@@ -42,14 +42,14 @@ jobs:
     - name: make distcheck
       run: make distcheck
     - name: Archive production artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: dist
         path: dist
     - name: Uncompress tarballs
       run: gunzip *.tar.gz
     - name: Archive tarball
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: tarball
         path: ./*tar

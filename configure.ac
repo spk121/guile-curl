@@ -19,7 +19,7 @@
 
 ##################
 # Package info
-AC_PREREQ([2.73])
+AC_PREREQ([2.71])
 AC_INIT([guile_curl],[0.11],[spk121@yahoo.com])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([no-dependencies subdir-objects -Wall foreign])
