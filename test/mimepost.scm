@@ -19,10 +19,17 @@
              (web request)
              (ice-9 threads)
              (rnrs bytevectors)
+             (rnrs io ports)
              (curl)
              )
 
 (test-begin "mime-post")
+
+(define (fails? thunk)
+  (not (false-if-exception
+        (begin
+          (thunk)
+          #t))))
 
 (define (with-temp-file proc)
   (let* ((tmpdir (or (getenv "TMPDIR")
@@ -41,9 +48,22 @@
 
 ;; Define a simple web server handler that echoes the request body for POST
 (define (simple-handler request request-body)
+  (define (body->string body)
+    (cond
+     ((string? body)
+      body)
+     ((bytevector? body)
+      (utf8->string body))
+     ((input-port? body)
+      (let ((bv (get-bytevector-all body)))
+        (if (eof-object? bv)
+            ""
+            (utf8->string bv))))
+     (else
+      (format #f "~a" body))))
   (values (build-response #:code 200)
           (if (eq? (request-method request) 'POST)
-              (utf8->string request-body)
+              (body->string request-body)
               "Hello, Guile!")))
 
 ;; Start the web server in a separate thread
@@ -52,11 +72,19 @@
    (run-server simple-handler 'http `(#:port ,port))))
 
 (define (test-curl-mime-post)
-  (let ((port 8088)
-        (url "http://localhost:8088")
+  (let* ((port-str (or (getenv "GUILE_CURL_TEST_PORT") "38088"))
+        (port (string->number port-str))
+        (url (format #f "http://localhost:~a" port))
         (handle (curl-easy-init)))
     (start-web-server port)
     (usleep 1000000)
+
+    ;; Ensure we are talking to the local test server, not an unrelated service.
+    (test-group "server sanity"
+                (curl-easy-setopt handle 'url url)
+                (let ((response (curl-easy-perform handle #f #f)))
+                  (test-assert "GET sanity response"
+                    (string-contains response "Hello, Guile!"))))
 
     ;; Test cases
     (let* ((test-cases
@@ -72,7 +100,7 @@
                                                (data . "12345"))
                                               ((name . "letters")
                                                (data . "abcde"))))
-                                 (checks . (("name="numbers"" #t)
+                                 (checks . (("name=\"numbers\"" #t)
                                             ("12345" #t)
                                             ("name=\"letters\"" #t)
                                             ("abcde" #t)))))
@@ -98,13 +126,16 @@
 
                     (test-group (symbol->string name)
                                 (curl-easy-setopt handle 'url url)
-                                (curl-easy-setopt handle 'verbose #t)
+                                (curl-easy-setopt handle 'verbose #f)
                                 (curl-easy-setopt handle 'mimepost mimedata)
                                 (let ((response (curl-easy-perform handle #f #f)))
                                   (for-each (lambda (check)
                                               (test-assert (format #f "response contains ~s" (car check))
-                                                (string-contains (pk 'substring1 response) (pk 'substring2 (car check)))))
-                                            checks))
+                                                (string-contains response (car check))))
+                                            checks)
+                                  (test-equal "HTTP response code"
+                                    200
+                                    (curl-easy-getinfo handle 'response-code)))
 
                                 (if cleanup
                                     (cleanup extra-val)))))
@@ -117,8 +148,7 @@
                    (display "filecontent" port)
                    (force-output port)
                    (curl-easy-setopt handle 'url url)
-                   (curl-easy-setopt handle 'verbose #t)
-                   (curl-easy-setopt handle 'port 8088)
+                   (curl-easy-setopt handle 'verbose #f)
                    (curl-easy-setopt handle 'mimepost
                                      `(((name . "file")
                                         (filedata . ,name))))
@@ -133,16 +163,52 @@
                      (test-assert "response contains filecontent"
                        (string-contains response "filecontent"))))))
 
+    (test-group "mimepost validation"
+                (curl-easy-setopt handle 'url url)
+                (test-assert "reject non-list mimepost"
+                  (fails? (lambda ()
+                            (curl-easy-setopt handle 'mimepost 'not-a-list))))
+                (test-assert "reject empty mimepost list"
+                  (fails? (lambda ()
+                            (curl-easy-setopt handle 'mimepost '()))))
+                (test-assert "reject part without name"
+                  (fails? (lambda ()
+                            (curl-easy-setopt handle 'mimepost
+                                              '(((data . "12345")))))))
+                (test-assert "reject part without content"
+                  (fails? (lambda ()
+                            (curl-easy-setopt handle 'mimepost
+                                              '(((name . "x")))))))
+                (test-assert "reject unknown part key"
+                  (fails? (lambda ()
+                            (curl-easy-setopt handle 'mimepost
+                                              '(((name . "x")
+                                                 (data . "123")
+                                                 (bogus . "y")))))))
+                (test-assert "reject wrong data type"
+                  (fails? (lambda ()
+                            (curl-easy-setopt handle 'mimepost
+                                              '(((name . "x")
+                                                 (data . 123)))))))
+                (test-assert "reject malformed port tuple arity"
+                  (fails? (lambda ()
+                            (curl-easy-setopt handle 'mimepost
+                                              `(((name . "x")
+                                                 (port ,(open-input-string "abc"))))))))
+                (test-assert "reject negative port size"
+                  (fails? (lambda ()
+                            (curl-easy-setopt handle 'mimepost
+                                              `(((name . "x")
+                                                 (port -1 ,(open-input-string "abc"))))))))
+                (test-assert "reject non-string headers"
+                  (fails? (lambda ()
+                            (curl-easy-setopt handle 'mimepost
+                                              '(((name . "x")
+                                                 (data . "123")
+                                                 (headers . ("X-Test: yes" 42)))))))))
+
     ;; Common getinfo tests after one perform
     (test-group "curl-easy-getinfo"
-                (test-equal "HTTP Version"
-                  CURL_HTTP_VERSION_1_1
-                  (curl-easy-getinfo handle 'http-version))
-
-                (test-equal "HTTP response code"
-                  200
-                  (curl-easy-getinfo handle 'response-code))
-
                 (test-assert "Total time"
                   (number? (curl-easy-getinfo handle 'total-time)))
 

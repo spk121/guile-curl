@@ -34,8 +34,6 @@ static scm_t_bits handle_tag;
 typedef struct mime_port_t
 {
   SCM port;
-  char *buffer;
-  int capacity;
   int size;
   int position;
 } mime_port_t;
@@ -46,8 +44,6 @@ static void
 _scm_convert_to_mime_part (curl_mimepart *part, SCM alist);
 static size_t
 read_scm_port (char *buffer, size_t size, size_t nitems, void *arg);
-static int
-seek_scm_port(void *arg, curl_off_t offset, int origin);
 static void
 free_scm_port(void *arg);
 
@@ -194,6 +190,11 @@ gc_free_handle (SCM handle)
         {
           curl_slist_free_all (x->telnetoptions);
           x->telnetoptions = NULL;
+        }
+      if (x->mimepost != NULL)
+        {
+          curl_mime_free (x->mimepost);
+          x->mimepost = NULL;
         }
       x->transfers = 0;
       if (x->handle != NULL)
@@ -398,12 +399,66 @@ _scm_convert_to_byte_data (SCM x, size_t *len)
 static int
 _scm_can_convert_to_mimepost_entry (SCM x)
 {
-  size_t n;
+  size_t i, n;
 
   if (!SCM_IS_LIST(x))
     return 0;
 
-  // FIXME: obviously this is incomplete
+  n = SCM_C_LIST_LENGTH (x);
+  if (n == 0)
+    return 0;
+  for (i = 0; i < n; i ++)
+    {
+      SCM entry = SCM_C_LIST_REF (x, i);
+      SCM key;
+      if (scm_is_false (scm_pair_p (entry)))
+        return 0;
+      key = scm_car (entry);
+      if (scm_is_false (scm_symbol_p (key)))
+        return 0;
+
+      if (scm_is_true (scm_eq_p (key, scm_from_utf8_symbol ("name")))
+          || scm_is_true (scm_eq_p (key, scm_from_utf8_symbol ("type")))
+          || scm_is_true (scm_eq_p (key, scm_from_utf8_symbol ("filename")))
+          || scm_is_true (scm_eq_p (key, scm_from_utf8_symbol ("filedata")))
+          || scm_is_true (scm_eq_p (key, scm_from_utf8_symbol ("encoder"))))
+        {
+          if (scm_is_false (scm_string_p (scm_cdr (entry))))
+            return 0;
+        }
+      else if (scm_is_true (scm_eq_p (key, scm_from_utf8_symbol ("data"))))
+        {
+          SCM data = scm_cdr (entry);
+          if (scm_is_false (scm_string_p (data)) && scm_is_false (scm_bytevector_p (data)))
+            return 0;
+        }
+      else if (scm_is_true (scm_eq_p (key, scm_from_utf8_symbol ("headers"))))
+        {
+          SCM headers = scm_cdr (entry);
+          size_t j, hn;
+          if (!SCM_IS_LIST (headers))
+            return 0;
+          hn = SCM_C_LIST_LENGTH (headers);
+          for (j = 0; j < hn; j ++)
+            {
+              if (scm_is_false (scm_string_p (SCM_C_LIST_REF (headers, j))))
+                return 0;
+            }
+        }
+      else if (scm_is_true (scm_eq_p (key, scm_from_utf8_symbol ("port"))))
+        {
+          if (scm_to_int (scm_length (entry)) != 3)
+            return 0;
+          if (scm_is_false (scm_integer_p (scm_cadr (entry))))
+            return 0;
+          if (scm_to_int (scm_cadr (entry)) < 0)
+            return 0;
+          if (scm_is_false (scm_input_port_p (scm_caddr (entry))))
+            return 0;
+        }
+      else
+        return 0;
+    }
   return 1;
 }
 
@@ -508,6 +563,7 @@ _scm_convert_to_mime_part (curl_mimepart *part, SCM alist)
           free (name);
           if (code != CURLE_OK)
             scm_misc_error ("%list->mime-part", "failed to set MIME part name: ~A", scm_list_1 (scm_cdr (entry)));
+          name_found = 1;
         }
       else if (strcmp (key, "type") == 0)
         {
@@ -543,6 +599,7 @@ _scm_convert_to_mime_part (curl_mimepart *part, SCM alist)
             code = curl_mime_data (part, SCM_BYTEVECTOR_CONTENTS (sdata), SCM_BYTEVECTOR_LENGTH (sdata));
           if (code != CURLE_OK)
             scm_misc_error ("%list->mime-part", "failed to set MIME part data: ~A", scm_list_1 (scm_cdr (entry)));
+          content_found = 1;
         }
       else if (strcmp (key, "filename") == 0)
         {
@@ -575,6 +632,7 @@ _scm_convert_to_mime_part (curl_mimepart *part, SCM alist)
               scm_misc_error ("%list->mime-part", "failed to set MIME part filedata: ~A: ~A",
                               scm_list_2 (cerr, scm_cdr (entry)));
             }
+          content_found = 1;
         }
       else if (strcmp (key, "encoder") == 0)
         {
@@ -626,8 +684,8 @@ _scm_convert_to_mime_part (curl_mimepart *part, SCM alist)
                 }
               headers = temp;
             }
-          code = curl_mime_headers (part, headers, 0);
-          curl_slist_free_all (headers);
+          /* Let libcurl own the header list for this MIME part. */
+          code = curl_mime_headers (part, headers, 1);
           if (code != CURLE_OK)
             scm_misc_error ("%list->mime-part", "failed to set MIME part headers: ~A", scm_list_1 (sheaders));
         }
@@ -648,29 +706,28 @@ _scm_convert_to_mime_part (curl_mimepart *part, SCM alist)
           sdatasize = scm_cadr (entry);
           sport = scm_caddr (entry);
           datasize = scm_to_int (sdatasize);
+          if (datasize < 0)
+            scm_wrong_type_arg_msg ("%list->mime-part", 0, sdatasize, "non-negative integer");
 
           mime_port = malloc (sizeof (mime_port_t));
           if (mime_port == NULL)
             scm_misc_error ("%list->mime-part", "out of memory", SCM_EOL);
-          mime_port->buffer = malloc (datasize);
-          if (mime_port->buffer == NULL)
-            {
-              free (mime_port);
-              scm_misc_error ("%list->mime-part", "out of memory", SCM_EOL);
-            }
-          memset (mime_port->buffer, 0, datasize);
           mime_port->port = sport;
-          mime_port->capacity = datasize;
           mime_port->size = datasize;
           mime_port->position = 0;
-          code = curl_mime_data_cb (part, datasize, read_scm_port, seek_scm_port, free_scm_port, mime_port);
+          code = curl_mime_data_cb (part, datasize, read_scm_port, NULL, free_scm_port, mime_port);
           if (code != CURLE_OK)
             scm_misc_error ("%list->mime-part", "failed to set MIME part callbacks for Scheme ports", SCM_EOL);
           scm_gc_protect_object (mime_port->port);
+          content_found = 1;
         }
       else
           scm_misc_error ("%list->mime-part", "unknown MIME part: ~S", scm_list_1 (scm_car (entry)));
     }
+  if (!name_found)
+    scm_misc_error ("%list->mime-part", "missing required MIME part field: name", SCM_EOL);
+  if (!content_found)
+    scm_misc_error ("%list->mime-part", "missing required MIME part content (data, filedata, or port)", SCM_EOL);
   return;
 }
 
@@ -678,46 +735,23 @@ static size_t
 read_scm_port (char *buffer, size_t size, size_t nitems, void *arg)
 {
   mime_port_t *p;
-  int sz;
-  int n;
+  size_t to_read;
+  size_t n;
 
   if (buffer == NULL || arg == NULL)
     scm_misc_error ("%read-scm-port", "internal error", SCM_EOL);
 
   p = (mime_port_t *) arg;
-  sz = p->size - p->position;
-  nitems *= size;
-  if (sz > nitems)
-    sz = nitems;
-  if (sz)
-    n = scm_c_read (p->port, p->buffer + p->position, sz);
-  p->position += n;
+  to_read = size * nitems;
+  if (p->position >= p->size)
+    return 0;
+  if ((size_t) (p->size - p->position) < to_read)
+    to_read = (size_t) (p->size - p->position);
+  n = scm_c_read (p->port, buffer, to_read);
+  if (n == 0)
+    return 0;
+  p->position += (int) n;
   return n;
-}
-
-static int
-seek_scm_port (void *arg, curl_off_t offset, int origin)
-{
-  mime_port_t *p;
-
-  if (arg == NULL)
-    scm_misc_error ("%seek-scm-port", "internal error", SCM_EOL);
-
-  p = (mime_port_t *) arg;
-
-  switch(origin) {
-  case SEEK_END:
-    offset += p->size;
-    break;
-  case SEEK_CUR:
-    offset += p->position;
-    break;
-  }
-
-  if(offset < 0)
-    return CURL_SEEKFUNC_FAIL;
-  p->position = offset;
-  return CURL_SEEKFUNC_OK;
 }
 
 static void
@@ -730,8 +764,6 @@ free_scm_port (void *arg)
 
   p = (mime_port_t *) arg;
   scm_gc_unprotect_object (p->port);
-  free (p->buffer);
-  p->buffer = NULL;
   free (p);
   p = NULL;
 }

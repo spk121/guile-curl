@@ -35,6 +35,7 @@ typedef struct handle_post_tag
   struct curl_slist *prequote;
   struct curl_slist *resolve;
   struct curl_slist *telnetoptions;
+  curl_mime *mimepost;
   int transfers;
 } handle_post_t;
 
