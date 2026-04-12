@@ -42,7 +42,9 @@ typedef struct mime_port_t
 int print_handle (SCM x, SCM port, scm_print_state *pstate);
 
 static void
-_scm_convert_to_mime_part (curl_mimepart *part, SCM alist);
+_scm_convert_to_mime_part (curl_mimepart *part, SCM alist, CURL *curl);
+static struct curl_mime *
+_scm_convert_to_mime_subparts (CURL *curl, SCM subparts_list);
 static size_t
 read_scm_port (char *buffer, size_t size, size_t nitems, void *arg);
 static void
@@ -466,6 +468,22 @@ _scm_can_convert_to_mimepost_entry (SCM x)
           if (scm_is_false (scm_input_port_p (scm_caddr (entry))))
             return 0;
         }
+      else if (scm_is_true (scm_eq_p (key, scm_from_utf8_symbol ("subparts"))))
+        {
+          SCM subparts = scm_cdr (entry);
+          int spi, spn;
+          /* subparts should be a list of MIME part entries */
+          if (!SCM_IS_LIST (subparts))
+            return 0;
+          spn = SCM_C_LIST_LENGTH (subparts);
+          if (spn == 0)
+            return 0;  /* subparts list must be non-empty */
+          for (spi = 0; spi < spn; spi++)
+            {
+              if (!_scm_can_convert_to_mimepost_entry (SCM_C_LIST_REF (subparts, spi)))
+                return 0;
+            }
+        }
       else
         return 0;
     }
@@ -531,13 +549,66 @@ _scm_convert_to_mime (CURL *curl, SCM x)
       if (part == NULL)
         scm_misc_error ("%list->mime", "MIME part allocation failure", SCM_EOL);
 
-      _scm_convert_to_mime_part (part, spart);
+      _scm_convert_to_mime_part (part, spart, curl);
+    }
+  return mime;
+}
+
+static struct curl_mime *
+_scm_convert_to_mime_subparts (CURL *curl, SCM subparts_list)
+{
+  curl_mime *mime;
+  int j, m;
+
+  assert (curl != NULL);
+
+  /* Create a mime handle for subparts */
+  mime = curl_mime_init (curl);
+  if (mime == NULL)
+    scm_misc_error ("%list->mime-subparts", "MIME handle allocation failure", SCM_EOL);
+
+  /* subparts_list should be a list of alists */
+  if (scm_is_false (scm_list_p (subparts_list)))
+    scm_wrong_type_arg_msg ("%list->mime-subparts", 0, subparts_list, "list");
+  m = scm_to_int (scm_length (subparts_list));
+  if (m == 0)
+    scm_wrong_type_arg_msg ("%list->mime-subparts", 0, subparts_list, "non-empty list");
+  if (m > 1024)
+    scm_wrong_type_arg_msg ("%list->mime-subparts", 0, subparts_list, "list of length 1024 or less");
+
+  for (j = 0; j < m; j++)
+    {
+      curl_mimepart *subpart;
+      SCM spart;
+      int k, n;
+
+      /* Each element should be an alist */
+      spart = scm_list_ref (subparts_list, scm_from_int (j));
+      if (scm_is_false (scm_list_p (spart)))
+        {
+          curl_mime_free (mime);
+          scm_wrong_type_arg_msg ("%list->mime-subparts", 0, spart, "list");
+        }
+      n = scm_to_int (scm_length (spart));
+      if (n == 0)
+        {
+          curl_mime_free (mime);
+          scm_wrong_type_arg_msg ("%list->mime-subparts", 0, spart, "non-empty list");
+        }
+      subpart = curl_mime_addpart (mime);
+      if (subpart == NULL)
+        {
+          curl_mime_free (mime);
+          scm_misc_error ("%list->mime-subparts", "MIME part allocation failure", SCM_EOL);
+        }
+
+      _scm_convert_to_mime_part (subpart, spart, curl);
     }
   return mime;
 }
 
 static void
-_scm_convert_to_mime_part (curl_mimepart *part, SCM alist)
+_scm_convert_to_mime_part (curl_mimepart *part, SCM alist, CURL *curl)
 {
   int k, n;
   int name_found = 0;
@@ -545,6 +616,7 @@ _scm_convert_to_mime_part (curl_mimepart *part, SCM alist)
   int data_found = 0;
   int filedata_found = 0;
   int port_found = 0;
+  int subparts_found = 0;
   int filename_found = 0;
   int encoder_found = 0;
   int headers_found = 0;
@@ -630,10 +702,10 @@ _scm_convert_to_mime_part (curl_mimepart *part, SCM alist)
               free (key);
               scm_misc_error ("%list->mime-part", "duplicate MIME part field: data", SCM_EOL);
             }
-          if (filedata_found || port_found)
+          if (filedata_found || port_found || subparts_found)
             {
               free (key);
-              scm_misc_error ("%list->mime-part", "MIME part content must specify exactly one of data, filedata, or port", SCM_EOL);
+              scm_misc_error ("%list->mime-part", "MIME part content must specify exactly one of data, filedata, port, or subparts", SCM_EOL);
             }
           sdata = scm_cdr (entry);
           if (scm_is_false (scm_string_p (sdata)) && scm_is_false (scm_bytevector_p (sdata)))
@@ -693,10 +765,10 @@ _scm_convert_to_mime_part (curl_mimepart *part, SCM alist)
               free (key);
               scm_misc_error ("%list->mime-part", "duplicate MIME part field: filedata", SCM_EOL);
             }
-          if (data_found || port_found)
+          if (data_found || port_found || subparts_found)
             {
               free (key);
-              scm_misc_error ("%list->mime-part", "MIME part content must specify exactly one of data, filedata, or port", SCM_EOL);
+              scm_misc_error ("%list->mime-part", "MIME part content must specify exactly one of data, filedata, port, or subparts", SCM_EOL);
             }
           if (scm_is_false (scm_string_p (scm_cdr (entry))))
             {
@@ -811,10 +883,10 @@ _scm_convert_to_mime_part (curl_mimepart *part, SCM alist)
               free (key);
               scm_misc_error ("%list->mime-part", "duplicate MIME part field: port", SCM_EOL);
             }
-          if (data_found || filedata_found)
+          if (data_found || filedata_found || subparts_found)
             {
               free (key);
-              scm_misc_error ("%list->mime-part", "MIME part content must specify exactly one of data, filedata, or port", SCM_EOL);
+              scm_misc_error ("%list->mime-part", "MIME part content must specify exactly one of data, filedata, port, or subparts", SCM_EOL);
             }
           if (scm_to_int (scm_length (entry)) != 3)
             {
@@ -866,10 +938,59 @@ _scm_convert_to_mime_part (curl_mimepart *part, SCM alist)
           scm_gc_protect_object (mime_port->port);
           port_found = 1;
         }
+      else if (strcmp (key, "subparts") == 0)
+        {
+          SCM ssubparts;
+          CURLcode code;
+          curl_mime *subparts_mime;
+
+          if (subparts_found)
+            {
+              free (key);
+              scm_misc_error ("%list->mime-part", "duplicate MIME part field: subparts", SCM_EOL);
+            }
+          if (data_found || filedata_found || port_found)
+            {
+              free (key);
+              scm_misc_error ("%list->mime-part", "MIME part content must specify exactly one of data, filedata, port, or subparts", SCM_EOL);
+            }
+          ssubparts = scm_cdr (entry);
+          if (scm_is_false (scm_list_p (ssubparts)))
+            {
+              free (key);
+              scm_wrong_type_arg_msg ("%list->mime-part", 0, ssubparts, "list");
+            }
+          if (scm_to_int (scm_length (ssubparts)) == 0)
+            {
+              free (key);
+              scm_wrong_type_arg_msg ("%list->mime-part", 0, ssubparts, "non-empty list");
+            }
+          /* Use the curl handle passed as parameter to create subparts mime structure */
+          if (curl == NULL)
+            {
+              free (key);
+              scm_misc_error ("%list->mime-part", "internal error: curl handle not available for subparts", SCM_EOL);
+            }
+          subparts_mime = _scm_convert_to_mime_subparts (curl, ssubparts);
+          if (subparts_mime == NULL)
+            {
+              free (key);
+              scm_misc_error ("%list->mime-part", "failed to create MIME subparts structure", SCM_EOL);
+            }
+          code = curl_mime_subparts (part, subparts_mime);
+          if (code != CURLE_OK)
+            {
+              curl_mime_free (subparts_mime);
+              free (key);
+              scm_misc_error ("%list->mime-part", "failed to set MIME part subparts: ~A",
+                              scm_list_1 (scm_from_utf8_string (curl_easy_strerror (code))));
+            }
+          subparts_found = 1;
+        }
       else
         {
           free (key);
-          scm_misc_error ("%list->mime-part", "unknown MIME part: ~S",
+          scm_misc_error ("%list->mime-part", "unknown MIME part field: ~S",
                           scm_list_1 (scm_car (entry)));
         }
       free (key);
@@ -877,9 +998,9 @@ _scm_convert_to_mime_part (curl_mimepart *part, SCM alist)
   if (!name_found)
     scm_misc_error ("%list->mime-part",
                     "missing required MIME part field: name", SCM_EOL);
-  if (!(data_found || filedata_found || port_found))
+  if (!(data_found || filedata_found || port_found || subparts_found))
     scm_misc_error ("%list->mime-part",
-                    "missing required MIME part content (data, filedata, or port)",
+                    "missing required MIME part content (data, filedata, port, or subparts)",
                     SCM_EOL);
 
   return;

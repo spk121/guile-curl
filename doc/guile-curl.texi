@@ -875,7 +875,7 @@ Validation rules for each MIME POST part:
 @item
 Each part must include @code{name}.
 @item
-Each part must include exactly one content source: @code{data}, @code{filedata}, or @code{port}.
+Each part must include exactly one content source: @code{data}, @code{filedata}, @code{port}, or @code{subparts}.
 @item
 Duplicate keys in a part are rejected.
 @item
@@ -929,6 +929,16 @@ If the length provided is greater than the total data available by the port,
 the result is unspecified but includes the possibility that the operation
 may hang.
 
+@item subparts
+A list of MIME part entries. This sets the MIME part's content to be a 
+multipart container with nested subparts. When a MIME part has subparts, 
+it represents a multipart message structure such as @code{multipart/mixed}
+or @code{multipart/alternative}. The subparts list has the same structure
+as the top-level mimepost list—a non-empty list of association lists, where 
+each subpart is configured the same way as top-level parts (with @code{name}, 
+@code{data}, @code{filedata}, @code{port}, @code{subparts}, etc.). 
+Note that subparts can be nested recursively to create complex MIME hierarchies.
+
 See examples below.
 @end table
 @end table
@@ -959,6 +969,22 @@ sent, which is 8 bytes.
 (curl-easy-setopt handle 'mimepost
   `(((name . "portdata")
      (port 8 ,(open-input-string "portdata")))))
+@end lisp
+
+Sending nested MIME subparts (multipart message structure):
+@lisp
+(curl-easy-setopt handle 'mimepost
+  '(((name . "alternative")
+     (type . "multipart/alternative")
+     (subparts . (((name . "text")
+                   (type . "text/plain")
+                   (data . "This is plain text"))
+                  ((name . "html")
+                   (type . "text/html")
+                   (data . "<html><body>This is HTML</body></html>")))))
+    ((name . "attachment")
+     (filename . "document.pdf")
+     (filedata . "/path/to/document.pdf"))))
 @end lisp
 
 @menu

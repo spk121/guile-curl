@@ -254,6 +254,45 @@
                                                  (data . "123")
                                                  (headers . ("X-Test: one"))
                                                  (headers . ("X-Test: two"))))))))
+                (test-assert "accept subparts as valid content source"
+                  (not (fails? (lambda ()
+                                 (curl-easy-setopt handle 'mimepost
+                                                   '(((name . "x")
+                                                      (subparts . (((name . "y")
+                                                                    (data . "content")))))))))))
+                (test-assert "reject empty subparts list"
+                  (fails? (lambda ()
+                            (curl-easy-setopt handle 'mimepost
+                                              '(((name . "x")
+                                                 (subparts . ())))))))
+                (test-assert "reject subparts with non-list value"
+                  (fails? (lambda ()
+                            (curl-easy-setopt handle 'mimepost
+                                              '(((name . "x")
+                                                 (subparts . "not-a-list")))))))
+                (test-assert "reject conflicting data and subparts"
+                  (fails? (lambda ()
+                            (curl-easy-setopt handle 'mimepost
+                                              '(((name . "x")
+                                                 (data . "123")
+                                                 (subparts . (((name . "y")
+                                                               (data . "content")))))))))))
+                (test-assert "reject conflicting filedata and subparts"
+                  (fails? (lambda ()
+                            (with-temp-file
+                             (lambda (name _)
+                               (curl-easy-setopt handle 'mimepost
+                                                 `(((name . "x")
+                                                    (filedata . ,name)
+                                                    (subparts . (((name . "y")
+                                                                  (data . "content")))))))))))
+                (test-assert "accept nested subparts (recursion)"
+                  (not (fails? (lambda ()
+                                 (curl-easy-setopt handle 'mimepost
+                                                   '(((name . "x")
+                                                      (subparts . (((name . "y")
+                                                                    (subparts . (((name . "z")
+                                                                                  (data . "deep"))))))))))))))))
                 )
 
     ;; Common getinfo tests after one perform
