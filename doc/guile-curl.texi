@@ -110,7 +110,7 @@ Options for setopt
 Option Data Types
 
 * Postfields::
-* Integer Constants for protocols::
+* String Values for protocols-str::
 * Integer Constants for proxytype::
 * Integer Constants for netrc::
 * Integer Constants for httpauth::
@@ -601,9 +601,8 @@ these types.
 @item NETWORK OPTIONS
 @item url @tab CURLOPT_URL @tab string
 @item path-as-is @tab CURLOPT_PATH_AS_IS @tab boolean
-@item protocols @tab CURLOPT_PROTOCOLS @tab
-integer@footnote{@xref{Integer Constants for protocols}.}
-@item redir-protocols @tab CURLOPT_REDIR_PROTOCOLS @tab integer@footnote{@xref{Integer Constants for protocols}.}
+@item protocols-str @tab CURLOPT_PROTOCOLS_STR @tab string@footnote{@xref{String Values for protocols-str}.}
+@item redir-protocols-str @tab CURLOPT_REDIR_PROTOCOLS_STR @tab string@footnote{@xref{String Values for protocols-str}.}
 @item default-protocol @tab CURLOPT_DEFAULT_PROTOCOL @tab string
 @item proxy @tab CURLOPT_PROXY @tab string
 @item pre-proxy @tab CURLOPT_PRE_PROXY @tab string
@@ -614,7 +613,6 @@ integer@footnote{@xref{Integer Constants for proxytype}.}
 @item httpproxytunnel @tab CURLOPT_HTTPPROXYTUNNEL @tab boolean
 @item connect-to @tab CURLOPT_CONNECT_TO @tab slist
 @item socks5-auth @tab CURLOPT_SOCKS5_AUTH @tab integer
-@item socks5-gssapi-service @tab CURLOPT_SOCKS5_GSSAPI_SERVICE @tab string
 @item socks5-gssapi-nec @tab CURLOPT_SOCKS5_GSSAPI_NEC @tab boolean
 @item proxy-service-name @tab CURLOPT_PROXY_SERVICE_NAME @tab string
 @item haproxyprotocol @tab CURLOPT_HAPROXYPROTOCOL @tab boolean
@@ -669,7 +667,6 @@ integer@footnote{@xref{Integer Constants for httpauth}.}
 @item maxredirs @tab CURLOPT_MAXREDIRS @tab integer
 @item postredir @tab CURLOPT_POSTREDIR @tab
 integer@footnote{@xref{Integer Constants for postredir}.}
-@item put @tab CURLOPT_PUT @tab boolean
 @item post @tab CURLOPT_POST @tab boolean
 @item postfields@footnote{@xref{Postfields}.} @tab CURLOPT_POSTFIELDS @tab bytevector
 @c @item postfieldsize @tab CURLOPT_POSTFIELDSIZE @tab integer
@@ -796,10 +793,8 @@ integer@footnote{@xref{Integer Constants for ftpsslauth}.}
 @item keypasswd @tab CURLOPT_KEYPASSWD @tab string
 @item proxy-keypasswd @tab CURLOPT_PROXY_KEYPASSWD @tab string
 @item ssl-enable-alpn @tab CURLOPT_SSL_ENABLE_ALPN @tab boolean
-@item ssl-enable-npn @tab CURLOPT_SSL_ENABLE_ALPN @tab boolean
 @item sslengine @tab CURLOPT_SSLENGINE @tab string
 @item sslengine-default @tab CURLOPT_SSLENGINE_DEFAULT @tab boolean
-@item ssl-falsestart @tab CURLOPT_SSL_FALSESTART @tab boolean
 @item sslversion @tab CURLOPT_SSLVERSION @tab integer@footnote{@xref{Integer Constants for sslversion}.}
 @item proxy-sslversion @tab CURLOPT_PROXY_SSLVERSION @tab integer@footnote{@xref{Integer Constants for sslversion}.}
 @item ssl-verifyhost @tab CURLOPT_SSL_VERIFYHOST @tab boolean
@@ -814,11 +809,8 @@ integer@footnote{@xref{Integer Constants for ftpsslauth}.}
 @item crlfile @tab CURLOPT_CRLFILE @tab string
 @item ssl-verifyhost @tab CURLOPT_SSL_VERIFYHOST @tab integer
 @item certinfo @tab CURLOPT_CERTINFO @tab boolean
-@item random-file @tab CURLOPT_RANDOM_FILE @tab string
-@item egdsocket @tab CURLOPT_EGDSOCKET @tab string
 @item ssl-cipher-list @tab CURLOPT_SSL_CIPHER_LIST @tab string
 @item ssl-sessionid-cache @tab CURLOPT_SSL_SESSIONID_CACHE @tab boolean
-@item krblevel @tab CURLOPT_KRBLEVEL @tab string
 @item gssapi-delegation @tab CURLOPT_GSSAPI_DELEGATION @tab integer@footnote{@xref{Integer Constants for gssapi-delegation}.}
 
 @item SSH OPTIONS
@@ -869,7 +861,7 @@ contains one section of MIME post data.  Obviously, this is only for
 handles for which the @code{url} option is set to an scheme that will
 accept a POST operation, such as IMAP, HTTP, or SMTP.
 
-The @var{mimepost} data is a list of one or more MIME Post elements.
+The @var{mimepost} data must be a non-empty list of MIME post elements.
 The MIME POST elements will be passed to the server in the order in
 which they appear in the list.
 
@@ -877,6 +869,18 @@ Each MIME POST part is itself an association list.  The association
 list can contain the following key/value pairs. The key is a @code{car}
 of a pair and is a symbol.  The value is the @code{cdr} of a pair, and its
 type is dependent on the specific key.
+
+Validation rules for each MIME POST part:
+@itemize @bullet
+@item
+Each part must include @code{name}.
+@item
+Each part must include exactly one content source: @code{data}, @code{filedata}, or @code{port}.
+@item
+Duplicate keys in a part are rejected.
+@item
+Unknown keys are rejected.
+@end itemize
 
 @table @code
 @item name
@@ -959,7 +963,7 @@ sent, which is 8 bytes.
 
 @menu
 * Postfields::
-* Integer Constants for protocols::
+* String Values for protocols-str::
 * Integer Constants for proxytype::
 * Integer Constants for netrc::
 * Integer Constants for httpauth::
@@ -976,7 +980,7 @@ sent, which is 8 bytes.
 * Integer Constants for ssh-auth-types::
 @end menu
 
-@node Postfields, Integer Constants for protocols, Option Data Types, Option Data Types
+@node Postfields, String Values for protocols-str, Option Data Types, Option Data Types
 @subsubsection Postfields
 
 The @code{postfields} option is treated somewhat different than with
@@ -990,44 +994,54 @@ Also, in this API, the postfields data is always copied from the
 source.  There is no need to hold on to the bytevector passed to the
 @code{postfields} option.
 
-@node Integer Constants for protocols, Integer Constants for proxytype, Postfields, Option Data Types
-@subsubsection Integer Constants for protocols
-The following list of integer constants can be used for the
-@code{protocols} and @code{redir-protocols} options.
+@node String Values for protocols-str, Integer Constants for proxytype, Postfields, Option Data Types
+@subsubsection String Values for protocols-str
+
+The @code{protocols-str} and @code{redir-protocols-str} options take
+a comma-separated list of case-insensitive URL scheme names.
+
+The following protocol names are supported by libcurl when available
+in the build:
 
 @flushleft
-  CURLPROTO_ALL,
-  CURLPROTO_DICT,
-  CURLPROTO_FILE,
-  CURLPROTO_FTP,
-  CURLPROTO_FTPS,
-  CURLPROTO_GOPHER,
-  CURLPROTO_HTTP,
-  CURLPROTO_HTTPS,
-  CURLPROTO_IMAP,
-  CURLPROTO_IMAPS,
-  CURLPROTO_LDAP,
-  CURLPROTO_LDAPS,
-  CURLPROTO_POP3,
-  CURLPROTO_POP3S,
-  CURLPROTO_RTMP,
-  CURLPROTO_RTMPE,
-  CURLPROTO_RTMPS,
-  CURLPROTO_RTMPT,
-  CURLPROTO_RTMPTE,
-  CURLPROTO_RTMPTS,
-  CURLPROTO_RTSP,
-  CURLPROTO_SCP,
-  CURLPROTO_SFTP,
-  CURLPROTO_SMB,
-  CURLPROTO_SMBS,
-  CURLPROTO_SMTP,
-  CURLPROTO_SMTPS,
-  CURLPROTO_TELNET,
-  CURLPROTO_TFTP
+DICT,
+FILE,
+FTP,
+FTPS,
+GOPHER,
+GOPHERS,
+HTTP,
+HTTPS,
+IMAP,
+IMAPS,
+LDAP,
+LDAPS,
+MQTT,
+MQTTS,
+POP3,
+POP3S,
+RTSP,
+SCP,
+SFTP,
+SMB,
+SMBS,
+SMTP,
+SMTPS,
+TELNET,
+TFTP,
+WS,
+WSS
 @end flushleft
 
-@node Integer Constants for proxytype, Integer Constants for netrc, Integer Constants for protocols, Option Data Types
+Use @code{ALL} to allow all protocols supported by the linked libcurl.
+
+Practical example:
+@example
+(curl-easy-setopt handle 'protocols-str "https,http")
+(curl-easy-setopt handle 'redir-protocols-str "https")
+@end example
+
+@node Integer Constants for proxytype, Integer Constants for netrc, String Values for protocols-str, Option Data Types
 @subsubsection Integer Constants for proxytype
 The following list of integer constants can be used for the
 @code{proxytype} option.
@@ -1227,7 +1241,7 @@ There is a set of named integer-value constants for the error codes.
 @item     CURLE_COULDNT_RESOLVE_PROXY
 @item     CURLE_COULDNT_RESOLVE_HOST
 @item     CURLE_COULDNT_CONNECT
-@item     CURLE_FTP_WEIRD_SERVER_REPLY
+@item     CURLE_WEIRD_SERVER_REPLY
 @item     CURLE_REMOTE_ACCESS_DENIED
 @item     CURLE_FTP_ACCEPT_FAILED
 @item     CURLE_FTP_WEIRD_PASS_REPLY
@@ -1239,7 +1253,7 @@ There is a set of named integer-value constants for the error codes.
 @item     CURLE_FTP_COULDNT_SET_TYPE
 @item     CURLE_PARTIAL_FILE
 @item     CURLE_FTP_COULDNT_RETR_FILE
-@item     CURLE_FTP_QUOTE_ERROR
+@item     CURLE_QUOTE_ERROR
 @item     CURLE_HTTP_RETURNED_ERROR
 @item     CURLE_WRITE_ERROR
 @item     CURLE_UPLOAD_FAILED
@@ -1248,25 +1262,18 @@ There is a set of named integer-value constants for the error codes.
 @item     CURLE_OPERATION_TIMEDOUT
 @item     CURLE_FTP_PORT_FAILED
 @item     CURLE_FTP_COULDNT_USE_REST
-@end table
-
-.
-
-@table @code
 @item     CURLE_RANGE_ERROR
-@item     CURLE_HTTP_POST_ERROR
 @item     CURLE_SSL_CONNECT_ERROR
 @item     CURLE_BAD_DOWNLOAD_RESUME
 @item     CURLE_FILE_COULDNT_READ_FILE
 @item     CURLE_LDAP_CANNOT_BIND
 @item     CURLE_LDAP_SEARCH_FAILED
-@item     CURLE_FUNCTION_NOT_FOUND
 @item     CURLE_ABORTED_BY_CALLBACK
 @item     CURLE_BAD_FUNCTION_ARGUMENT
 @item     CURLE_INTERFACE_FAILED
 @item     CURLE_TOO_MANY_REDIRECTS
 @item     CURLE_UNKNOWN_OPTION
-@item     CURLE_TELNET_OPTION_SYNTAX
+@item     CURLE_SETOPT_OPTION_SYNTAX
 @item     CURLE_GOT_NOTHING
 @item     CURLE_SSL_ENGINE_NOTFOUND
 @item     CURLE_SSL_ENGINE_SETFAILED
@@ -1276,7 +1283,6 @@ There is a set of named integer-value constants for the error codes.
 @item     CURLE_SSL_CIPHER
 @item     CURLE_PEER_FAILED_VERIFICATION
 @item     CURLE_BAD_CONTENT_ENCODING
-@item     CURLE_LDAP_INVALID_URL
 @item     CURLE_FILESIZE_EXCEEDED
 @item     CURLE_USE_SSL_FAILED
 @item     CURLE_SEND_FAIL_REWIND
@@ -1289,22 +1295,16 @@ There is a set of named integer-value constants for the error codes.
 @item     CURLE_TFTP_UNKNOWNID
 @item     CURLE_REMOTE_FILE_EXISTS
 @item     CURLE_TFTP_NOSUCHUSER
-@item     CURLE_CONV_FAILED
-@item     CURLE_CONV_REQD
 @item     CURLE_SSL_CACERT_BADFILE
 @item     CURLE_REMOTE_FILE_NOT_FOUND
 @item     CURLE_SSH
 @item     CURLE_SSL_SHUTDOWN_FAILED
 @item     CURLE_AGAIN
-@end table
-
-.
-
-@table @code
 @item     CURLE_SSL_CRL_BADFILE
 @item     CURLE_SSL_ISSUER_ERROR
 @item     CURLE_FTP_PRET_FAILED
 @item     CURLE_RTSP_CSEQ_ERROR
+@item     CURLE_RTSP_SESSION_ERROR
 @item     CURLE_FTP_BAD_FILE_LIST
 @item     CURLE_CHUNK_FAILED
 @item     CURLE_NO_CONNECTION_AVAILABLE
@@ -1312,6 +1312,14 @@ There is a set of named integer-value constants for the error codes.
 @item     CURLE_SSL_INVALIDCERTSTATUS
 @item     CURLE_HTTP2_STREAM
 @item     CURLE_RECURSIVE_API_CALL
+@item     CURLE_AUTH_ERROR
+@item     CURLE_HTTP3
+@item     CURLE_QUIC_CONNECT_ERROR
+@item     CURLE_PROXY
+@item     CURLE_SSL_CLIENTCERT
+@item     CURLE_UNRECOVERABLE_POLL
+@item     CURLE_TOO_LARGE
+@item     CURLE_ECH_REQUIRED
 @end table
 
 @node Index,  , Reference, Top
