@@ -190,6 +190,15 @@
                             (curl-easy-setopt handle 'mimepost
                                               '(((name . "x")
                                                  (data . 123)))))))
+                (test-assert "reject top-level list that is not list-of-alists"
+                  (fails? (lambda ()
+                            (curl-easy-setopt handle 'mimepost
+                                              '((name . "x"))))))
+                (test-assert "reject entry key that is not symbol"
+                  (fails? (lambda ()
+                            (curl-easy-setopt handle 'mimepost
+                                              '(((("name") . "x")
+                                                 (data . "123")))))))
                 (test-assert "reject malformed port tuple arity"
                   (fails? (lambda ()
                             (curl-easy-setopt handle 'mimepost
@@ -205,7 +214,47 @@
                             (curl-easy-setopt handle 'mimepost
                                               '(((name . "x")
                                                  (data . "123")
-                                                 (headers . ("X-Test: yes" 42)))))))))
+                                                 (headers . ("X-Test: yes" 42))))))))
+                (test-assert "reject invalid encoder value (libcurl error)"
+                  (fails? (lambda ()
+                            (curl-easy-setopt handle 'mimepost
+                                              '(((name . "x")
+                                                 (data . "123")
+                                                 (encoder . "not-a-valid-encoder")))))))
+                (test-assert "reject duplicate name field"
+                  (fails? (lambda ()
+                            (curl-easy-setopt handle 'mimepost
+                                              '(((name . "x")
+                                                 (name . "y")
+                                                 (data . "123")))))))
+                (test-assert "reject duplicate data field"
+                  (fails? (lambda ()
+                            (curl-easy-setopt handle 'mimepost
+                                              '(((name . "x")
+                                                 (data . "123")
+                                                 (data . "456")))))))
+                (test-assert "reject conflicting data and filedata"
+                  (fails? (lambda ()
+                            (with-temp-file
+                             (lambda (name _)
+                               (curl-easy-setopt handle 'mimepost
+                                                 `(((name . "x")
+                                                    (data . "123")
+                                                    (filedata . ,name)))))))))
+                (test-assert "reject conflicting data and port"
+                  (fails? (lambda ()
+                            (curl-easy-setopt handle 'mimepost
+                                              `(((name . "x")
+                                                 (data . "123")
+                                                 (port 3 ,(open-input-string "abc"))))))))
+                (test-assert "reject duplicate headers field"
+                  (fails? (lambda ()
+                            (curl-easy-setopt handle 'mimepost
+                                              '(((name . "x")
+                                                 (data . "123")
+                                                 (headers . ("X-Test: one"))
+                                                 (headers . ("X-Test: two"))))))))
+                )
 
     ;; Common getinfo tests after one perform
     (test-group "curl-easy-getinfo"

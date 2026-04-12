@@ -198,6 +198,13 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
       curl_mime *old_mime;
       curl_mime *new_mime;
 
+      if (!_scm_can_convert_to_mimepost (param))
+        scm_error (SCM_BOOL_F,
+                   "cl-easy-setopt",
+                   "CURLOPT_MIMEPOST requires a list of MIME part alists",
+                   SCM_BOOL_F,
+                   SCM_BOOL_F);
+
       old_mime = c_handle->mimepost;
       new_mime = _scm_convert_to_mime (c_handle->handle, param);
       code = curl_easy_setopt (c_handle->handle, CURLOPT_MIMEPOST, new_mime);
@@ -227,11 +234,13 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
                SCM_BOOL_F,
                SCM_BOOL_F);
   if (code != CURLE_OK)
-    scm_error (SCM_BOOL_F,
-               "curl-easy-setopt",
-               "bad handle",
-               SCM_BOOL_F,
-               SCM_BOOL_F);
+    {
+      error_code = code;
+      scm_misc_error ("curl-easy-setopt",
+                      "libcurl setopt failed: ~A (code ~A)",
+                      scm_list_2 (scm_from_utf8_string (curl_easy_strerror (code)),
+                                  scm_from_int ((int) code)));
+    }
 
   return SCM_UNSPECIFIED;
 }
