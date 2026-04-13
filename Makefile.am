@@ -126,6 +126,7 @@ TESTS = \
   test/setopt.scm \
   test/stress.scm \
   test/getinfo.scm \
+	test/sendrecv.scm \
   test/mimepost.scm
 
 SCM_LOG_DRIVER = \

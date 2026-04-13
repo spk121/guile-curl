@@ -25,6 +25,8 @@
             curl-easy-getinfo
             curl-easy-setopt
             curl-easy-perform
+            curl-easy-send
+            curl-easy-receive
             curl-easy-cleanup
             curl-easy-reset
             curl-error-string
@@ -816,6 +818,23 @@ calls are made, and will perform the transfer as described in the
 options.  It must be called with the same handle as input as the
 curl_easy_init call returned."
   (%curl-easy-perform handle bytevector? header?))
+
+(define (curl-easy-send handle data)
+  "Send DATA on a connected easy HANDLE using libcurl's curl_easy_send.
+DATA must be a string or bytevector.
+
+Returns the number of bytes sent, or #f on failure. On failure, inspect
+curl-error-code/curl-error-string (for example CURLE_AGAIN for would-block)."
+  (%curl-easy-send handle data))
+
+(define (curl-easy-receive handle max-bytes)
+  "Receive up to MAX-BYTES from a connected easy HANDLE using libcurl's
+curl_easy_recv.
+
+Returns a bytevector (possibly empty), or #f on failure. On failure,
+inspect curl-error-code/curl-error-string (for example CURLE_AGAIN for
+would-block)."
+  (%curl-easy-receive handle max-bytes))
 
 (define (curl-error-string)
   "Returns information about the last error as a string."

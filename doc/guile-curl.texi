@@ -413,6 +413,33 @@ The second is the body of the request, either as a string or as a
 bytevector, as described above.
 @end deffn
 
+@deffn Procedure curl-easy-send handle data
+Send @var{data} on an already connected @var{handle} using
+@code{curl_easy_send}.  The @var{data} value must be a string or
+bytevector.
+
+This procedure returns the number of bytes sent on success, or
+@code{#f} on failure.  On failure, inspect @code{curl-error-code} and
+@code{curl-error-string}.  In particular, @code{CURLE_AGAIN} indicates
+the operation would block and should be retried later.
+
+This low-level API is primarily useful with connect-only style flows.
+For regular transfers, prefer @code{curl-easy-perform}.
+@end deffn
+
+@deffn Procedure curl-easy-receive handle max-bytes
+Receive up to @var{max-bytes} bytes from an already connected
+@var{handle} using @code{curl_easy_recv}.
+
+This procedure returns a bytevector on success (possibly empty), or
+@code{#f} on failure.  On failure, inspect @code{curl-error-code} and
+@code{curl-error-string}.  In particular, @code{CURLE_AGAIN} indicates
+the operation would block and should be retried later.
+
+This low-level API is primarily useful with connect-only style flows.
+For regular transfers, prefer @code{curl-easy-perform}.
+@end deffn
+
 @deffn Procedure curl-error-string
 If a call to @code{curl-easy-perform} fails, calling this function
 will return information about the last error as a string.

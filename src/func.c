@@ -505,6 +505,83 @@ cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag)
   return (body_sf.scm);
 }
 
+SCM DLL_PUBLIC
+cl_easy_send (SCM handle, SCM data)
+{
+  handle_post_t *c_handle;
+  CURLcode code;
+  const void *buffer;
+  size_t buffer_len;
+  size_t sent = 0;
+  char *str = NULL;
+
+  SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "%curl-easy-send");
+
+  c_handle = _scm_to_handle (handle);
+  if (scm_is_true (scm_string_p (data)))
+    {
+      buffer = str = scm_to_utf8_stringn (data, &buffer_len);
+    }
+  else if (scm_is_true (scm_bytevector_p (data)))
+    {
+      buffer = SCM_BYTEVECTOR_CONTENTS (data);
+      buffer_len = SCM_BYTEVECTOR_LENGTH (data);
+    }
+  else
+    {
+      scm_wrong_type_arg_msg ("%curl-easy-send", 0, data, "string or bytevector");
+      return SCM_BOOL_F;
+    }
+
+  code = curl_easy_send (c_handle->handle, buffer, buffer_len, &sent);
+  if (str != NULL)
+    free (str);
+
+  if (code != CURLE_OK)
+    {
+      error_code = code;
+      return SCM_BOOL_F;
+    }
+
+  return scm_from_size_t (sent);
+}
+
+SCM DLL_PUBLIC
+cl_easy_receive (SCM handle, SCM max_bytes)
+{
+  handle_post_t *c_handle;
+  CURLcode code;
+  size_t max_len;
+  size_t n = 0;
+  unsigned char *buf;
+  SCM out;
+
+  SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "%curl-easy-receive");
+  SCM_ASSERT (scm_is_integer (max_bytes), max_bytes, SCM_ARG2, "%curl-easy-receive");
+
+  max_len = scm_to_size_t (max_bytes);
+  if (max_len == 0)
+    return scm_c_make_bytevector (0);
+
+  c_handle = _scm_to_handle (handle);
+  buf = malloc (max_len);
+  if (buf == NULL)
+    scm_misc_error ("%curl-easy-receive", "out of memory", SCM_EOL);
+
+  code = curl_easy_recv (c_handle->handle, buf, max_len, &n);
+  if (code != CURLE_OK)
+    {
+      free (buf);
+      error_code = code;
+      return SCM_BOOL_F;
+    }
+
+  out = scm_c_make_bytevector (n);
+  memcpy (SCM_BYTEVECTOR_CONTENTS (out), buf, n);
+  free (buf);
+  return out;
+}
+
 /* This callback function catches the data passed by libcurl and sends
    it back as a scheme string */
 static size_t
@@ -691,6 +768,8 @@ cl_init_func ()
       scm_c_define_gsubr ("%curl-easy-getinfo", 2, 0, 0, cl_easy_getinfo);
       scm_c_define_gsubr ("%curl-easy-setopt", 4, 0, 0, cl_easy_setopt);
       scm_c_define_gsubr ("%curl-easy-perform", 3, 0, 0, cl_easy_perform);
+      scm_c_define_gsubr ("%curl-easy-send", 2, 0, 0, cl_easy_send);
+      scm_c_define_gsubr ("%curl-easy-receive", 2, 0, 0, cl_easy_receive);
       scm_c_define_gsubr ("%curl-easy-cleanup", 1, 0, 0, cl_easy_cleanup);
       scm_c_define_gsubr ("%curl-easy-reset", 1, 0, 0, cl_easy_reset);
       scm_c_define_gsubr ("%curl-error-string", 0, 0, 0, cl_error_string);
