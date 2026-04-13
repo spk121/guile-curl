@@ -39,17 +39,16 @@
 
 ;; NETWORK OPTIONS
 (test-assert "'url \"http://localhost\"" (check-setopt 'url "http://localhost"))
-(test-assert "'protocols CURLPROTO_HTTP" (check-setopt 'protocols CURLPROTO_HTTP))
-(test-assert "'redir-protocols CURLPROTO_HTTP"
-  (check-setopt 'redir-protocols CURLPROTO_HTTP))
+(test-assert "'protocols-str \"http,https\""
+  (check-setopt 'protocols-str "http,https"))
+(test-assert "'redir-protocols-str \"http,https\""
+  (check-setopt 'redir-protocols-str "http,https"))
 (test-assert "'proxy \"http://localhost\""
   (check-setopt 'proxy "http://localhost"))
 (test-assert "'proxyport 8080" (check-setopt 'proxyport 8080))
 (test-assert "'proxytype CURLPROXY_HTTP" (check-setopt 'proxytype CURLPROXY_HTTP))
 (test-assert "'noproxy \"locahost\"" (check-setopt 'noproxy "localhost"))
 (test-assert "'httpproxytunnel #t" (check-setopt 'httpproxytunnel #t))
-(test-assert "'socks5-gssapi-service \"rcmd/server-fqdn\""
-  (check-setopt 'socks5-gssapi-service "rcmd/server-fqdn"))
 (test-assert "'socks5-gssapi-nec #t" (check-setopt 'socks5-gssapi-nec #t))
 (test-assert "'interface \"localhost\"" (check-setopt 'interface "localhost"))
 (test-assert "'localport 8000" (check-setopt 'localport 8000))
@@ -80,7 +79,7 @@
 (test-assert "'maxredirs 100" (check-setopt 'maxredirs 100))
 (test-assert "'postredir CURL_REDIR_POST_301"
   (check-setopt 'postredir CURL_REDIR_POST_301))
-(test-assert "'put #t" (check-setopt 'put #t))
+(test-assert "'upload #t" (check-setopt 'upload #t))
 (test-assert "'post #t" (check-setopt 'post #t))
 ;; RNRS_BYTEVECTORS_BEGIN
 (test-assert "'postfields #vu(0 1 2)" (check-setopt 'postfields #vu8(0 1 2)))

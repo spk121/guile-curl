@@ -1,6 +1,6 @@
 ## Process this file with automake to produce Makefile.in
 
-# Copyright (C) 2011, 2013, 2021 Michael L. Gran
+# Copyright (C) 2011, 2013, 2021, 2025 Michael L. Gran
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -125,7 +125,9 @@ TESTS = \
   test/bytevectors.scm \
   test/setopt.scm \
   test/stress.scm \
-  test/getinfo.scm
+  test/getinfo.scm \
+	test/sendrecv.scm \
+  test/mimepost.scm
 
 SCM_LOG_DRIVER = \
   $(top_builddir)/libtool $(TESTS_LTDLOPEN) --mode=execute \

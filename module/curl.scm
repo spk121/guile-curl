@@ -1,6 +1,6 @@
 ;; -*- Mode: scheme; -*-
 
-;;; Copyright (C) 2011, 2013, 2014, 2019, 2021 Michael L. Gran
+;;; Copyright (C) 2011, 2013, 2014, 2019, 2021, 2025, 2026 Michael L. Gran
 
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
@@ -25,6 +25,8 @@
             curl-easy-getinfo
             curl-easy-setopt
             curl-easy-perform
+            curl-easy-send
+            curl-easy-receive
             curl-easy-cleanup
             curl-easy-reset
             curl-error-string
@@ -173,6 +175,7 @@
             CURLINFO_FILETIME_T
             CURLINFO_FTP_ENTRY_PATH
             CURLINFO_HEADER_SIZE
+            CURLINFO_TEXT
             CURLINFO_HTTPAUTH_AVAIL
             CURLINFO_HTTPAUTH_USED
             CURLINFO_HTTP_CONNECTCODE
@@ -228,7 +231,7 @@
             CURLE_COULDNT_RESOLVE_PROXY
             CURLE_COULDNT_RESOLVE_HOST
             CURLE_COULDNT_CONNECT
-            CURLE_FTP_WEIRD_SERVER_REPLY
+            CURLE_WEIRD_SERVER_REPLY
             CURLE_REMOTE_ACCESS_DENIED
             CURLE_FTP_ACCEPT_FAILED
             CURLE_FTP_WEIRD_PASS_REPLY
@@ -240,7 +243,7 @@
             CURLE_FTP_COULDNT_SET_TYPE
             CURLE_PARTIAL_FILE
             CURLE_FTP_COULDNT_RETR_FILE
-            CURLE_FTP_QUOTE_ERROR
+            CURLE_QUOTE_ERROR
             CURLE_HTTP_RETURNED_ERROR
             CURLE_WRITE_ERROR
             CURLE_UPLOAD_FAILED
@@ -250,19 +253,17 @@
             CURLE_FTP_PORT_FAILED
             CURLE_FTP_COULDNT_USE_REST
             CURLE_RANGE_ERROR
-            CURLE_HTTP_POST_ERROR
             CURLE_SSL_CONNECT_ERROR
             CURLE_BAD_DOWNLOAD_RESUME
             CURLE_FILE_COULDNT_READ_FILE
             CURLE_LDAP_CANNOT_BIND
             CURLE_LDAP_SEARCH_FAILED
-            CURLE_FUNCTION_NOT_FOUND
             CURLE_ABORTED_BY_CALLBACK
             CURLE_BAD_FUNCTION_ARGUMENT
             CURLE_INTERFACE_FAILED
             CURLE_TOO_MANY_REDIRECTS
             CURLE_UNKNOWN_OPTION
-            CURLE_TELNET_OPTION_SYNTAX
+            CURLE_SETOPT_OPTION_SYNTAX
             CURLE_GOT_NOTHING
             CURLE_SSL_ENGINE_NOTFOUND
             CURLE_SSL_ENGINE_SETFAILED
@@ -272,7 +273,6 @@
             CURLE_SSL_CIPHER
             CURLE_PEER_FAILED_VERIFICATION
             CURLE_BAD_CONTENT_ENCODING
-            CURLE_LDAP_INVALID_URL
             CURLE_FILESIZE_EXCEEDED
             CURLE_USE_SSL_FAILED
             CURLE_SEND_FAIL_REWIND
@@ -285,8 +285,6 @@
             CURLE_TFTP_UNKNOWNID
             CURLE_REMOTE_FILE_EXISTS
             CURLE_TFTP_NOSUCHUSER
-            CURLE_CONV_FAILED
-            CURLE_CONV_REQD
             CURLE_SSL_CACERT_BADFILE
             CURLE_REMOTE_FILE_NOT_FOUND
             CURLE_SSH
@@ -296,95 +294,22 @@
             CURLE_SSL_ISSUER_ERROR
             CURLE_FTP_PRET_FAILED
             CURLE_RTSP_CSEQ_ERROR
+            CURLE_RTSP_SESSION_ERROR
             CURLE_FTP_BAD_FILE_LIST
             CURLE_CHUNK_FAILED
             CURLE_NO_CONNECTION_AVAILABLE
             CURLE_SSL_PINNEDPUBKEYNOTMATCH
             CURLE_SSL_INVALIDCERTSTATUS
             CURLE_HTTP2_STREAM
-
-            CURLE_OK
-            CURLE_UNSUPPORTED_PROTOCOL
-            CURLE_FAILED_INIT
-            CURLE_URL_MALFORMAT
-            CURLE_URL_MALFORMAT_USER
-            CURLE_COULDNT_RESOLVE_PROXY
-            CURLE_COULDNT_RESOLVE_HOST
-            CURLE_COULDNT_CONNECT
-            CURLE_FTP_WEIRD_SERVER_REPLY
-            CURLE_FTP_ACCESS_DENIED
-            CURLE_FTP_USER_PASSWORD_INCORRECT
-            CURLE_FTP_WEIRD_PASS_REPLY
-            CURLE_FTP_WEIRD_USER_REPLY
-            CURLE_FTP_WEIRD_PASV_REPLY
-            CURLE_FTP_WEIRD_227_FORMAT
-            CURLE_FTP_CANT_GET_HOST
-            CURLE_FTP_CANT_RECONNECT
-            CURLE_FTP_COULDNT_SET_BINARY
-            CURLE_PARTIAL_FILE
-            CURLE_FTP_COULDNT_RETR_FILE
-            CURLE_FTP_WRITE_ERROR
-            CURLE_FTP_QUOTE_ERROR
-            CURLE_HTTP_RETURNED_ERROR
-            CURLE_WRITE_ERROR
-            CURLE_MALFORMAT_USER
-            CURLE_UPLOAD_FAILED
-            CURLE_READ_ERROR
-            CURLE_OUT_OF_MEMORY
-            CURLE_OPERATION_TIMEOUTED
-            CURLE_FTP_COULDNT_SET_ASCII
-            CURLE_FTP_PORT_FAILED
-            CURLE_FTP_COULDNT_USE_REST
-            CURLE_FTP_COULDNT_GET_SIZE
-            CURLE_HTTP_RANGE_ERROR
-            CURLE_HTTP_POST_ERROR
-            CURLE_SSL_CONNECT_ERROR
-            CURLE_BAD_DOWNLOAD_RESUME
-            CURLE_FILE_COULDNT_READ_FILE
-            CURLE_LDAP_CANNOT_BIND
-            CURLE_LDAP_SEARCH_FAILED
-            CURLE_LIBRARY_NOT_FOUND
-            CURLE_FUNCTION_NOT_FOUND
-            CURLE_ABORTED_BY_CALLBACK
-            CURLE_BAD_FUNCTION_ARGUMENT
-            CURLE_BAD_CALLING_ORDER
-            CURLE_INTERFACE_FAILED
-            CURLE_BAD_PASSWORD_ENTERED
-            CURLE_TOO_MANY_REDIRECTS
-            CURLE_UNKNOWN_TELNET_OPTION
-            CURLE_TELNET_OPTION_SYNTAX
-            CURLE_OBSOLETE
-            CURLE_SSL_PEER_CERTIFICATE
-            CURLE_GOT_NOTHING
-            CURLE_SSL_ENGINE_NOTFOUND
-            CURLE_SSL_ENGINE_SETFAILED
-            CURLE_SEND_ERROR
-            CURLE_RECV_ERROR
-            CURLE_SHARE_IN_USE
-            CURLE_SSL_CERTPROBLEM
-            CURLE_SSL_CIPHER
-            CURLE_SSL_CACERT
-            CURLE_BAD_CONTENT_ENCODING
-            CURLE_LDAP_INVALID_URL
-            CURLE_FILESIZE_EXCEEDED
-            CURLE_FTP_SSL_FAILED
-            CURLE_SEND_FAIL_REWIND
-            CURLE_SSL_ENGINE_INITFAILED
-            CURLE_LOGIN_DENIED
-            CURLE_TFTP_NOTFOUND
-            CURLE_TFTP_PERM
-            CURLE_TFTP_DISKFULL
-            CURLE_TFTP_ILLEGAL
-            CURLE_TFTP_UNKNOWNID
-            CURLE_TFTP_EXISTS
-            CURLE_TFTP_NOSUCHUSER
-            CURLE_CONV_FAILED
-            CURLE_CONV_REQD
-            CURLE_SSL_CACERT_BADFILE
-            CURLE_REMOTE_FILE_NOT_FOUND
-            CURLE_SSH
-            CURLE_SSL_SHUTDOWN_FAILED
             CURLE_RECURSIVE_API_CALL
+            CURLE_AUTH_ERROR
+            CURLE_HTTP3
+            CURLE_QUIC_CONNECT_ERROR
+            CURLE_PROXY
+            CURLE_SSL_CLIENTCERT
+            CURLE_UNRECOVERABLE_POLL
+            CURLE_TOO_LARGE
+            CURLE_ECH_REQUIRED
 
             CURLPX_OK
             CURLPX_BAD_ADDRESS_TYPE
@@ -532,7 +457,9 @@ cache, the cookies or the shared."
     (url ,CURLOPT_URL string)
     (path-as-is ,CURLOPT_PATH_AS_IS boolean)
     (protocols ,CURLOPT_PROTOCOLS integer)
+    (protocols-str ,CURLOPT_PROTOCOLS_STR string)
     (redir-protocols ,CURLOPT_REDIR_PROTOCOLS integer)
+    (redir-protocols-str ,CURLOPT_REDIR_PROTOCOLS_STR string)
     (default-protocol ,CURLOPT_DEFAULT_PROTOCOL string)
     (proxy ,CURLOPT_PROXY string)
     (pre-proxy ,CURLOPT_PRE_PROXY string)
@@ -601,7 +528,6 @@ cache, the cookies or the shared."
     (postfieldsize ,CURLOPT_POSTFIELDSIZE integer)
     (postfieldsize-large ,CURLOPT_POSTFIELDSIZE_LARGE biginteger)
     (copypostfields ,CURLOPT_COPYPOSTFIELDS bytevector)
-    (httppost ,CURLOPT_HTTPPOST httppost)
     (referer ,CURLOPT_REFERER string)
     (useragent ,CURLOPT_USERAGENT string)
     (httpheader ,CURLOPT_HTTPHEADER slist)
@@ -755,12 +681,14 @@ cache, the cookies or the shared."
     (new-file-perms ,CURLOPT_NEW_FILE_PERMS integer)
     (new-directory-perms ,CURLOPT_NEW_DIRECTORY_PERMS integer)
     (telnetoptions ,CURLOPT_TELNETOPTIONS slist)
+    (mimepost ,CURLOPT_MIMEPOST mime)
     ))
 
 (define (curl-easy-setopt handle option arg)
   "Apply the option and argument to a given handle.
 Returns #t on success and #f on failure."
-
+  (unless option
+    (error "option is #f. Perhaps it is a deprecated option constant."))
   (let ((value (assq-ref symbol-options option)))
     (if value
         (let ((option (car value))
@@ -792,7 +720,12 @@ Returns #t on success and #f on failure."
            ((and (eq? type 'input-port)
                  (input-port? arg))
             (%curl-easy-setopt handle option arg #f))
-           ((not (member type '(integer boolean string biginteger slist httppost bytevector)))
+           ((eq? type 'mime)
+            ;; MIME has its own unique format of nested association lists.
+            ;; It is complicated, so it isn't pre-checked. It is check
+            ;; during execution of setopt.
+            (%curl-easy-setopt handle option arg #f))
+           ((not (member type '(integer boolean string biginteger slist httppost bytevector mime)))
             (error (format #f "unimplemented type: ~a" type)))
            (else
             (error (format #f "wrong type arg: ~a" arg)))))
@@ -877,7 +810,7 @@ or curl-error-string for more information."
     (if value
         (%curl-easy-getinfo handle value)
         ;; else
-        (error (format #f "unknown option: ~a" option)))))        
+        (error (format #f "unknown option: ~a" option)))))
 
 (define* (curl-easy-perform handle #:optional (bytevector? #f) (header? #f))
   "This function is called after the init and all the curl-easy-setopt
@@ -885,6 +818,23 @@ calls are made, and will perform the transfer as described in the
 options.  It must be called with the same handle as input as the
 curl_easy_init call returned."
   (%curl-easy-perform handle bytevector? header?))
+
+(define (curl-easy-send handle data)
+  "Send DATA on a connected easy HANDLE using libcurl's curl_easy_send.
+DATA must be a string or bytevector.
+
+Returns the number of bytes sent, or #f on failure. On failure, inspect
+curl-error-code/curl-error-string (for example CURLE_AGAIN for would-block)."
+  (%curl-easy-send handle data))
+
+(define (curl-easy-receive handle max-bytes)
+  "Receive up to MAX-BYTES from a connected easy HANDLE using libcurl's
+curl_easy_recv.
+
+Returns a bytevector (possibly empty), or #f on failure. On failure,
+inspect curl-error-code/curl-error-string (for example CURLE_AGAIN for
+would-block)."
+  (%curl-easy-receive handle max-bytes))
 
 (define (curl-error-string)
   "Returns information about the last error as a string."

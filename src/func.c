@@ -61,7 +61,6 @@ SCM DLL_PUBLIC cl_easy_init ()
     {
       fprintf (stderr, "Allocating <#handle %p>\n", hp);
       fprintf (stderr, "\t        handle %p\n", hp->handle);
-      fprintf (stderr, "\t      httppost %p\n", hp->httppost);
       fprintf (stderr, "\t    httpheader %p\n", hp->httpheader);
       fprintf (stderr, "\thttp200aliases %p\n", hp->http200aliases);
       fprintf (stderr, "\t     mail_rcpt %p\n", hp->mail_rcpt);
@@ -84,6 +83,8 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
   CURLoption c_option;
   CURLcode code = CURLE_UNSUPPORTED_PROTOCOL;
 
+  if (scm_is_false (option))
+    scm_error (SCM_BOOL_F, "cl-easy-setopt", "invalid option", SCM_BOOL_F, SCM_BOOL_F);
   SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "curl-easy-setopt");
   SCM_ASSERT (scm_is_integer (option), option, SCM_ARG2, "curl-easy-setopt");
 
@@ -194,15 +195,30 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
         code = curl_easy_setopt (c_handle->handle, c_option, sl);
 
     }
-  else if (_scm_can_convert_to_httppost (param))
+  else if (c_option == CURLOPT_MIMEPOST)
     {
-      if (c_option == CURLOPT_HTTPPOST)
+      curl_mime *old_mime;
+      curl_mime *new_mime;
+
+      if (!_scm_can_convert_to_mimepost (param))
+        scm_error (SCM_BOOL_F,
+                   "cl-easy-setopt",
+                   "CURLOPT_MIMEPOST requires a list of MIME part alists",
+                   SCM_BOOL_F,
+                   SCM_BOOL_F);
+
+      old_mime = c_handle->mimepost;
+      new_mime = _scm_convert_to_mime (c_handle->handle, param);
+      code = curl_easy_setopt (c_handle->handle, CURLOPT_MIMEPOST, new_mime);
+      if (code == CURLE_OK)
         {
-          struct curl_httppost *p;
-          p = _scm_convert_to_httppost (param);
-          free (c_handle->httppost);
-          c_handle->httppost = p;
-          code = curl_easy_setopt (c_handle, CURLOPT_HTTPPOST, p);
+          c_handle->mimepost = new_mime;
+          if (old_mime != NULL)
+            curl_mime_free (old_mime);
+        }
+      else if (new_mime != NULL)
+        {
+          curl_mime_free (new_mime);
         }
     }
   else if (scm_is_true (scm_input_port_p (param)))
@@ -220,11 +236,13 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
                SCM_BOOL_F,
                SCM_BOOL_F);
   if (code != CURLE_OK)
-    scm_error (SCM_BOOL_F,
-               "curl-easy-setopt",
-               "bad handle",
-               SCM_BOOL_F,
-               SCM_BOOL_F);
+    {
+      error_code = code;
+      scm_misc_error ("curl-easy-setopt",
+                      "libcurl setopt failed: ~A (code ~A)",
+                      scm_list_2 (scm_from_utf8_string (curl_easy_strerror (code)),
+                                  scm_from_int ((int) code)));
+    }
 
   return SCM_UNSPECIFIED;
 }
@@ -487,6 +505,83 @@ cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag)
   return (body_sf.scm);
 }
 
+SCM DLL_PUBLIC
+cl_easy_send (SCM handle, SCM data)
+{
+  handle_post_t *c_handle;
+  CURLcode code;
+  const void *buffer;
+  size_t buffer_len;
+  size_t sent = 0;
+  char *str = NULL;
+
+  SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "%curl-easy-send");
+
+  c_handle = _scm_to_handle (handle);
+  if (scm_is_true (scm_string_p (data)))
+    {
+      buffer = str = scm_to_utf8_stringn (data, &buffer_len);
+    }
+  else if (scm_is_true (scm_bytevector_p (data)))
+    {
+      buffer = SCM_BYTEVECTOR_CONTENTS (data);
+      buffer_len = SCM_BYTEVECTOR_LENGTH (data);
+    }
+  else
+    {
+      scm_wrong_type_arg_msg ("%curl-easy-send", 0, data, "string or bytevector");
+      return SCM_BOOL_F;
+    }
+
+  code = curl_easy_send (c_handle->handle, buffer, buffer_len, &sent);
+  if (str != NULL)
+    free (str);
+
+  if (code != CURLE_OK)
+    {
+      error_code = code;
+      return SCM_BOOL_F;
+    }
+
+  return scm_from_size_t (sent);
+}
+
+SCM DLL_PUBLIC
+cl_easy_receive (SCM handle, SCM max_bytes)
+{
+  handle_post_t *c_handle;
+  CURLcode code;
+  size_t max_len;
+  size_t n = 0;
+  unsigned char *buf;
+  SCM out;
+
+  SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "%curl-easy-receive");
+  SCM_ASSERT (scm_is_integer (max_bytes), max_bytes, SCM_ARG2, "%curl-easy-receive");
+
+  max_len = scm_to_size_t (max_bytes);
+  if (max_len == 0)
+    return scm_c_make_bytevector (0);
+
+  c_handle = _scm_to_handle (handle);
+  buf = malloc (max_len);
+  if (buf == NULL)
+    scm_misc_error ("%curl-easy-receive", "out of memory", SCM_EOL);
+
+  code = curl_easy_recv (c_handle->handle, buf, max_len, &n);
+  if (code != CURLE_OK)
+    {
+      free (buf);
+      error_code = code;
+      return SCM_BOOL_F;
+    }
+
+  out = scm_c_make_bytevector (n);
+  memcpy (SCM_BYTEVECTOR_CONTENTS (out), buf, n);
+  free (buf);
+  return out;
+}
+
 /* This callback function catches the data passed by libcurl and sends
    it back as a scheme string */
 static size_t
@@ -628,33 +723,6 @@ xstrlen (const char *s)
   return strlen (s);
 }
 
-static void
-print_httppost (struct curl_httppost *hp)
-{
-  struct curl_httppost *p = hp;
-  int i = 0;
-  while (p != NULL)
-    {
-      fprintf (stderr, "\t\t%d: name: ", i);
-      print_mem (p->name, p->namelength);
-      fprintf (stderr, "\n\t\t   contents: ");
-      print_mem (p->contents, p->contentslength);
-      fprintf (stderr, "\n\t\t   buffer: ");
-      print_mem (p->buffer, p->bufferlength);
-      fprintf (stderr, "\n\t\t   contenttype: ");
-      print_mem (p->contenttype, xstrlen (p->contenttype));
-      fprintf (stderr, "\n\t\t   contentheader: ");
-      print_slist (p->contentheader);
-      fprintf (stderr, "\n\t\t   showfilename: ");
-      print_mem (p->showfilename, xstrlen (p->showfilename));
-      fprintf (stderr, "\n\t\t   flags: 0x%lx", p->flags);
-      fprintf (stderr, "\n");
-      i++;
-      p = p->next;
-    }
-}
-
-
 SCM DLL_PUBLIC
 cl_dump_handle (SCM handle)
 {
@@ -668,8 +736,6 @@ cl_dump_handle (SCM handle)
   fprintf (stderr, "\t    postfields %p\n", hp->postfields);
   fprintf (stderr, "\t postfieldsize %zu\n", hp->postfieldsize);
   print_mem (hp->postfields, hp->postfieldsize);
-  fprintf (stderr, "\t      httppost %p\n", hp->httppost);
-  print_httppost (hp->httppost);
   fprintf (stderr, "\t    httpheader %p\n", hp->httpheader);
   print_slist (hp->httpheader);
   fprintf (stderr, "\thttp200aliases %p\n", hp->http200aliases);
@@ -702,6 +768,8 @@ cl_init_func ()
       scm_c_define_gsubr ("%curl-easy-getinfo", 2, 0, 0, cl_easy_getinfo);
       scm_c_define_gsubr ("%curl-easy-setopt", 4, 0, 0, cl_easy_setopt);
       scm_c_define_gsubr ("%curl-easy-perform", 3, 0, 0, cl_easy_perform);
+      scm_c_define_gsubr ("%curl-easy-send", 2, 0, 0, cl_easy_send);
+      scm_c_define_gsubr ("%curl-easy-receive", 2, 0, 0, cl_easy_receive);
       scm_c_define_gsubr ("%curl-easy-cleanup", 1, 0, 0, cl_easy_cleanup);
       scm_c_define_gsubr ("%curl-easy-reset", 1, 0, 0, cl_easy_reset);
       scm_c_define_gsubr ("%curl-error-string", 0, 0, 0, cl_error_string);

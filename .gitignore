@@ -6,6 +6,7 @@
 .sc*
 /GNUmakefile
 /maint.mk
+.dirstamp
 INSTALL
 Makefile
 Makefile.in
@@ -46,6 +47,7 @@ m4/pkg.m4
 src/*.la
 src/*.lo
 src/*.o
+*.go
 src/.deps/
 src/.libs/
 src/Makefile
@@ -54,3 +56,7 @@ stamp-h1
 test/.deps
 test/Makefile
 test/Makefile.in
+*.trs
+*.log
+*.exe
+

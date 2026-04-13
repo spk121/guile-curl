@@ -1,6 +1,6 @@
 /* Constants for guile-curl
 
-   Copyright (c) 2011, 2013 Michael L. Gran
+   Copyright (c) 2011, 2013, 2025 Michael L. Gran
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,7 +27,6 @@ typedef struct handle_post_tag
   uint8_t *postfields;
   size_t postfieldsize;
   // curl_off_t postfieldsize_large;
-  struct curl_httppost *httppost;
   struct curl_slist *httpheader;
   struct curl_slist *http200aliases;
   struct curl_slist *mail_rcpt;
@@ -36,6 +35,7 @@ typedef struct handle_post_tag
   struct curl_slist *prequote;
   struct curl_slist *resolve;
   struct curl_slist *telnetoptions;
+  curl_mime *mimepost;
   int transfers;
 } handle_post_t;
 
@@ -53,7 +53,7 @@ int _scm_can_convert_to_slist (SCM x);
 struct curl_slist *_scm_convert_to_slist (SCM x);
 int _scm_can_convert_to_byte_data (SCM x);
 uint8_t *_scm_convert_to_byte_data (SCM x, size_t *len);
-int _scm_can_convert_to_httppost (SCM x);
-struct curl_httppost *_scm_convert_to_httppost (SCM x);
+int _scm_can_convert_to_mimepost (SCM x);
+struct curl_mime *_scm_convert_to_mime (CURL *curl, SCM x);
 
 #endif
