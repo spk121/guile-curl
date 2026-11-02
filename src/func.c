@@ -28,8 +28,8 @@ static size_t write_callback (void *ptr, size_t size, size_t nmemb,
 static size_t read_callback (void *ptr, size_t size, size_t nmemb,
                              void *port);
 
-CURLcode error_code = CURLE_OK;
-char error_string[CURL_ERROR_SIZE+1] = "";
+static _Thread_local CURLcode error_code = CURLE_OK;
+static _Thread_local char error_string[CURL_ERROR_SIZE+1] = "";
 
 struct response_buffer
 {
