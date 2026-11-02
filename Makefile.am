@@ -123,6 +123,8 @@ TEST_EXTENSIONS = .scm
 TESTS_LTDLOPEN = -dlopen ${abs_top_builddir}/src/libguile-curl.la
 TESTS = \
   test/bytevectors.scm \
+  test/large-response.scm \
+  test/file-descriptor.scm \
   test/setopt.scm \
   test/stress.scm \
   test/getinfo.scm

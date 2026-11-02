@@ -423,6 +423,17 @@ procedures, inspect @code{curl-error-code} and @code{curl-error-string}
 after a failure. The descriptor remains open and is owned by the caller.
 @end deffn
 
+@deffn Procedure curl-easy-progress handle
+Return a pair containing the most recently reported downloaded and total
+byte counts for a file descriptor transfer. Either value may be zero when
+the server has not yet reported a total.
+@end deffn
+
+@deffn Procedure curl-easy-cancel! handle
+Request cancellation of a running @code{curl-easy-perform-to-fd} transfer.
+The transfer returns @code{#f} with the libcurl aborted-by-callback error.
+@end deffn
+
 @deffn Procedure curl-error-string
 If a call to @code{curl-easy-perform} fails, calling this function
 will return information about the last error as a string.

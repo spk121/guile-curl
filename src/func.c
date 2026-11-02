@@ -54,6 +54,9 @@ struct fd_transfer
 static size_t fd_write_callback (void *ptr, size_t size, size_t nmemb,
                                  void *userdata);
 static void *perform_fd_transfer (void *userdata);
+static int transfer_progress_callback (void *userdata, curl_off_t dltotal,
+                                      curl_off_t dlnow, curl_off_t ultotal,
+                                      curl_off_t ulnow);
 
 SCM DLL_PUBLIC cl_easy_init ()
 {
@@ -74,6 +77,9 @@ SCM DLL_PUBLIC cl_easy_init ()
   hp = scm_malloc (sizeof (handle_post_t));
   memset (hp, 0, sizeof (handle_post_t));
   hp->handle = handle;
+  atomic_init (&hp->dlnow, 0);
+  atomic_init (&hp->dltotal, 0);
+  atomic_init (&hp->cancel, 0);
 
   if (0)
     {
@@ -530,13 +536,22 @@ cl_easy_perform_to_fd (SCM handle, SCM fd, SCM offset)
   transfer.fd = scm_to_int (fd);
   if (scm_is_true (offset))
     {
-      scm_t_int64 value = scm_to_int64 (offset);
+      int64_t value = scm_to_int64 (offset);
       SCM_ASSERT (value >= 0, offset, SCM_ARG3, "curl-easy-perform-to-fd");
       transfer.use_offset = 1;
       transfer.offset = (off_t) value;
     }
   c_handle->write_errno = 0;
+  atomic_store (&c_handle->dlnow, 0);
+  atomic_store (&c_handle->dltotal, 0);
+  atomic_store (&c_handle->cancel, 0);
   curl_easy_setopt (c_handle->handle, CURLOPT_NOSIGNAL, 1L);
+  curl_easy_setopt (c_handle->handle, CURLOPT_HEADERFUNCTION, NULL);
+  curl_easy_setopt (c_handle->handle, CURLOPT_HEADERDATA, NULL);
+  curl_easy_setopt (c_handle->handle, CURLOPT_NOPROGRESS, 0L);
+  curl_easy_setopt (c_handle->handle, CURLOPT_XFERINFOFUNCTION,
+                    transfer_progress_callback);
+  curl_easy_setopt (c_handle->handle, CURLOPT_XFERINFODATA, c_handle);
   curl_easy_setopt (c_handle->handle, CURLOPT_WRITEFUNCTION, fd_write_callback);
   curl_easy_setopt (c_handle->handle, CURLOPT_WRITEDATA, &transfer);
   curl_easy_setopt (c_handle->handle, CURLOPT_ERRORBUFFER, error_string);
@@ -587,6 +602,41 @@ fd_write_callback (void *ptr, size_t size, size_t nmemb, void *userdata)
       transfer->written += written;
     }
   return length;
+}
+
+static int
+transfer_progress_callback (void *userdata, curl_off_t dltotal,
+                             curl_off_t dlnow, curl_off_t ultotal,
+                             curl_off_t ulnow)
+{
+  handle_post_t *handle = userdata;
+  (void) ultotal;
+  (void) ulnow;
+  atomic_store (&handle->dlnow, dlnow);
+  atomic_store (&handle->dltotal, dltotal);
+  return atomic_load (&handle->cancel) != 0;
+}
+
+SCM DLL_PUBLIC
+cl_easy_progress (SCM handle)
+{
+  handle_post_t *c_handle;
+  SCM now, total;
+  SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "curl-easy-progress");
+  c_handle = _scm_to_handle (handle);
+  now = scm_from_int64 (atomic_load (&c_handle->dlnow));
+  total = scm_from_int64 (atomic_load (&c_handle->dltotal));
+  return scm_cons (now, total);
+}
+
+SCM DLL_PUBLIC
+cl_easy_cancel (SCM handle)
+{
+  handle_post_t *c_handle;
+  SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "curl-easy-cancel!");
+  c_handle = _scm_to_handle (handle);
+  atomic_store (&c_handle->cancel, 1);
+  return SCM_UNSPECIFIED;
 }
 
 /* This callback function catches the data passed by libcurl and sends
@@ -787,6 +837,8 @@ cl_init_func ()
       scm_c_define_gsubr ("%curl-easy-perform", 3, 0, 0, cl_easy_perform);
       scm_c_define_gsubr ("%curl-easy-perform-to-fd", 3, 0, 0,
                           cl_easy_perform_to_fd);
+      scm_c_define_gsubr ("%curl-easy-progress", 1, 0, 0, cl_easy_progress);
+      scm_c_define_gsubr ("%curl-easy-cancel!", 1, 0, 0, cl_easy_cancel);
       scm_c_define_gsubr ("%curl-easy-cleanup", 1, 0, 0, cl_easy_cleanup);
       scm_c_define_gsubr ("%curl-easy-reset", 1, 0, 0, cl_easy_reset);
       scm_c_define_gsubr ("%curl-error-string", 0, 0, 0, cl_error_string);

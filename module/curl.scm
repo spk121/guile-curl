@@ -26,6 +26,8 @@
             curl-easy-setopt
             curl-easy-perform
             curl-easy-perform-to-fd
+            curl-easy-progress
+            curl-easy-cancel!
             curl-easy-cleanup
             curl-easy-reset
             curl-error-string
@@ -892,6 +894,14 @@ curl_easy_init call returned."
 #f for sequential writes, or a non-negative byte offset for positioned
 writes.  Returns the number of bytes written, or #f on failure."
   (%curl-easy-perform-to-fd handle fd offset))
+
+(define (curl-easy-progress handle)
+  "Return a pair containing the latest downloaded and total byte counts."
+  (%curl-easy-progress handle))
+
+(define (curl-easy-cancel! handle)
+  "Request cancellation of a curl-easy-perform-to-fd transfer."
+  (%curl-easy-cancel! handle))
 
 (define (curl-error-string)
   "Returns information about the last error as a string."
