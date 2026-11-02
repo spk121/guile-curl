@@ -413,6 +413,16 @@ The second is the body of the request, either as a string or as a
 bytevector, as described above.
 @end deffn
 
+@deffn Procedure curl-easy-perform-to-fd handle fd #:optional offset
+Transfer the response body directly to the open file descriptor @var{fd}.
+If @var{offset} is omitted or @code{#f}, data is written sequentially.
+Otherwise, @var{offset} must be a non-negative integer and the transfer
+uses positioned writes beginning there. The procedure returns the number
+of bytes written or @code{#f} on failure. As with other transfer
+procedures, inspect @code{curl-error-code} and @code{curl-error-string}
+after a failure. The descriptor remains open and is owned by the caller.
+@end deffn
+
 @deffn Procedure curl-error-string
 If a call to @code{curl-easy-perform} fails, calling this function
 will return information about the last error as a string.

@@ -20,6 +20,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdint.h>
+#include <errno.h>
+#include <unistd.h>
 #include "type.h"
 #include "func.h"
 
@@ -38,6 +40,20 @@ struct response_buffer
   size_t capacity;
   int bytevector;
 };
+
+struct fd_transfer
+{
+  handle_post_t *handle;
+  int fd;
+  int use_offset;
+  off_t offset;
+  curl_off_t written;
+  CURLcode status;
+};
+
+static size_t fd_write_callback (void *ptr, size_t size, size_t nmemb,
+                                 void *userdata);
+static void *perform_fd_transfer (void *userdata);
 
 SCM DLL_PUBLIC cl_easy_init ()
 {
@@ -497,6 +513,82 @@ cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag)
   return body;
 }
 
+SCM DLL_PUBLIC
+cl_easy_perform_to_fd (SCM handle, SCM fd, SCM offset)
+{
+  handle_post_t *c_handle;
+  struct fd_transfer transfer = { 0 };
+  SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1,
+              "curl-easy-perform-to-fd");
+  SCM_ASSERT (scm_is_integer (fd), fd, SCM_ARG2,
+              "curl-easy-perform-to-fd");
+  SCM_ASSERT (scm_is_false (offset) || scm_is_integer (offset), offset,
+              SCM_ARG3, "curl-easy-perform-to-fd");
+
+  c_handle = _scm_to_handle (handle);
+  transfer.handle = c_handle;
+  transfer.fd = scm_to_int (fd);
+  if (scm_is_true (offset))
+    {
+      scm_t_int64 value = scm_to_int64 (offset);
+      SCM_ASSERT (value >= 0, offset, SCM_ARG3, "curl-easy-perform-to-fd");
+      transfer.use_offset = 1;
+      transfer.offset = (off_t) value;
+    }
+  c_handle->write_errno = 0;
+  curl_easy_setopt (c_handle->handle, CURLOPT_NOSIGNAL, 1L);
+  curl_easy_setopt (c_handle->handle, CURLOPT_WRITEFUNCTION, fd_write_callback);
+  curl_easy_setopt (c_handle->handle, CURLOPT_WRITEDATA, &transfer);
+  curl_easy_setopt (c_handle->handle, CURLOPT_ERRORBUFFER, error_string);
+  scm_without_guile (perform_fd_transfer, &transfer);
+  if (transfer.status != CURLE_OK)
+    {
+      error_code = transfer.status;
+      if (c_handle->write_errno)
+        snprintf (error_string, sizeof error_string,
+                  "write failed: %s", strerror (c_handle->write_errno));
+      return SCM_BOOL_F;
+    }
+  if (c_handle->transfers < INT_MAX)
+    c_handle->transfers++;
+  return scm_from_int64 (transfer.written);
+}
+
+static void *
+perform_fd_transfer (void *userdata)
+{
+  struct fd_transfer *transfer = userdata;
+  transfer->status = curl_easy_perform (transfer->handle->handle);
+  return NULL;
+}
+
+static size_t
+fd_write_callback (void *ptr, size_t size, size_t nmemb, void *userdata)
+{
+  struct fd_transfer *transfer = userdata;
+  size_t length = size * nmemb;
+  size_t done = 0;
+  while (done < length)
+    {
+      ssize_t written;
+      if (transfer->use_offset)
+        written = pwrite (transfer->fd, (char *) ptr + done, length - done,
+                          transfer->offset + transfer->written);
+      else
+        written = write (transfer->fd, (char *) ptr + done, length - done);
+      if (written < 0 && errno == EINTR)
+        continue;
+      if (written <= 0)
+        {
+          transfer->handle->write_errno = written == 0 ? EIO : errno;
+          return 0;
+        }
+      done += (size_t) written;
+      transfer->written += written;
+    }
+  return length;
+}
+
 /* This callback function catches the data passed by libcurl and sends
    it back as a scheme string */
 static size_t
@@ -693,6 +785,8 @@ cl_init_func ()
       scm_c_define_gsubr ("%curl-easy-getinfo", 2, 0, 0, cl_easy_getinfo);
       scm_c_define_gsubr ("%curl-easy-setopt", 4, 0, 0, cl_easy_setopt);
       scm_c_define_gsubr ("%curl-easy-perform", 3, 0, 0, cl_easy_perform);
+      scm_c_define_gsubr ("%curl-easy-perform-to-fd", 3, 0, 0,
+                          cl_easy_perform_to_fd);
       scm_c_define_gsubr ("%curl-easy-cleanup", 1, 0, 0, cl_easy_cleanup);
       scm_c_define_gsubr ("%curl-easy-reset", 1, 0, 0, cl_easy_reset);
       scm_c_define_gsubr ("%curl-error-string", 0, 0, 0, cl_error_string);

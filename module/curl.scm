@@ -25,6 +25,7 @@
             curl-easy-getinfo
             curl-easy-setopt
             curl-easy-perform
+            curl-easy-perform-to-fd
             curl-easy-cleanup
             curl-easy-reset
             curl-error-string
@@ -885,6 +886,12 @@ calls are made, and will perform the transfer as described in the
 options.  It must be called with the same handle as input as the
 curl_easy_init call returned."
   (%curl-easy-perform handle bytevector? header?))
+
+(define* (curl-easy-perform-to-fd handle fd #:optional (offset #f))
+  "Transfer the response body directly to file descriptor FD.  OFFSET is
+#f for sequential writes, or a non-negative byte offset for positioned
+writes.  Returns the number of bytes written, or #f on failure."
+  (%curl-easy-perform-to-fd handle fd offset))
 
 (define (curl-error-string)
   "Returns information about the last error as a string."
