@@ -54,3 +54,14 @@ stamp-h1
 test/.deps
 test/Makefile
 test/Makefile.in
+node_modules/
+dist/
+build/
+*.log
+*.db
+*.sqlite
+.cache/
+var/
+models/
+vendor/comfyui-frontend/
+tmp/

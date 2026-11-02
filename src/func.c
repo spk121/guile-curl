@@ -31,10 +31,12 @@ static size_t read_callback (void *ptr, size_t size, size_t nmemb,
 CURLcode error_code = CURLE_OK;
 char error_string[CURL_ERROR_SIZE+1] = "";
 
-struct scm_flag
+struct response_buffer
 {
-  SCM scm;
-  int flag;
+  unsigned char *data;
+  size_t length;
+  size_t capacity;
+  int bytevector;
 };
 
 SCM DLL_PUBLIC cl_easy_init ()
@@ -437,37 +439,25 @@ SCM DLL_PUBLIC
 cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag)
 {
   handle_post_t *c_handle;
-  SCM data;
+  SCM body, headers = SCM_BOOL_F;
   CURLcode status;
-  struct scm_flag body_sf, header_sf;
+  struct response_buffer body_buffer = { 0 }, header_buffer = { 0 };
 
   SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "%curl-easy-perform");
 
   c_handle = _scm_to_handle (handle);
 
-  body_sf.flag = scm_is_true (bvflag);
-  if (body_sf.flag)
-    data = scm_c_make_bytevector (0);
-  else
-    data = scm_c_make_string (0, SCM_MAKE_CHAR('\n'));
-  body_sf.scm = data;
-
-  header_sf.flag = 0;
-  if (header_sf.flag)
-    data = scm_c_make_bytevector (0);
-  else
-    data = scm_c_make_string (0, SCM_MAKE_CHAR('\n'));
-  header_sf.scm = data;
+  body_buffer.bytevector = scm_is_true (bvflag);
 
   if (scm_is_true (headerflag))
   {
     curl_easy_setopt (c_handle->handle, CURLOPT_HEADERFUNCTION, write_callback);
-    curl_easy_setopt (c_handle->handle, CURLOPT_HEADERDATA, &header_sf);
+    curl_easy_setopt (c_handle->handle, CURLOPT_HEADERDATA, &header_buffer);
     curl_easy_setopt (c_handle->handle, CURLOPT_ERRORBUFFER, error_string);
   }
 
   curl_easy_setopt (c_handle->handle, CURLOPT_WRITEFUNCTION, write_callback);
-  curl_easy_setopt (c_handle->handle, CURLOPT_WRITEDATA, &body_sf);
+  curl_easy_setopt (c_handle->handle, CURLOPT_WRITEDATA, &body_buffer);
   curl_easy_setopt (c_handle->handle, CURLOPT_ERRORBUFFER, error_string);
 
   /* Do the transfer, and fill c_str with the result */
@@ -475,16 +465,36 @@ cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag)
   if (status != CURLE_OK)
     {
       error_code = status;
+      free (body_buffer.data);
+      free (header_buffer.data);
       return (SCM_BOOL_F);
     }
+
+  if (body_buffer.bytevector)
+    {
+      body = scm_c_make_bytevector (body_buffer.length);
+      if (body_buffer.length)
+        memcpy (SCM_BYTEVECTOR_CONTENTS (body), body_buffer.data,
+                body_buffer.length);
+    }
+  else
+    body = scm_from_latin1_stringn ((const char *) body_buffer.data,
+                                    body_buffer.length);
+
+  if (scm_is_true (headerflag))
+    headers = scm_from_latin1_stringn ((const char *) header_buffer.data,
+                                       header_buffer.length);
+
+  free (body_buffer.data);
+  free (header_buffer.data);
 
   if (c_handle->transfers < INT_MAX)
       c_handle->transfers ++;
 
   if (scm_is_true (headerflag))
-    return (scm_list_2 (header_sf.scm, body_sf.scm));
+    return (scm_list_2 (headers, body));
 
-  return (body_sf.scm);
+  return body;
 }
 
 /* This callback function catches the data passed by libcurl and sends
@@ -492,46 +502,27 @@ cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag)
 static size_t
 write_callback (void *ptr, size_t size, size_t nmemb, void *userdata)
 {
-  size_t length1, length2;
-  SCM data1, data2;
-  struct scm_flag *sf;
-
-  sf = (struct scm_flag *) userdata;
-  data1 = sf->scm;
-  if (sf->flag)
-    length1 = scm_c_bytevector_length (data1);
-  else
-    length1 = scm_c_string_length (data1);
-
-  length2 = size * nmemb;
-
-  /* printf ("In write_callback\n"); */
-  if (sf->flag)
+  struct response_buffer *buffer = userdata;
+  size_t length = size * nmemb;
+  size_t needed = buffer->length + length;
+  if (needed > buffer->capacity)
     {
-      data2 = scm_c_make_bytevector (length1 + length2);
-      memcpy (SCM_BYTEVECTOR_CONTENTS (data2),
-              SCM_BYTEVECTOR_CONTENTS (data1),
-              length1);
-      memcpy (SCM_BYTEVECTOR_CONTENTS (data2) + length1,
-              ptr,
-              length2);
-    }
-  else
-    {
-      data2 = scm_c_make_string (length1 + length2, SCM_MAKE_CHAR('\0'));
-      for (size_t i = 0; i < length1; i ++)
+      size_t capacity = buffer->capacity ? buffer->capacity : 16384;
+      while (capacity < needed)
         {
-          scm_c_string_set_x (data2, i, scm_c_string_ref (data1, i));
+          if (capacity > SIZE_MAX / 2)
+            return 0;
+          capacity *= 2;
         }
-      for (size_t i = 0; i < length2; i ++)
-        {
-          scm_c_string_set_x (data2, i + length1,
-                              SCM_MAKE_CHAR (((char *)ptr)[i]));
-        }
+      unsigned char *data = realloc (buffer->data, capacity);
+      if (!data)
+        return 0;
+      buffer->data = data;
+      buffer->capacity = capacity;
     }
-  sf->scm = data2;
-
-  return length2;
+  memcpy (buffer->data + buffer->length, ptr, length);
+  buffer->length = needed;
+  return length;
 }
 
 /* This callback function sends some data from a port over to curl. */
