@@ -19,6 +19,7 @@
 
 #include <curl/curl.h>
 #include <libguile.h>
+#include <stdatomic.h>
 #include "visibility.h"
 
 typedef struct handle_post_tag
@@ -37,6 +38,10 @@ typedef struct handle_post_tag
   struct curl_slist *resolve;
   struct curl_slist *telnetoptions;
   int transfers;
+  int write_errno;
+  _Atomic curl_off_t dlnow;
+  _Atomic curl_off_t dltotal;
+  _Atomic int cancel;
 } handle_post_t;
 
 void DLL_PUBLIC cl_init_type (void);
