@@ -210,7 +210,10 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
         }
       if (ok)
         code = curl_easy_setopt (c_handle->handle, c_option, sl);
-
+      else
+        scm_misc_error ("curl-easy-setopt",
+                        "this option does not accept a list of strings",
+                        SCM_EOL);
     }
   else if (_scm_can_convert_to_httppost (param))
     {
@@ -222,6 +225,10 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
           c_handle->httppost = p;
           code = curl_easy_setopt (c_handle->handle, CURLOPT_HTTPPOST, p);
         }
+      else
+        scm_misc_error ("curl-easy-setopt",
+                        "this option does not accept form data",
+                        SCM_EOL);
     }
   else if (scm_is_true (scm_input_port_p (param)))
     {
@@ -231,15 +238,22 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
           curl_easy_setopt (c_handle->handle, CURLOPT_READFUNCTION, read_callback);
           code = curl_easy_setopt (c_handle->handle, CURLOPT_READDATA, c_handle);
         }
+      else
+        scm_misc_error ("curl-easy-setopt",
+                        "this option does not accept a port",
+                        SCM_EOL);
     }
   else
     scm_misc_error ("curl-easy-setopt",
                     "unimplemented option type",
                     SCM_EOL);
   if (code != CURLE_OK)
-    scm_misc_error ("curl-easy-setopt",
-                    "bad handle",
-                    SCM_EOL);
+    {
+      error_code = code;
+      scm_misc_error ("curl-easy-setopt", "~A",
+                      scm_list_1 (scm_from_locale_string
+                                  (curl_easy_strerror (code))));
+    }
 
   return SCM_UNSPECIFIED;
 }

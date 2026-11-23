@@ -191,4 +191,20 @@ Return the server's base URL."
         (lambda () (curl-easy-setopt h 'postfields "λ") 'no-error)
         (lambda (key subr message . rest) (list key message))))))
 
+;;; Every curl_easy_setopt failure was reported as "bad handle", and
+;;; curl-error-code was not set.
+
+(test-group "curl-easy-setopt reports curl's error"
+  (let* ((h (make-handle))
+         (message (catch 'misc-error
+                    (lambda () (curl-easy-setopt h 'maxredirs -5) #f)
+                    (lambda (key subr fmt args . rest)
+                      (apply format #f fmt args)))))
+    (test-assert "an error is raised" (string? message))
+    (test-assert "the message is not \"bad handle\""
+      (not (equal? message "bad handle")))
+    (test-equal "curl-error-code is set"
+      CURLE_BAD_FUNCTION_ARGUMENT
+      (curl-error-code))))
+
 (test-end "regression")
