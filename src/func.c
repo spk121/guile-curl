@@ -248,6 +248,12 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
   return SCM_UNSPECIFIED;
 }
 
+static void
+free_slist (void *sl)
+{
+  curl_slist_free_all ((struct curl_slist *) sl);
+}
+
 SCM DLL_PUBLIC
 cl_easy_getinfo (SCM handle, SCM option)
 {
@@ -377,12 +383,17 @@ cl_easy_getinfo (SCM handle, SCM option)
           SCM lst = SCM_EOL;
           c_each = c_cookies;
 
+          /* scm_from_utf8_string throws on invalid UTF-8, so free the
+             list on any exit, not just the normal one.  */
+          scm_dynwind_begin (0);
+          scm_dynwind_unwind_handler (free_slist, c_cookies,
+                                      SCM_F_WIND_EXPLICITLY);
           while (c_each)
             {
               lst = scm_cons (scm_from_utf8_string (c_each->data), lst);
               c_each = c_each->next;
             }
-          curl_slist_free_all (c_cookies);
+          scm_dynwind_end ();
           return scm_reverse(lst);
         }
       else
