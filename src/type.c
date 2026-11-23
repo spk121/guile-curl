@@ -277,6 +277,8 @@ _scm_convert_to_slist (SCM x)
         {
           str = scm_to_locale_string (elt);
           slist = curl_slist_append (slist, str);
+          /* curl_slist_append copies the string.  */
+          free (str);
           if (slist == NULL)
             {
               /* This should be impossible. */
