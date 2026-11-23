@@ -27,6 +27,7 @@ For the next major release (unreleased)
     - Much faster collection of large response bodies.
     - When libcurl uses a synchronous DNS resolver, new handles set
       nosignal by default.
+    - libcurl 7.76.0 or later is required, and configure checks for it.
     - Building from the repository requires gettext, for Guile's
       guile.m4 macros.
 

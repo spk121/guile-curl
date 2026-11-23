@@ -60,7 +60,9 @@ AM_CONDITIONAL([DLL_VERSION_INFO], [test "$dll_version_info" = yes])
 
 ##################
 # Check for libraries
-PKG_CHECK_MODULES(CURL, [libcurl])
+dnl libcurl 7.76.0 is the oldest release that declares every libcurl
+dnl symbol used without a guard in src/ (the newest is CURLINFO_REFERER).
+PKG_CHECK_MODULES(CURL, [libcurl >= 7.76.0])
 GUILE_PKG([3.0 2.2])
 GUILE_PROGS
 dnl Guile's GUILE_FLAGS macro (m4/guile.m4) calls AC_LIB_LINKFLAGS_FROM_LIBS,

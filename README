@@ -14,7 +14,8 @@ which is defined in gettext's lib-link.m4.  Building from a release
 tarball does not require gettext.
 
 This is an autotools build, so usually building is a "./configure &&
-make && make install" sort of thing.
+make && make install" sort of thing.  It requires Guile 3.0 or 2.2 and
+libcurl 7.76.0 or later.
 
 For information on how to use it, there is a manual in the doc/
 directory.
