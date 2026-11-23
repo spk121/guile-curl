@@ -31,18 +31,19 @@ static size_t read_callback (void *ptr, size_t size, size_t nmemb,
 CURLcode error_code = CURLE_OK;
 char error_string[CURL_ERROR_SIZE+1] = "";
 
-struct scm_flag
+/* Received data (body or headers) is collected here by write_callback
+   and converted to a Scheme object once, after the transfer.  */
+struct recv_buffer
 {
-  SCM scm;
-  int flag;
-  /* An exception thrown inside write_callback, as (KEY . ARGS), or #f.  */
-  SCM exception;
+  char *data;
+  size_t len;
+  size_t cap;
 };
 
 /* Errors must not unwind through libcurl's stack frames: curl forbids
    longjmp out of its callbacks, and doing so leaves the easy handle in
-   the middle of a transfer.  So the callbacks run their Scheme code under
-   a catch, store any exception here, and tell curl to abort.  */
+   the middle of a transfer.  So read_callback runs its Scheme code under
+   a catch, stores any exception, and tells curl to abort.  */
 static SCM
 store_exception_handler (void *data, SCM key, SCM args)
 {
@@ -498,40 +499,54 @@ cl_easy_getinfo (SCM handle, SCM option)
 }
 
 
+static void
+free_recv_buffer (void *data)
+{
+  struct recv_buffer *buf = data;
+  free (buf->data);
+  buf->data = NULL;
+  buf->len = buf->cap = 0;
+}
+
+/* Received bytes become a string with one character per byte
+   (ISO-8859-1), or a bytevector.  */
+static SCM
+recv_buffer_to_scm (struct recv_buffer *buf, int bytevector)
+{
+  if (bytevector)
+    {
+      SCM bv = scm_c_make_bytevector (buf->len);
+      if (buf->len > 0)
+        memcpy (SCM_BYTEVECTOR_CONTENTS (bv), buf->data, buf->len);
+      return bv;
+    }
+  return scm_from_latin1_stringn (buf->len > 0 ? buf->data : "", buf->len);
+}
+
 SCM DLL_PUBLIC
 cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag)
 {
   handle_post_t *c_handle;
-  SCM data;
   CURLcode status;
-  struct scm_flag body_sf, header_sf;
+  struct recv_buffer body = { NULL, 0, 0 };
+  struct recv_buffer header = { NULL, 0, 0 };
+  SCM result;
 
   SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "%curl-easy-perform");
 
   c_handle = _scm_to_handle (handle);
-
-  body_sf.flag = scm_is_true (bvflag);
-  if (body_sf.flag)
-    data = scm_c_make_bytevector (0);
-  else
-    data = scm_c_make_string (0, SCM_MAKE_CHAR('\n'));
-  body_sf.scm = data;
-  body_sf.exception = SCM_BOOL_F;
-
-  header_sf.flag = 0;
-  if (header_sf.flag)
-    data = scm_c_make_bytevector (0);
-  else
-    data = scm_c_make_string (0, SCM_MAKE_CHAR('\n'));
-  header_sf.scm = data;
-  header_sf.exception = SCM_BOOL_F;
   c_handle->pending_exception = SCM_BOOL_F;
+
+  /* The buffers are freed however this procedure exits.  */
+  scm_dynwind_begin (0);
+  scm_dynwind_unwind_handler (free_recv_buffer, &body, SCM_F_WIND_EXPLICITLY);
+  scm_dynwind_unwind_handler (free_recv_buffer, &header,
+                              SCM_F_WIND_EXPLICITLY);
 
   if (scm_is_true (headerflag))
   {
     curl_easy_setopt (c_handle->handle, CURLOPT_HEADERFUNCTION, write_callback);
-    curl_easy_setopt (c_handle->handle, CURLOPT_HEADERDATA, &header_sf);
-    curl_easy_setopt (c_handle->handle, CURLOPT_ERRORBUFFER, error_string);
+    curl_easy_setopt (c_handle->handle, CURLOPT_HEADERDATA, &header);
   }
   else
   {
@@ -542,10 +557,9 @@ cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag)
   }
 
   curl_easy_setopt (c_handle->handle, CURLOPT_WRITEFUNCTION, write_callback);
-  curl_easy_setopt (c_handle->handle, CURLOPT_WRITEDATA, &body_sf);
+  curl_easy_setopt (c_handle->handle, CURLOPT_WRITEDATA, &body);
   curl_easy_setopt (c_handle->handle, CURLOPT_ERRORBUFFER, error_string);
 
-  /* Do the transfer, and fill c_str with the result */
   status = curl_easy_perform (c_handle->handle);
 
   /* Count failed transfers too: getinfo is still meaningful after one
@@ -553,109 +567,57 @@ cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag)
   if (c_handle->transfers < INT_MAX)
     c_handle->transfers ++;
 
-  /* Rethrow any Scheme error caught inside a callback, now that curl has
-     returned normally.  */
-  {
-    SCM exc = SCM_BOOL_F;
-    if (scm_is_true (c_handle->pending_exception))
-      exc = c_handle->pending_exception;
-    else if (scm_is_true (header_sf.exception))
-      exc = header_sf.exception;
-    else if (scm_is_true (body_sf.exception))
-      exc = body_sf.exception;
-    c_handle->pending_exception = SCM_BOOL_F;
-    if (scm_is_true (exc))
-      {
-        error_code = status;
-        scm_throw (scm_car (exc), scm_cdr (exc));
-      }
-  }
+  /* Rethrow any Scheme error caught inside read_callback, now that curl
+     has returned normally.  */
+  if (scm_is_true (c_handle->pending_exception))
+    {
+      SCM exc = c_handle->pending_exception;
+      c_handle->pending_exception = SCM_BOOL_F;
+      error_code = status;
+      scm_throw (scm_car (exc), scm_cdr (exc));
+    }
 
   if (status != CURLE_OK)
     {
       error_code = status;
-      return (SCM_BOOL_F);
+      result = SCM_BOOL_F;
     }
+  else if (scm_is_true (headerflag))
+    result = scm_list_2 (recv_buffer_to_scm (&header, 0),
+                         recv_buffer_to_scm (&body, scm_is_true (bvflag)));
+  else
+    result = recv_buffer_to_scm (&body, scm_is_true (bvflag));
 
-  if (scm_is_true (headerflag))
-    return (scm_list_2 (header_sf.scm, body_sf.scm));
-
-  return (body_sf.scm);
+  scm_dynwind_end ();
+  return result;
 }
 
-struct write_args
-{
-  char *ptr;
-  size_t length;
-  struct scm_flag *sf;
-};
-
-/* Append the data passed by libcurl to the Scheme string or bytevector
-   in SF.  Runs under a catch; see write_callback.  */
-static SCM
-write_callback_body (void *data)
-{
-  struct write_args *args = data;
-  void *ptr = args->ptr;
-  size_t length1, length2;
-  SCM data1, data2;
-  struct scm_flag *sf = args->sf;
-
-  data1 = sf->scm;
-  if (sf->flag)
-    length1 = scm_c_bytevector_length (data1);
-  else
-    length1 = scm_c_string_length (data1);
-
-  length2 = args->length;
-
-  if (sf->flag)
-    {
-      data2 = scm_c_make_bytevector (length1 + length2);
-      memcpy (SCM_BYTEVECTOR_CONTENTS (data2),
-              SCM_BYTEVECTOR_CONTENTS (data1),
-              length1);
-      memcpy (SCM_BYTEVECTOR_CONTENTS (data2) + length1,
-              ptr,
-              length2);
-    }
-  else
-    {
-      data2 = scm_c_make_string (length1 + length2, SCM_MAKE_CHAR('\0'));
-      for (size_t i = 0; i < length1; i ++)
-        {
-          scm_c_string_set_x (data2, i, scm_c_string_ref (data1, i));
-        }
-      for (size_t i = 0; i < length2; i ++)
-        {
-          scm_c_string_set_x (data2, i + length1,
-                              SCM_MAKE_CHAR (((char *)ptr)[i]));
-        }
-    }
-  sf->scm = data2;
-
-  return SCM_BOOL_T;
-}
-
-/* This callback function catches the data passed by libcurl and sends
-   it back as a scheme string or bytevector.  */
+/* This callback function collects the data passed by libcurl.  It runs
+   no Scheme code, so it cannot throw.  */
 static size_t
 write_callback (void *ptr, size_t size, size_t nmemb, void *userdata)
 {
-  struct write_args args;
-  SCM ret;
+  struct recv_buffer *buf = (struct recv_buffer *) userdata;
+  size_t length = size * nmemb;
 
-  args.ptr = ptr;
-  args.length = size * nmemb;
-  args.sf = (struct scm_flag *) userdata;
-
-  ret = scm_c_catch (SCM_BOOL_T,
-                     write_callback_body, &args,
-                     store_exception_handler, &args.sf->exception,
-                     NULL, NULL);
-  if (scm_is_false (ret))
+  if (length > SIZE_MAX - buf->len)
     return 0;                   /* Makes curl abort with CURLE_WRITE_ERROR.  */
-  return args.length;
+  if (buf->len + length > buf->cap)
+    {
+      /* Grow geometrically, so the total copying stays linear.  */
+      size_t cap = buf->cap ? buf->cap : 16384;
+      char *data;
+      while (cap < buf->len + length)
+        cap = (cap > SIZE_MAX / 2) ? buf->len + length : cap * 2;
+      data = realloc (buf->data, cap);
+      if (data == NULL)
+        return 0;
+      buf->data = data;
+      buf->cap = cap;
+    }
+  memcpy (buf->data + buf->len, ptr, length);
+  buf->len += length;
+  return length;
 }
 
 struct read_args

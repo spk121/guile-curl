@@ -35,9 +35,23 @@
 
 ;;; The test server.  Every response body is the request method, a
 ;;; newline, then the request body, so tests can see exactly what curl
-;;; sent.  Responses also carry an "X-Test: 1" header.
+;;; sent.  Responses also carry an "X-Test: 1" header.  The path /big
+;;; instead returns BIG-BODY, a 1 MB body containing every byte value.
+
+(define big-body
+  (let ((bv (make-bytevector (* 1024 1024))))
+    (do ((i 0 (1+ i))) ((= i (bytevector-length bv)) bv)
+      (bytevector-u8-set! bv i (modulo (* i 7) 256)))))
 
 (define (echo-handler request body)
+  (if (equal? (uri-path (request-uri request)) "/big")
+      (values (build-response
+               #:code 200
+               #:headers '((content-type . (application/octet-stream))))
+              big-body)
+      (echo-reply request body)))
+
+(define (echo-reply request body)
   (call-with-values open-bytevector-output-port
     (lambda (port get-bytes)
       (put-bytevector port
@@ -275,5 +289,23 @@ Return the server's base URL."
       (catch #t
         (lambda () (curl-easy-setopt h 'httppost '()) #t)
         (lambda args #f)))))
+
+;;; Received data was appended by copying the whole body again for each
+;;; chunk.  Check that the buffered replacement returns large bodies
+;;; intact, with one character per byte in string mode.
+
+(test-group "large response bodies"
+  (let ((h (make-handle)))
+    (curl-easy-setopt h 'url (string-append base-url "big"))
+    (test-assert "as a bytevector"
+      (bytevector=? big-body (curl-easy-perform h #t)))
+    (test-assert "as a string, one character per byte"
+      (let ((str (curl-easy-perform h #f)))
+        (and (= (string-length str) (bytevector-length big-body))
+             (let loop ((i 0))
+               (or (= i (string-length str))
+                   (and (= (char->integer (string-ref str i))
+                           (bytevector-u8-ref big-body i))
+                        (loop (1+ i))))))))))
 
 (test-end "regression")
