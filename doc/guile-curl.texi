@@ -496,6 +496,43 @@ Request that a running @code{curl-easy-perform-to-fd} transfer on
 returns @code{#f}, with the error code @code{CURLE_ABORTED_BY_CALLBACK}.
 @end deffn
 
+@deffn Procedure curl-easy-header handle name #:optional index
+Return the value of the response header @var{name} of the most recent
+transfer on @var{handle}, as a string, or @code{#f} if the response had
+no such header.  @var{name} is matched without regard to case.  If the
+header occurs more than once, @var{index} (default 0) selects which
+occurrence.  Requires libcurl 7.83.0 or later.
+@end deffn
+
+@deffn Procedure curl-easy-headers handle
+Return all the response headers of the most recent transfer on
+@var{handle} as a list of @code{(@var{name} . @var{value})} pairs of
+strings, in the order they were received.  Requires libcurl 7.83.0 or
+later.
+@end deffn
+
+@deffn Procedure curl-easy-send handle data
+@deffnx Procedure curl-easy-receive handle max-bytes
+Send and receive raw data over a connection that libcurl set up but did
+not use, so that a program can speak a protocol libcurl does not
+support.  Set the @code{connect-only} option and call
+@code{curl-easy-perform} to connect first.
+
+@code{curl-easy-send} sends @var{data}, a string (sent as UTF-8) or a
+bytevector, and returns the number of bytes sent, which may be fewer
+than given.  @code{curl-easy-receive} returns a bytevector of at most
+@var{max-bytes} bytes; it is empty when the other side has closed the
+connection.  Both return @code{#f} on failure, including when the
+connection is not ready yet, in which case @code{curl-error-code} is
+@code{CURLE_AGAIN} and the call can be repeated later.
+@end deffn
+
+@deffn Procedure curl-easy-upkeep handle
+Perform connection upkeep on the connections of @var{handle}, such as
+sending HTTP/2 PING frames on idle connections that need them.  Returns
+@code{#t}, or @code{#f} on failure.
+@end deffn
+
 @deffn Procedure curl-error-string
 If a call to @code{curl-easy-perform} fails, calling this function
 will return information about the last error as a string.
@@ -567,13 +604,14 @@ that the @code{CURLINFO_XFER_ID} evaluates to an integer.
 @item appconnect-time-t @tab CURLINFO_APPCONNECT_TIME_T @tab integer microseconds
 @item cainfo @tab CURLINFO_CAINFO @tab string
 @item capath @tab CURLINFO_CAPATH @tab string
-@c @item certinfo @tab CURLINFO_CERTINFO @tab integer
+@item certinfo @tab CURLINFO_CERTINFO @tab list of lists of strings@footnote{One list per certificate in the server's chain, each of @code{"name:value"} strings.  The @code{certinfo} option must be set before the transfer; otherwise the list is empty.}
 @item condition-unmet @tab CURLINFO_CONDITION_UNMET @tab integer 1 or zero
 @item connect-time @tab CURLINFO_CONNECT_TIME @tab real seconds
 @item connect-time-t @tab CURLINFO_CONNECT_TIME_T @tab integer microseconds
 @item conn-id @tab CURLINFO_CONN_ID @tab integer
 @item content-length-download-t @tab CURLINFO_CONTENT_LENGTH_DOWNLOAD_T @tab integer
 @item content-length-upload-t @tab CURLINFO_CONTENT_LENGTH_UPLOAD_T @tab integer
+@item content-type @tab CURLINFO_CONTENT_TYPE @tab string
 @item cookielist @tab CURLINFO_COOKIELIST @tab list of strings
 @item earlydata-sent-t @tab CURLINFO_EARLYDATA_SENT_T @tab integer bytes
 @item effective-method @tab CURLINFO_EFFECTIVE_METHOD @tab string
@@ -918,7 +956,66 @@ CURLOPT_SSH_HOST_PUBLIC_KEY_MD5 @tab string
 @item new-file-perms @tab CURLOPT_NEW_FILE_PERMS @tab integer
 @item new-directory-perms @tab CURLOPT_NEW_DIRECTORY_PERMS @tab integer
 @item telnetoptions @tab CURLOPT_TELNETOPTIONS @tab slist
+
+@item MORE OPTIONS
+@item failonerror @tab CURLOPT_FAILONERROR @tab boolean
+@item keep-sending-on-error @tab CURLOPT_KEEP_SENDING_ON_ERROR @tab boolean
+@item suppress-connect-headers @tab CURLOPT_SUPPRESS_CONNECT_HEADERS @tab boolean
+@item ssl-verifystatus @tab CURLOPT_SSL_VERIFYSTATUS @tab boolean
+@item ssh-compression @tab CURLOPT_SSH_COMPRESSION @tab boolean
+@item doh-ssl-verifypeer @tab CURLOPT_DOH_SSL_VERIFYPEER @tab boolean
+@item doh-ssl-verifystatus @tab CURLOPT_DOH_SSL_VERIFYSTATUS @tab boolean
+@item doh-ssl-verifyhost @tab CURLOPT_DOH_SSL_VERIFYHOST @tab integer
+@item quick-exit @tab CURLOPT_QUICK_EXIT @tab boolean (libcurl 7.87.0)
+@item mail-rcpt-allowfails @tab CURLOPT_MAIL_RCPT_ALLOWFAILS @tab boolean (libcurl 8.2.0)
+@item ssl-options @tab CURLOPT_SSL_OPTIONS @tab integer
+@item proxy-ssl-options @tab CURLOPT_PROXY_SSL_OPTIONS @tab integer
+@item altsvc-ctrl @tab CURLOPT_ALTSVC_CTRL @tab integer
+@item hsts-ctrl @tab CURLOPT_HSTS_CTRL @tab integer
+@item maxage-conn @tab CURLOPT_MAXAGE_CONN @tab integer
+@item maxlifetime-conn @tab CURLOPT_MAXLIFETIME_CONN @tab integer (libcurl 7.80.0)
+@item mime-options @tab CURLOPT_MIME_OPTIONS @tab integer (libcurl 7.81.0)
+@item ca-cache-timeout @tab CURLOPT_CA_CACHE_TIMEOUT @tab integer (libcurl 7.87.0)
+@item ws-options @tab CURLOPT_WS_OPTIONS @tab integer (libcurl 7.86.0)
+@item server-response-timeout @tab CURLOPT_SERVER_RESPONSE_TIMEOUT @tab integer
+@item server-response-timeout-ms @tab CURLOPT_SERVER_RESPONSE_TIMEOUT_MS @tab integer (libcurl 8.6.0)
+@item tcp-keepcnt @tab CURLOPT_TCP_KEEPCNT @tab integer (libcurl 8.9.0)
+@item upload-flags @tab CURLOPT_UPLOAD_FLAGS @tab integer (libcurl 8.13.0)
+@item altsvc @tab CURLOPT_ALTSVC @tab string
+@item aws-sigv4 @tab CURLOPT_AWS_SIGV4 @tab string
+@item ech @tab CURLOPT_ECH @tab string (libcurl 8.8.0)
+@item haproxy-client-ip @tab CURLOPT_HAPROXY_CLIENT_IP @tab string (libcurl 8.2.0)
+@item hsts @tab CURLOPT_HSTS @tab string
+@item pinnedpublickey @tab CURLOPT_PINNEDPUBLICKEY @tab string
+@item proxy-pinnedpublickey @tab CURLOPT_PROXY_PINNEDPUBLICKEY @tab string
+@item protocols-str @tab CURLOPT_PROTOCOLS_STR @tab string (libcurl 7.85.0)
+@item redir-protocols-str @tab CURLOPT_REDIR_PROTOCOLS_STR @tab string (libcurl 7.85.0)
+@item proxy-crlfile @tab CURLOPT_PROXY_CRLFILE @tab string
+@item proxy-issuercert @tab CURLOPT_PROXY_ISSUERCERT @tab string
+@item proxy-ssl-cipher-list @tab CURLOPT_PROXY_SSL_CIPHER_LIST @tab string
+@item proxy-tls13-ciphers @tab CURLOPT_PROXY_TLS13_CIPHERS @tab string
+@item tls13-ciphers @tab CURLOPT_TLS13_CIPHERS @tab string
+@item sasl-authzid @tab CURLOPT_SASL_AUTHZID @tab string
+@item ssh-host-public-key-sha256 @tab CURLOPT_SSH_HOST_PUBLIC_KEY_SHA256 @tab string (libcurl 7.80.0)
+@item ssl-ec-curves @tab CURLOPT_SSL_EC_CURVES @tab string
+@item ssl-signature-algorithms @tab CURLOPT_SSL_SIGNATURE_ALGORITHMS @tab string (libcurl 8.14.0)
+@item rtspheader @tab CURLOPT_RTSPHEADER @tab slist
+@item cainfo-blob @tab CURLOPT_CAINFO_BLOB @tab blob (libcurl 7.77.0)
+@item proxy-cainfo-blob @tab CURLOPT_PROXY_CAINFO_BLOB @tab blob (libcurl 7.77.0)
+@item issuercert-blob @tab CURLOPT_ISSUERCERT_BLOB @tab blob
+@item proxy-issuercert-blob @tab CURLOPT_PROXY_ISSUERCERT_BLOB @tab blob
+@item sslcert-blob @tab CURLOPT_SSLCERT_BLOB @tab blob
+@item proxy-sslcert-blob @tab CURLOPT_PROXY_SSLCERT_BLOB @tab blob
+@item sslkey-blob @tab CURLOPT_SSLKEY_BLOB @tab blob
+@item proxy-sslkey-blob @tab CURLOPT_PROXY_SSLKEY_BLOB @tab blob
 @end multitable
+
+Options marked with a libcurl version need that version or later.  With an
+older libcurl, setting them raises an error saying that the option is not
+supported by this version of libcurl.  The integer options take the
+corresponding @code{CURLSSLOPT_}, @code{CURLALTSVC_}, @code{CURLHSTS_},
+@code{CURLMIMEOPT_}, @code{CURLWS_}, @code{CURLULFLAG_} and @code{CURLAUTH_}
+constants, combined with @code{logior} where libcurl allows several.
 
 @node Option Data Types,  , Option Table, Options for setopt
 @subsection Option Data Types
@@ -941,6 +1038,12 @@ current locale.
 @item bytevector
 Either a bytevector or a string that only
 contains the Unicode code points U+0000 through U+00FF.
+
+@item blob
+A bytevector, or a string that only contains the Unicode code points
+U+0000 through U+00FF, holding data such as a certificate or a key in
+memory.  libcurl copies it, so it may be changed after the option is
+set.
 
 @item slist
 A list containing zero or more strings. The scheme string is converted

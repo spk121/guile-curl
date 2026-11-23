@@ -118,6 +118,29 @@ SCM DLL_PUBLIC cl_easy_init ()
   return _scm_from_handle (hp);
 }
 
+/* Options that take a struct curl_blob, given in Scheme as a bytevector
+   or 8-bit string.  */
+static int
+is_blob_option (CURLoption option)
+{
+  switch (option)
+    {
+    case CURLOPT_ISSUERCERT_BLOB:
+    case CURLOPT_PROXY_ISSUERCERT_BLOB:
+    case CURLOPT_SSLCERT_BLOB:
+    case CURLOPT_PROXY_SSLCERT_BLOB:
+    case CURLOPT_SSLKEY_BLOB:
+    case CURLOPT_PROXY_SSLKEY_BLOB:
+#if CURL_AT_LEAST_VERSION(7, 77, 0)
+    case CURLOPT_CAINFO_BLOB:
+    case CURLOPT_PROXY_CAINFO_BLOB:
+#endif
+      return 1;
+    default:
+      return 0;
+    }
+}
+
 SCM DLL_PUBLIC
 cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
 {
@@ -187,6 +210,26 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
       else
         scm_misc_error ("curl-easy-setopt",
                         "CURLOPT_HTTPHEADER requires a list of strings",
+                        SCM_EOL);
+    }
+  else if (is_blob_option (c_option))
+    {
+      if (_scm_can_convert_to_byte_data (param))
+        {
+          /* CURL_BLOB_COPY makes curl copy the data, so it can be freed
+             here.  */
+          struct curl_blob blob;
+          size_t len;
+          uint8_t *m = _scm_convert_to_byte_data (param, &len);
+          blob.data = m ? (void *) m : (void *) "";
+          blob.len = len;
+          blob.flags = CURL_BLOB_COPY;
+          code = curl_easy_setopt (c_handle->handle, c_option, &blob);
+          free (m);
+        }
+      else
+        scm_misc_error ("curl-easy-setopt",
+                        "this option requires a bytevector or an 8-bit string",
                         SCM_EOL);
     }
   else if (c_option == CURLOPT_MIMEPOST)
@@ -275,6 +318,18 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
           if (c_handle->telnetoptions)
             curl_slist_free_all (c_handle->telnetoptions);
           c_handle->telnetoptions = sl;
+        }
+      else if (c_option == CURLOPT_PROXYHEADER)
+        {
+          if (c_handle->proxyheader)
+            curl_slist_free_all (c_handle->proxyheader);
+          c_handle->proxyheader = sl;
+        }
+      else if (c_option == CURLOPT_RTSPHEADER)
+        {
+          if (c_handle->rtspheader)
+            curl_slist_free_all (c_handle->rtspheader);
+          c_handle->rtspheader = sl;
         }
       else if (c_option == CURLOPT_CONNECT_TO)
         {
@@ -487,6 +542,7 @@ cl_easy_getinfo (SCM handle, SCM option)
 #if CURL_AT_LEAST_VERSION(7, 84, 0)
            || (c_option == CURLINFO_CAPATH)
 #endif
+           || (c_option == CURLINFO_CONTENT_TYPE)
            || (c_option == CURLINFO_EFFECTIVE_METHOD)
            || (c_option == CURLINFO_EFFECTIVE_URL)
            || (c_option == CURLINFO_FTP_ENTRY_PATH)
@@ -505,6 +561,32 @@ cl_easy_getinfo (SCM handle, SCM option)
           if (c_str == NULL)
             return scm_from_utf8_string ("");
           return scm_from_utf8_string (c_str);
+        }
+      else
+        {
+          error_code = code;
+          return SCM_BOOL_F;
+        }
+    }
+  else if (c_option == CURLINFO_CERTINFO)
+    {
+      /* A list with one element per certificate in the server's chain,
+         each a list of "name:value" strings.  Needs the certinfo option
+         set before the transfer; the list is empty otherwise.  */
+      struct curl_certinfo *c_info = NULL;
+      code = curl_easy_getinfo (c_handle->handle, c_option, &c_info);
+      if (code == CURLE_OK)
+        {
+          SCM certs = SCM_EOL;
+          if (c_info != NULL)
+            for (int i = c_info->num_of_certs - 1; i >= 0; i --)
+              {
+                SCM fields = SCM_EOL;
+                for (struct curl_slist *p = c_info->certinfo[i]; p; p = p->next)
+                  fields = scm_cons (scm_from_latin1_string (p->data), fields);
+                certs = scm_cons (scm_reverse (fields), certs);
+              }
+          return certs;
         }
       else
         {
@@ -885,6 +967,155 @@ cl_easy_cancel (SCM handle)
 }
 
 
+/* Raw connections, after a transfer with the connect-only option.
+   Based on the draft in spk121/guile-curl#15.  */
+
+SCM DLL_PUBLIC
+cl_easy_send (SCM handle, SCM data)
+{
+  handle_post_t *c_handle;
+  CURLcode code;
+  const void *buffer;
+  size_t buffer_len;
+  size_t sent = 0;
+  char *str = NULL;
+
+  SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "curl-easy-send");
+  c_handle = _scm_to_handle (handle);
+
+  if (scm_is_string (data))
+    buffer = str = scm_to_utf8_stringn (data, &buffer_len);
+  else if (scm_is_bytevector (data))
+    {
+      buffer = SCM_BYTEVECTOR_CONTENTS (data);
+      buffer_len = SCM_BYTEVECTOR_LENGTH (data);
+    }
+  else
+    scm_wrong_type_arg_msg ("curl-easy-send", SCM_ARG2, data,
+                            "string or bytevector");
+
+  code = curl_easy_send (c_handle->handle, buffer, buffer_len, &sent);
+  free (str);
+  if (code != CURLE_OK)
+    {
+      error_code = code;
+      return SCM_BOOL_F;
+    }
+  return scm_from_size_t (sent);
+}
+
+SCM DLL_PUBLIC
+cl_easy_receive (SCM handle, SCM max_bytes)
+{
+  handle_post_t *c_handle;
+  CURLcode code;
+  size_t max_len;
+  size_t n = 0;
+  unsigned char *buf;
+  SCM out;
+
+  SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "curl-easy-receive");
+  SCM_ASSERT (scm_is_integer (max_bytes), max_bytes, SCM_ARG2,
+              "curl-easy-receive");
+  c_handle = _scm_to_handle (handle);
+  max_len = scm_to_size_t (max_bytes);
+  if (max_len == 0)
+    return scm_c_make_bytevector (0);
+
+  buf = malloc (max_len);
+  if (buf == NULL)
+    scm_misc_error ("curl-easy-receive", "out of memory", SCM_EOL);
+  code = curl_easy_recv (c_handle->handle, buf, max_len, &n);
+  if (code != CURLE_OK)
+    {
+      free (buf);
+      error_code = code;
+      return SCM_BOOL_F;
+    }
+  out = scm_c_make_bytevector (n);
+  memcpy (SCM_BYTEVECTOR_CONTENTS (out), buf, n);
+  free (buf);
+  return out;
+}
+
+/* Response headers of the most recent transfer (libcurl 7.83.0).  */
+
+#if CURL_AT_LEAST_VERSION(7, 83, 0)
+# define HAVE_CURL_HEADER_API 1
+#endif
+
+SCM DLL_PUBLIC
+cl_easy_header (SCM handle, SCM name, SCM index)
+{
+  SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "curl-easy-header");
+  SCM_ASSERT (scm_is_string (name), name, SCM_ARG2, "curl-easy-header");
+  SCM_ASSERT (scm_is_integer (index), index, SCM_ARG3, "curl-easy-header");
+#ifdef HAVE_CURL_HEADER_API
+  {
+    handle_post_t *c_handle = _scm_to_handle (handle);
+    struct curl_header *h = NULL;
+    CURLHcode rc;
+    char *c_name = scm_to_locale_string (name);
+
+    rc = curl_easy_header (c_handle->handle, c_name, scm_to_size_t (index),
+                           CURLH_HEADER, -1, &h);
+    free (c_name);
+    if (rc == CURLHE_OK)
+      return scm_from_latin1_string (h->value);
+    if (rc == CURLHE_NOT_BUILT_IN)
+      scm_misc_error ("curl-easy-header",
+                      "libcurl was built without the header API", SCM_EOL);
+    /* Missing header, bad index, or no headers yet.  */
+    return SCM_BOOL_F;
+  }
+#else
+  scm_misc_error ("curl-easy-header",
+                  "this procedure requires libcurl 7.83.0 or later", SCM_EOL);
+  return SCM_BOOL_F;
+#endif
+}
+
+SCM DLL_PUBLIC
+cl_easy_headers (SCM handle)
+{
+  SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "curl-easy-headers");
+#ifdef HAVE_CURL_HEADER_API
+  {
+    handle_post_t *c_handle = _scm_to_handle (handle);
+    struct curl_header *h = NULL;
+    SCM lst = SCM_EOL;
+
+    while ((h = curl_easy_nextheader (c_handle->handle, CURLH_HEADER, -1, h))
+           != NULL)
+      lst = scm_cons (scm_cons (scm_from_latin1_string (h->name),
+                                scm_from_latin1_string (h->value)),
+                      lst);
+    return scm_reverse (lst);
+  }
+#else
+  scm_misc_error ("curl-easy-headers",
+                  "this procedure requires libcurl 7.83.0 or later", SCM_EOL);
+  return SCM_BOOL_F;
+#endif
+}
+
+SCM DLL_PUBLIC
+cl_easy_upkeep (SCM handle)
+{
+  handle_post_t *c_handle;
+  CURLcode code;
+
+  SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "curl-easy-upkeep");
+  c_handle = _scm_to_handle (handle);
+  code = curl_easy_upkeep (c_handle->handle);
+  if (code != CURLE_OK)
+    {
+      error_code = code;
+      return SCM_BOOL_F;
+    }
+  return SCM_BOOL_T;
+}
+
 SCM DLL_PUBLIC
 cl_easy_reset (SCM handle)
 {
@@ -997,6 +1228,10 @@ cl_dump_handle (SCM handle)
   print_slist (hp->resolve);
   fprintf (stderr, "\t telnetoptions %p\n", hp->telnetoptions);
   print_slist (hp->telnetoptions);
+  fprintf (stderr, "\t   proxyheader %p\n", hp->proxyheader);
+  print_slist (hp->proxyheader);
+  fprintf (stderr, "\t    rtspheader %p\n", hp->rtspheader);
+  print_slist (hp->rtspheader);
   fprintf (stderr, "\t    connect_to %p\n", hp->connect_to);
   print_slist (hp->connect_to);
   fflush (stderr);
@@ -1019,6 +1254,11 @@ cl_init_func ()
                           cl_easy_perform_to_fd);
       scm_c_define_gsubr ("%curl-easy-progress", 1, 0, 0, cl_easy_progress);
       scm_c_define_gsubr ("%curl-easy-cancel!", 1, 0, 0, cl_easy_cancel);
+      scm_c_define_gsubr ("%curl-easy-send", 2, 0, 0, cl_easy_send);
+      scm_c_define_gsubr ("%curl-easy-receive", 2, 0, 0, cl_easy_receive);
+      scm_c_define_gsubr ("%curl-easy-header", 3, 0, 0, cl_easy_header);
+      scm_c_define_gsubr ("%curl-easy-headers", 1, 0, 0, cl_easy_headers);
+      scm_c_define_gsubr ("%curl-easy-upkeep", 1, 0, 0, cl_easy_upkeep);
       scm_c_define_gsubr ("%curl-easy-cleanup", 1, 0, 0, cl_easy_cleanup);
       scm_c_define_gsubr ("%curl-easy-reset", 1, 0, 0, cl_easy_reset);
       scm_c_define_gsubr ("%curl-error-string", 0, 0, 0, cl_error_string);

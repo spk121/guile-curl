@@ -213,6 +213,16 @@ gc_free_handle_unlocked (SCM handle)
           curl_slist_free_all (x->telnetoptions);
           x->telnetoptions = NULL;
         }
+      if (x->proxyheader != NULL)
+        {
+          curl_slist_free_all (x->proxyheader);
+          x->proxyheader = NULL;
+        }
+      if (x->rtspheader != NULL)
+        {
+          curl_slist_free_all (x->rtspheader);
+          x->rtspheader = NULL;
+        }
       if (x->connect_to != NULL)
         {
           curl_slist_free_all (x->connect_to);

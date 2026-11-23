@@ -36,7 +36,8 @@
 ;;; The test server.  Every response body is the request method, a
 ;;; newline, then the request body, so tests can see exactly what curl
 ;;; sent.  Responses also carry an "X-Test: 1" header.  The path /big
-;;; instead returns BIG-BODY, a 1 MB body containing every byte value.
+;;; instead returns BIG-BODY, a 1 MB body containing every byte value,
+;;; and the path /missing returns a 404 error.
 
 (define big-body
   (let ((bv (make-bytevector (* 1024 1024))))
@@ -44,12 +45,17 @@
       (bytevector-u8-set! bv i (modulo (* i 7) 256)))))
 
 (define (echo-handler request body)
-  (if (equal? (uri-path (request-uri request)) "/big")
+  (let ((path (uri-path (request-uri request))))
+    (cond
+     ((equal? path "/big")
       (values (build-response
                #:code 200
                #:headers '((content-type . (application/octet-stream))))
-              big-body)
-      (echo-reply request body)))
+              big-body))
+     ((equal? path "/missing")
+      (values (build-response #:code 404) "not found"))
+     (else
+      (echo-reply request body)))))
 
 (define (echo-reply request body)
   (call-with-values open-bytevector-output-port
@@ -564,5 +570,132 @@ Return the server's base URL."
       (let ((body (curl-easy-perform h #t)))
         (and body (bytevector=? body big-body))))
     (delete-file name)))
+
+;;; Options, getinfo values and procedures added for libcurl 8.15
+;;; (spk121/guile-curl#16).
+
+(define (setopt-ok? h option value)
+  (catch #t
+    (lambda () (curl-easy-setopt h option value) #t)
+    (lambda args #f)))
+
+(test-group "new options"
+  (let ((h (make-handle)))
+    (test-assert "boolean: ssl-verifystatus" (setopt-ok? h 'ssl-verifystatus #f))
+    (test-assert "integer: ssl-options"
+      (setopt-ok? h 'ssl-options CURLSSLOPT_NO_REVOKE))
+    (test-assert "string: pinnedpublickey" (setopt-ok? h 'pinnedpublickey ""))
+    (test-assert "list of strings: proxyheader"
+      (setopt-ok? h 'proxyheader '("X-Proxy: 1")))
+    (test-assert "list of strings: rtspheader"
+      (setopt-ok? h 'rtspheader '("X-Rtsp: 1")))
+    (test-assert "blob: sslcert-blob, as a bytevector"
+      (setopt-ok? h 'sslcert-blob (u8-list->bytevector '(1 2 3))))
+    (test-assert "blob: sslkey-blob, as a string"
+      (setopt-ok? h 'sslkey-blob "not a key"))
+    (test-equal "a blob rejects other types"
+      #f (setopt-ok? h 'sslcert-blob 42))
+    ;; The options above do not affect a plain HTTP request.
+    (curl-easy-setopt h 'sslcert-blob #vu8())
+    (curl-easy-setopt h 'sslkey-blob #vu8())
+    (test-equal "the handle still works" "GET\n" (curl-easy-perform h)))
+
+  (let ((h (make-handle)))
+    (curl-easy-setopt h 'url (string-append base-url "missing"))
+    (test-assert "without failonerror a 404 is returned as a body"
+      (string? (curl-easy-perform h)))
+    (curl-easy-setopt h 'failonerror #t)
+    (test-equal "with failonerror a 404 fails" #f (curl-easy-perform h))
+    (test-equal "with CURLE_HTTP_RETURNED_ERROR"
+      CURLE_HTTP_RETURNED_ERROR (curl-error-code)))
+
+  (let ((h (make-handle)))
+    (if (@@ (curl) CURLOPT_PROTOCOLS_STR)
+        (begin
+          (curl-easy-setopt h 'protocols-str "ftp")
+          (test-equal "protocols-str restricts the protocols"
+            #f (curl-easy-perform h)))
+        (test-assert "protocols-str is reported as unsupported"
+          (not (setopt-ok? h 'protocols-str "ftp")))))
+
+  ;; tcp-keepcnt needs libcurl 8.9.0; check the error on older ones.
+  (let ((h (make-handle)))
+    (if (@@ (curl) CURLOPT_TCP_KEEPCNT)
+        (test-assert "tcp-keepcnt can be set" (setopt-ok? h 'tcp-keepcnt 3))
+        (test-equal "an option libcurl lacks raises a clear error"
+          "option tcp-keepcnt is not supported by this version of libcurl"
+          (catch #t
+            (lambda () (curl-easy-setopt h 'tcp-keepcnt 3) #f)
+            (lambda (key subr fmt args . rest)
+              (apply format #f fmt args)))))))
+
+(test-group "new getinfo values"
+  (let ((h (make-handle)))
+    (curl-easy-setopt h 'url (string-append base-url "big"))
+    (curl-easy-perform h #t)
+    (test-equal "content-type" "application/octet-stream"
+      (curl-easy-getinfo h 'content-type))
+    (test-equal "certinfo is empty without TLS" '()
+      (curl-easy-getinfo h 'certinfo))))
+
+(test-group "response headers"
+  (let ((h (make-handle)))
+    (curl-easy-perform h)
+    ;; The header API needs libcurl 7.83.0; older ones raise an error.
+    (if (catch 'misc-error
+          (lambda () (curl-easy-header h "X-Test") #t)
+          (lambda args #f))
+        (begin
+          (test-equal "curl-easy-header" "1" (curl-easy-header h "X-Test"))
+          (test-equal "is case-insensitive" "1" (curl-easy-header h "x-test"))
+          (test-equal "returns #f for a missing header" #f
+            (curl-easy-header h "X-No-Such-Header"))
+          (test-equal "returns #f for a missing occurrence" #f
+            (curl-easy-header h "X-Test" 1))
+          (test-equal "curl-easy-headers lists the headers" "1"
+            (assoc-ref (map (lambda (p) (cons (string-downcase (car p)) (cdr p)))
+                            (curl-easy-headers h))
+                       "x-test")))
+        (test-equal "raises an error on older libcurl" 'misc-error
+          (catch #t (lambda () (curl-easy-header h "X-Test") #f)
+            (lambda (key . args) key))))))
+
+(define (receive-until h done? timeout-seconds)
+  "Receive from H until DONE? accepts the text so far, the connection
+closes, or TIMEOUT-SECONDS pass.  Returns the text received."
+  (let ((deadline (+ (current-time) timeout-seconds)))
+    (let loop ((text ""))
+      (if (or (done? text) (> (current-time) deadline))
+          text
+          (let ((bv (curl-easy-receive h 4096)))
+            (cond
+             ((not bv)                  ; CURLE_AGAIN: nothing yet
+              (usleep 10000)
+              (loop text))
+             ((zero? (bytevector-length bv)) text)   ; connection closed
+             (else
+              (loop (string-append text (utf8->string bv))))))))))
+
+(test-group "send and receive"
+  (let ((h (make-handle)))
+    (curl-easy-setopt h 'connect-only #t)
+    (curl-easy-perform h)
+    (let ((request "GET / HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n"))
+      (test-equal "curl-easy-send sends the request"
+        (string-length request)
+        (curl-easy-send h request))
+      (let ((reply (receive-until h (lambda (text) (string-suffix? "GET\n" text))
+                                  10)))
+        (test-assert "curl-easy-receive gets the response"
+          (and (string-prefix? "HTTP/1." reply)
+               (string-suffix? "\r\n\r\nGET\n" reply))))))
+  (let ((h (make-handle)))
+    (test-equal "send without a connection fails" #f
+      (curl-easy-send h #vu8(1 2 3)))))
+
+(test-group "upkeep"
+  (let ((h (make-handle)))
+    (curl-easy-perform h)
+    (test-equal "curl-easy-upkeep" #t (curl-easy-upkeep h))))
 
 (test-end "regression")

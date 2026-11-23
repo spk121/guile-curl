@@ -38,6 +38,8 @@ typedef struct handle_post_tag
   struct curl_slist *prequote;
   struct curl_slist *resolve;
   struct curl_slist *telnetoptions;
+  struct curl_slist *proxyheader;
+  struct curl_slist *rtspheader;
   struct curl_slist *connect_to;
   int transfers;
   /* The port given with CURLOPT_READDATA.  Curl only holds a raw pointer

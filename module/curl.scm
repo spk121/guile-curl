@@ -28,6 +28,11 @@
             curl-easy-perform-to-fd
             curl-easy-progress
             curl-easy-cancel!
+            curl-easy-send
+            curl-easy-receive
+            curl-easy-header
+            curl-easy-headers
+            curl-easy-upkeep
             curl-easy-cleanup
             curl-easy-reset
             curl-error-string
@@ -88,6 +93,8 @@
             CURLAUTH_ANY
             CURLAUTH_ANYSAFE
             CURLAUTH_ONLY
+            CURLAUTH_GSSAPI
+            CURLAUTH_NONE
 
             CURL_REDIR_POST_301
             CURL_REDIR_POST_302
@@ -155,6 +162,27 @@
             CURLSSH_AUTH_HOST
             CURLSSH_AUTH_KEYBOARD
             CURLSSH_AUTH_ANY
+            CURLSSLOPT_ALLOW_BEAST
+            CURLSSLOPT_NO_REVOKE
+            CURLSSLOPT_NO_PARTIALCHAIN
+            CURLSSLOPT_REVOKE_BEST_EFFORT
+            CURLSSLOPT_NATIVE_CA
+            CURLSSLOPT_AUTO_CLIENT_CERT
+            CURLSSLOPT_EARLYDATA
+            CURLALTSVC_READONLYFILE
+            CURLALTSVC_H1
+            CURLALTSVC_H2
+            CURLALTSVC_H3
+            CURLHSTS_ENABLE
+            CURLHSTS_READONLYFILE
+            CURLMIMEOPT_FORMESCAPE
+            CURLWS_RAW_MODE
+            CURLWS_NOAUTOPONG
+            CURLULFLAG_ANSWERED
+            CURLULFLAG_DELETED
+            CURLULFLAG_DRAFT
+            CURLULFLAG_FLAGGED
+            CURLULFLAG_SEEN
 
             CURLINFO_ACTIVESOCKET
             CURLINFO_APPCONNECT_TIME
@@ -166,6 +194,7 @@
             CURLINFO_CONNECT_TIME
             CURLINFO_CONNECT_TIME_T
             CURLINFO_CONN_ID
+            CURLINFO_CONTENT_TYPE
             CURLINFO_CONTENT_LENGTH_DOWNLOAD_T
             CURLINFO_CONTENT_LENGTH_UPLOAD_T
             CURLINFO_COOKIELIST
@@ -758,6 +787,60 @@ cache, the cookies or the shared."
     (new-file-perms ,CURLOPT_NEW_FILE_PERMS integer)
     (new-directory-perms ,CURLOPT_NEW_DIRECTORY_PERMS integer)
     (telnetoptions ,CURLOPT_TELNETOPTIONS slist)
+    ;; Added for libcurl 8.15 (issue #16).
+    (failonerror ,CURLOPT_FAILONERROR boolean)
+    (keep-sending-on-error ,CURLOPT_KEEP_SENDING_ON_ERROR boolean)
+    (suppress-connect-headers ,CURLOPT_SUPPRESS_CONNECT_HEADERS boolean)
+    (ssl-verifystatus ,CURLOPT_SSL_VERIFYSTATUS boolean)
+    (ssh-compression ,CURLOPT_SSH_COMPRESSION boolean)
+    (doh-ssl-verifypeer ,CURLOPT_DOH_SSL_VERIFYPEER boolean)
+    (doh-ssl-verifystatus ,CURLOPT_DOH_SSL_VERIFYSTATUS boolean)
+    (doh-ssl-verifyhost ,CURLOPT_DOH_SSL_VERIFYHOST integer)
+    (quick-exit ,CURLOPT_QUICK_EXIT boolean)
+    (mail-rcpt-allowfails ,CURLOPT_MAIL_RCPT_ALLOWFAILS boolean)
+    (ssl-options ,CURLOPT_SSL_OPTIONS integer)
+    (proxy-ssl-options ,CURLOPT_PROXY_SSL_OPTIONS integer)
+    (socks5-auth ,CURLOPT_SOCKS5_AUTH integer)
+    (altsvc-ctrl ,CURLOPT_ALTSVC_CTRL integer)
+    (hsts-ctrl ,CURLOPT_HSTS_CTRL integer)
+    (maxage-conn ,CURLOPT_MAXAGE_CONN integer)
+    (maxlifetime-conn ,CURLOPT_MAXLIFETIME_CONN integer)
+    (mime-options ,CURLOPT_MIME_OPTIONS integer)
+    (ca-cache-timeout ,CURLOPT_CA_CACHE_TIMEOUT integer)
+    (ws-options ,CURLOPT_WS_OPTIONS integer)
+    (server-response-timeout ,CURLOPT_SERVER_RESPONSE_TIMEOUT integer)
+    (server-response-timeout-ms ,CURLOPT_SERVER_RESPONSE_TIMEOUT_MS integer)
+    (rtsp-server-cseq ,CURLOPT_RTSP_SERVER_CSEQ integer)
+    (tcp-keepcnt ,CURLOPT_TCP_KEEPCNT integer)
+    (upload-flags ,CURLOPT_UPLOAD_FLAGS integer)
+    (altsvc ,CURLOPT_ALTSVC string)
+    (aws-sigv4 ,CURLOPT_AWS_SIGV4 string)
+    (ech ,CURLOPT_ECH string)
+    (haproxy-client-ip ,CURLOPT_HAPROXY_CLIENT_IP string)
+    (hsts ,CURLOPT_HSTS string)
+    (pinnedpublickey ,CURLOPT_PINNEDPUBLICKEY string)
+    (proxy-pinnedpublickey ,CURLOPT_PROXY_PINNEDPUBLICKEY string)
+    (protocols-str ,CURLOPT_PROTOCOLS_STR string)
+    (redir-protocols-str ,CURLOPT_REDIR_PROTOCOLS_STR string)
+    (proxy-crlfile ,CURLOPT_PROXY_CRLFILE string)
+    (proxy-issuercert ,CURLOPT_PROXY_ISSUERCERT string)
+    (proxy-ssl-cipher-list ,CURLOPT_PROXY_SSL_CIPHER_LIST string)
+    (proxy-tls13-ciphers ,CURLOPT_PROXY_TLS13_CIPHERS string)
+    (tls13-ciphers ,CURLOPT_TLS13_CIPHERS string)
+    (sasl-authzid ,CURLOPT_SASL_AUTHZID string)
+    (ssh-host-public-key-sha256 ,CURLOPT_SSH_HOST_PUBLIC_KEY_SHA256 string)
+    (ssl-ec-curves ,CURLOPT_SSL_EC_CURVES string)
+    (ssl-signature-algorithms ,CURLOPT_SSL_SIGNATURE_ALGORITHMS string)
+    (proxyheader ,CURLOPT_PROXYHEADER slist)
+    (rtspheader ,CURLOPT_RTSPHEADER slist)
+    (cainfo-blob ,CURLOPT_CAINFO_BLOB blob)
+    (proxy-cainfo-blob ,CURLOPT_PROXY_CAINFO_BLOB blob)
+    (issuercert-blob ,CURLOPT_ISSUERCERT_BLOB blob)
+    (proxy-issuercert-blob ,CURLOPT_PROXY_ISSUERCERT_BLOB blob)
+    (sslcert-blob ,CURLOPT_SSLCERT_BLOB blob)
+    (proxy-sslcert-blob ,CURLOPT_PROXY_SSLCERT_BLOB blob)
+    (sslkey-blob ,CURLOPT_SSLKEY_BLOB blob)
+    (proxy-sslkey-blob ,CURLOPT_PROXY_SSLKEY_BLOB blob)
     ))
 
 (define (curl-easy-setopt handle option arg)
@@ -766,9 +849,14 @@ Returns #t on success and #f on failure."
 
   (let ((value (assq-ref symbol-options option)))
     (if value
-        (let ((option (car value))
+        (let ((option-name option)
+              (option (car value))
               (type (cadr value)))
           (cond
+           ((not option)
+            ;; The constant is #f when libcurl is too old to have it.
+            (error (format #f "option ~a is not supported by this version of libcurl"
+                           option-name)))
            ((or (and (eq? type 'integer)
                      (integer? arg))
                 (and (eq? type 'string)
@@ -779,7 +867,7 @@ Returns #t on success and #f on failure."
             (%curl-easy-setopt handle option arg #t))
            ((eq? type 'boolean)
             (%curl-easy-setopt handle option (c-bool arg) #f))
-           ((and (eq? type 'bytevector)
+           ((and (memq type '(bytevector blob))
                  (or
                   (string? arg)
                   (bytevector? arg)
@@ -796,7 +884,7 @@ Returns #t on success and #f on failure."
                  (input-port? arg))
             (%curl-easy-setopt handle option arg #f))
            ((not (member type '(integer boolean string biginteger slist mimepost bytevector
-                                input-port)))
+                                blob input-port)))
             (error (format #f "unimplemented type: ~a" type)))
            (else
             (error (format #f "wrong type arg: ~a" arg)))))
@@ -810,13 +898,14 @@ Returns #t on success and #f on failure."
     (appconnect-time-t . ,CURLINFO_APPCONNECT_TIME_T)
     (cainfo . ,CURLINFO_CAINFO)
     (capath . ,CURLINFO_CAPATH)
-    ;; (certinfo . ,CURLINFO_CERTINFO)
+    (certinfo . ,CURLINFO_CERTINFO)
     (condition-unmet . ,CURLINFO_CONDITION_UNMET)
     (connect-time . ,CURLINFO_CONNECT_TIME)
     (connect-time-t . ,CURLINFO_CONNECT_TIME_T)
     (conn-id . ,CURLINFO_CONN_ID)
     (content-length-download-t . ,CURLINFO_CONTENT_LENGTH_DOWNLOAD_T)
     (content-length-upload-t . ,CURLINFO_CONTENT_LENGTH_UPLOAD_T)
+    (content-type . ,CURLINFO_CONTENT_TYPE)
     (cookielist . ,CURLINFO_COOKIELIST)
     (earlydata-sent-t . ,CURLINFO_EARLYDATA_SENT_T)
     (effective-method . ,CURLINFO_EFFECTIVE_METHOD)
@@ -877,11 +966,16 @@ Returns #t on success and #f on failure."
 in accordance with the given operation.
 It usually returns #f on a recoverable error; check curl-error-code
 or curl-error-string for more information."
-  (let ((value (assq-ref getinfo-options option)))
-    (if value
-        (%curl-easy-getinfo handle value)
-        ;; else
-        (error (format #f "unknown option: ~a" option)))))        
+  (let ((entry (assq option getinfo-options)))
+    (cond
+     ((not entry)
+      (error (format #f "unknown option: ~a" option)))
+     ((not (cdr entry))
+      ;; The constant is #f when libcurl is too old to have it.
+      (error (format #f "option ~a is not supported by this version of libcurl"
+                     option)))
+     (else
+      (%curl-easy-getinfo handle (cdr entry))))))        
 
 (define* (curl-easy-perform handle #:optional (bytevector? #f) (header? #f))
   "This function is called after the init and all the curl-easy-setopt
@@ -905,6 +999,40 @@ reported by a curl-easy-perform-to-fd transfer on HANDLE."
   "Request cancellation of a running curl-easy-perform-to-fd transfer on
 HANDLE.  It can be called from another thread."
   (%curl-easy-cancel! handle))
+
+(define (curl-easy-send handle data)
+  "Send DATA, a string (sent as UTF-8) or a bytevector, over the
+connection of HANDLE, which must have been set up by a transfer with the
+connect-only option.  Returns the number of bytes sent, which may be
+fewer than given, or #f on failure (including CURLE_AGAIN when the
+connection is not ready to send)."
+  (%curl-easy-send handle data))
+
+(define (curl-easy-receive handle max-bytes)
+  "Receive up to MAX-BYTES bytes from the connection of HANDLE, set up
+by a transfer with the connect-only option.  Returns a bytevector, which
+is empty when the connection has been closed, or #f on failure
+(including CURLE_AGAIN when no data is available yet)."
+  (%curl-easy-receive handle max-bytes))
+
+(define* (curl-easy-header handle name #:optional (index 0))
+  "Return the value of the response header NAME (case-insensitive) of
+the most recent transfer on HANDLE, or #f if there is none.  If the
+header occurs more than once, INDEX selects the occurrence.  Requires
+libcurl 7.83.0 or later."
+  (%curl-easy-header handle name index))
+
+(define (curl-easy-headers handle)
+  "Return the response headers of the most recent transfer on HANDLE as
+a list of (NAME . VALUE) pairs of strings, in the order received.
+Requires libcurl 7.83.0 or later."
+  (%curl-easy-headers handle))
+
+(define (curl-easy-upkeep handle)
+  "Perform connection upkeep for HANDLE, such as sending keep-alive
+messages on idle connections that need them.  Returns #t, or #f on
+failure."
+  (%curl-easy-upkeep handle))
 
 (define (curl-error-string)
   "Returns information about the last error as a string."
