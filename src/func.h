@@ -22,7 +22,6 @@
 #include "visibility.h"
 
 SCM DLL_PUBLIC cl_easy_init (void);
-SCM DLL_PUBLIC cl_easy_getopt (SCM handle, SCM label, SCM val);
 SCM DLL_PUBLIC cl_easy_getinfo (SCM handle, SCM option);
 SCM DLL_PUBLIC cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big);
 SCM DLL_PUBLIC cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag);

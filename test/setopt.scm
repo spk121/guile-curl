@@ -27,6 +27,10 @@
   (false-if-exception
    (let ((h (curl-easy-init)))
      (curl-easy-setopt h opt val)
+     ;; Clean up now rather than leaving it to the GC.  A handle with
+     ;; 'cookiejar writes the cookie file when it is cleaned up, which
+     ;; must happen before the file is deleted at the end of this test.
+     (curl-easy-cleanup h)
      #t)))
 
 (define (true-if-exception x)

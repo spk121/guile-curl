@@ -28,14 +28,47 @@ static size_t write_callback (void *ptr, size_t size, size_t nmemb,
 static size_t read_callback (void *ptr, size_t size, size_t nmemb,
                              void *port);
 
-CURLcode error_code = CURLE_OK;
-char error_string[CURL_ERROR_SIZE+1] = "";
+/* The error state reported by curl-error-code and curl-error-string.
+   It is per thread, so that one thread's failure does not overwrite
+   the error another thread is about to read.  */
+static SCM_THREAD_LOCAL CURLcode error_code = CURLE_OK;
+static SCM_THREAD_LOCAL char error_string[CURL_ERROR_SIZE+1] = "";
 
-struct scm_flag
+/* Received data (body or headers) is collected here by write_callback
+   and converted to a Scheme object once, after the transfer.  */
+struct recv_buffer
 {
-  SCM scm;
-  int flag;
+  char *data;
+  size_t len;
+  size_t cap;
 };
+
+/* Errors must not unwind through libcurl's stack frames: curl forbids
+   longjmp out of its callbacks, and doing so leaves the easy handle in
+   the middle of a transfer.  So read_callback runs its Scheme code under
+   a catch, stores any exception, and tells curl to abort.  */
+static SCM
+store_exception_handler (void *data, SCM key, SCM args)
+{
+  *(SCM *) data = scm_cons (key, args);
+  return SCM_BOOL_F;
+}
+
+/* Options every new or reset handle starts with.
+
+   With a synchronous DNS resolver, libcurl implements DNS timeouts with
+   SIGALRM and siglongjmp, which is unsafe in a multithreaded program,
+   and a Guile process always has several threads.  libcurl's
+   documentation says such programs must set CURLOPT_NOSIGNAL, so do so
+   by default in that case.  With an asynchronous resolver (threaded or
+   c-ares) libcurl does not use SIGALRM, and the default is left alone.
+   Either way, (curl-easy-setopt h 'nosignal ...) overrides it.  */
+static void
+set_default_options (CURL *handle)
+{
+  if (!(curl_version_info (CURLVERSION_NOW)->features & CURL_VERSION_ASYNCHDNS))
+    curl_easy_setopt (handle, CURLOPT_NOSIGNAL, 1L);
+}
 
 SCM DLL_PUBLIC cl_easy_init ()
 {
@@ -46,22 +79,25 @@ SCM DLL_PUBLIC cl_easy_init ()
 
   if (handle == NULL)
     {
-      scm_error (SCM_BOOL_F,
-                 "curl-easy-init",
-                 "initialization failure",
-                 SCM_BOOL_F,
-                 SCM_BOOL_F);
+      scm_misc_error ("curl-easy-init",
+                      "initialization failure",
+                      SCM_EOL);
     }
 
-  hp = scm_malloc (sizeof (handle_post_t));
+  /* Allocated from the GC heap, not with malloc, so that the GC scans
+     its SCM fields (such as readport).  The smob keeps it alive.  */
+  hp = scm_gc_malloc (sizeof (handle_post_t), "curl handle");
   memset (hp, 0, sizeof (handle_post_t));
   hp->handle = handle;
+  set_default_options (handle);
+  hp->readport = SCM_BOOL_F;
+  hp->pending_exception = SCM_BOOL_F;
 
   if (0)
     {
       fprintf (stderr, "Allocating <#handle %p>\n", hp);
       fprintf (stderr, "\t        handle %p\n", hp->handle);
-      fprintf (stderr, "\t      httppost %p\n", hp->httppost);
+      fprintf (stderr, "\t          mime %p\n", hp->mime);
       fprintf (stderr, "\t    httpheader %p\n", hp->httpheader);
       fprintf (stderr, "\thttp200aliases %p\n", hp->http200aliases);
       fprintf (stderr, "\t     mail_rcpt %p\n", hp->mail_rcpt);
@@ -98,13 +134,38 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
           uint8_t *m = _scm_convert_to_byte_data (param, &len);
           free (c_handle->postfields);
           c_handle->postfields = m;
-          curl_easy_setopt (c_handle->handle, CURLOPT_POSTFIELDSIZE, len);
+          curl_easy_setopt (c_handle->handle, CURLOPT_POSTFIELDSIZE_LARGE,
+                            (curl_off_t) len);
           c_handle->postfieldsize = len;
           code = curl_easy_setopt (c_handle->handle, CURLOPT_POSTFIELDS, (char *) m);
         }
       else
-        scm_error (SCM_BOOL_F, "cl-easy-setopt", "CURLOPT_POSTFIELDS requires 8-bit string or bytevector data",
-                   SCM_BOOL_F, SCM_BOOL_F);
+        scm_misc_error ("curl-easy-setopt",
+                        "CURLOPT_POSTFIELDS requires 8-bit string or bytevector data",
+                        SCM_EOL);
+    }
+  else if (c_option == CURLOPT_COPYPOSTFIELDS)
+    {
+      if (_scm_can_convert_to_byte_data (param))
+        {
+          size_t len;
+          uint8_t *m = _scm_convert_to_byte_data (param, &len);
+          /* With the size set first, curl copies exactly LEN bytes, so
+             binary data with NULs works.  */
+          curl_easy_setopt (c_handle->handle, CURLOPT_POSTFIELDSIZE_LARGE,
+                            (curl_off_t) len);
+          code = curl_easy_setopt (c_handle->handle, CURLOPT_COPYPOSTFIELDS,
+                                   m ? (char *) m : "");
+          free (m);
+          /* Curl no longer uses any buffer kept for CURLOPT_POSTFIELDS.  */
+          free (c_handle->postfields);
+          c_handle->postfields = NULL;
+          c_handle->postfieldsize = 0;
+        }
+      else
+        scm_misc_error ("curl-easy-setopt",
+                        "CURLOPT_COPYPOSTFIELDS requires 8-bit string or bytevector data",
+                        SCM_EOL);
     }
   else if (c_option == CURLOPT_HTTPHEADER)
     {
@@ -119,13 +180,38 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
           code = curl_easy_setopt (c_handle->handle, CURLOPT_HTTPHEADER, sl);
         }
       else
-        scm_error (SCM_BOOL_F, "cl-easy-setopt", "CURLOPT_HTTPHEADER requires a list of strings",
-                   SCM_BOOL_F, SCM_BOOL_F);
+        scm_misc_error ("curl-easy-setopt",
+                        "CURLOPT_HTTPHEADER requires a list of strings",
+                        SCM_EOL);
+    }
+  else if (c_option == CURLOPT_MIMEPOST)
+    {
+      /* Checked by option rather than by argument type, because an
+         empty form, '(), would also pass as a list of strings.  */
+      if (_scm_can_convert_to_mime (param))
+        {
+          /* An empty form gives NULL, which clears the form.  */
+          curl_mime *mime = _scm_convert_to_mime (param, c_handle->handle);
+          code = curl_easy_setopt (c_handle->handle, CURLOPT_MIMEPOST, mime);
+          if (code == CURLE_OK)
+            {
+              /* Setting the new form detached the old one.  */
+              curl_mime_free (c_handle->mime);
+              c_handle->mime = mime;
+            }
+          else
+            curl_mime_free (mime);
+        }
+      else
+        scm_misc_error ("curl-easy-setopt",
+                        "CURLOPT_MIMEPOST requires a list of form fields",
+                        SCM_EOL);
     }
   else if (scm_is_integer (param))
     {
       if (scm_is_true (big))
-        code = curl_easy_setopt (c_handle->handle, c_option, scm_to_int64 (param));
+        code = curl_easy_setopt (c_handle->handle, c_option,
+                                 (curl_off_t) scm_to_int64 (param));
       else
         code = curl_easy_setopt (c_handle->handle, c_option, scm_to_long (param));
     }
@@ -185,48 +271,57 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
             curl_slist_free_all (c_handle->telnetoptions);
           c_handle->telnetoptions = sl;
         }
+      else if (c_option == CURLOPT_CONNECT_TO)
+        {
+          if (c_handle->connect_to)
+            curl_slist_free_all (c_handle->connect_to);
+          c_handle->connect_to = sl;
+        }
       else
         {
-          // Bad slist option
+          // Bad slist option.  Nothing took ownership of SL.
+          curl_slist_free_all (sl);
           ok = 0;
         }
       if (ok)
         code = curl_easy_setopt (c_handle->handle, c_option, sl);
-
-    }
-  else if (_scm_can_convert_to_httppost (param))
-    {
-      if (c_option == CURLOPT_HTTPPOST)
-        {
-          struct curl_httppost *p;
-          p = _scm_convert_to_httppost (param);
-          free (c_handle->httppost);
-          c_handle->httppost = p;
-          code = curl_easy_setopt (c_handle, CURLOPT_HTTPPOST, p);
-        }
+      else
+        scm_misc_error ("curl-easy-setopt",
+                        "this option does not accept a list of strings",
+                        SCM_EOL);
     }
   else if (scm_is_true (scm_input_port_p (param)))
     {
       if (c_option == CURLOPT_READDATA)
         {
+          c_handle->readport = param;
           curl_easy_setopt (c_handle->handle, CURLOPT_READFUNCTION, read_callback);
-          code = curl_easy_setopt (c_handle->handle, CURLOPT_READDATA, SCM2PTR (param));
+          code = curl_easy_setopt (c_handle->handle, CURLOPT_READDATA, c_handle);
         }
+      else
+        scm_misc_error ("curl-easy-setopt",
+                        "this option does not accept a port",
+                        SCM_EOL);
     }
   else
-    scm_error (SCM_BOOL_F,
-               "curl-easy-setopt",
-               "unimplemented option type",
-               SCM_BOOL_F,
-               SCM_BOOL_F);
+    scm_misc_error ("curl-easy-setopt",
+                    "unimplemented option type",
+                    SCM_EOL);
   if (code != CURLE_OK)
-    scm_error (SCM_BOOL_F,
-               "curl-easy-setopt",
-               "bad handle",
-               SCM_BOOL_F,
-               SCM_BOOL_F);
+    {
+      error_code = code;
+      scm_misc_error ("curl-easy-setopt", "~A",
+                      scm_list_1 (scm_from_locale_string
+                                  (curl_easy_strerror (code))));
+    }
 
   return SCM_UNSPECIFIED;
+}
+
+static void
+free_slist (void *sl)
+{
+  curl_slist_free_all ((struct curl_slist *) sl);
 }
 
 SCM DLL_PUBLIC
@@ -252,11 +347,15 @@ cl_easy_getinfo (SCM handle, SCM option)
       curl_socket_t c_sockfd;
       code = curl_easy_getinfo(c_handle->handle, c_option, &c_sockfd);
       if (code == CURLE_OK && c_sockfd != CURL_SOCKET_BAD)
+        {
 #ifdef _WIN32
-        return scm_from_unsigned_int (c_sockfd);
+          /* SOCKET is a pointer-sized unsigned integer (64 bits on
+             64-bit Windows).  */
+          return scm_from_uintptr_t ((uintptr_t) c_sockfd);
 #else
-      return scm_from_int (c_sockfd);
+          return scm_from_int (c_sockfd);
 #endif
+        }
       else
         {
           error_code = code;
@@ -265,18 +364,21 @@ cl_easy_getinfo (SCM handle, SCM option)
     }
   else if ((c_option == CURLINFO_APPCONNECT_TIME_T)
            || (c_option == CURLINFO_CONNECT_TIME_T)
-#ifdef CURLINFO_CONN_ID
+#if CURL_AT_LEAST_VERSION(8, 2, 0)
            || (c_option == CURLINFO_CONN_ID)
 #endif
            || (c_option == CURLINFO_CONTENT_LENGTH_DOWNLOAD_T)
            || (c_option == CURLINFO_CONTENT_LENGTH_UPLOAD_T)
+#if CURL_AT_LEAST_VERSION(8, 11, 0)
+           || (c_option == CURLINFO_EARLYDATA_SENT_T)
+#endif
            || (c_option == CURLINFO_FILETIME_T)
            || (c_option == CURLINFO_NAMELOOKUP_TIME_T)
-#ifdef CURLINFO_POSTTRANSFER_TIME_T
+#if CURL_AT_LEAST_VERSION(8, 10, 0)
            || (c_option == CURLINFO_POSTTRANSFER_TIME_T)
 #endif
            || (c_option == CURLINFO_PRETRANSFER_TIME_T)
-#ifdef CURLINFO_QUEUE_TIME_T
+#if CURL_AT_LEAST_VERSION(8, 6, 0)
            || (c_option == CURLINFO_QUEUE_TIME_T)
 #endif
            || (c_option == CURLINFO_REDIRECT_TIME_T)
@@ -284,6 +386,7 @@ cl_easy_getinfo (SCM handle, SCM option)
            || (c_option == CURLINFO_SIZE_DOWNLOAD_T)
            || (c_option == CURLINFO_SIZE_UPLOAD_T)
            || (c_option == CURLINFO_SPEED_DOWNLOAD_T)
+           || (c_option == CURLINFO_SPEED_UPLOAD_T)
            || (c_option == CURLINFO_STARTTRANSFER_TIME_T)
            || (c_option == CURLINFO_TOTAL_TIME_T)
            )
@@ -291,23 +394,18 @@ cl_easy_getinfo (SCM handle, SCM option)
       curl_off_t c_val;
       code = curl_easy_getinfo (c_handle->handle, c_option, &c_val);
       if (code == CURLE_OK)
+        return scm_from_int64 ((int64_t) c_val);
+      else
         {
-          if (sizeof (curl_off_t) == 4)
-            return scm_from_int32 (c_val);
-          else if (sizeof (curl_off_t) == 8)
-            return scm_from_int64 (c_val);
-          else
-            {
-              error_code = code;
-              return SCM_BOOL_F;
-            }
+          error_code = code;
+          return SCM_BOOL_F;
         }
     }
   else if ((c_option == CURLINFO_CONDITION_UNMET)
            || (c_option == CURLINFO_FILETIME)
            || (c_option == CURLINFO_HEADER_SIZE)
            || (c_option == CURLINFO_HTTPAUTH_AVAIL)
-#ifdef CURLINFO_HTTPAUTH_USED
+#if CURL_AT_LEAST_VERSION(8, 12, 0)
            || (c_option == CURLINFO_HTTPAUTH_USED)
 #endif
            || (c_option == CURLINFO_HTTP_CONNECTCODE)
@@ -317,7 +415,7 @@ cl_easy_getinfo (SCM handle, SCM option)
            || (c_option == CURLINFO_OS_ERRNO)
            || (c_option == CURLINFO_PRIMARY_PORT)
            || (c_option == CURLINFO_PROXYAUTH_AVAIL)
-#ifdef CURLINFO_PROXYAUTH_USED
+#if CURL_AT_LEAST_VERSION(8, 12, 0)
            || (c_option == CURLINFO_PROXYAUTH_USED)
 #endif
            || (c_option == CURLINFO_PROXY_ERROR)
@@ -329,10 +427,10 @@ cl_easy_getinfo (SCM handle, SCM option)
            || (c_option == CURLINFO_RTSP_CSEQ_RECV)
            || (c_option == CURLINFO_RTSP_SERVER_CSEQ)
            || (c_option == CURLINFO_SSL_VERIFYRESULT)
-#ifdef CURLINFO_USED_PROXY
+#if CURL_AT_LEAST_VERSION(8, 7, 0)
            || (c_option == CURLINFO_USED_PROXY)
 #endif
-#ifdef CURLINFO_XFER_ID
+#if CURL_AT_LEAST_VERSION(8, 2, 0)
            || (c_option == CURLINFO_XFER_ID)
 #endif
            )
@@ -358,12 +456,17 @@ cl_easy_getinfo (SCM handle, SCM option)
           SCM lst = SCM_EOL;
           c_each = c_cookies;
 
+          /* scm_from_utf8_string throws on invalid UTF-8, so free the
+             list on any exit, not just the normal one.  */
+          scm_dynwind_begin (0);
+          scm_dynwind_unwind_handler (free_slist, c_cookies,
+                                      SCM_F_WIND_EXPLICITLY);
           while (c_each)
             {
               lst = scm_cons (scm_from_utf8_string (c_each->data), lst);
               c_each = c_each->next;
             }
-          curl_slist_free_all (c_cookies);
+          scm_dynwind_end ();
           return scm_reverse(lst);
         }
       else
@@ -373,10 +476,10 @@ cl_easy_getinfo (SCM handle, SCM option)
         }
     }
   else if (0
-#ifdef CURLINFO_CAINFO
+#if CURL_AT_LEAST_VERSION(7, 84, 0)
 	   || (c_option == CURLINFO_CAINFO)
 #endif
-#ifdef CURLINFO_CAPATH
+#if CURL_AT_LEAST_VERSION(7, 84, 0)
            || (c_option == CURLINFO_CAPATH)
 #endif
            || (c_option == CURLINFO_EFFECTIVE_METHOD)
@@ -424,126 +527,172 @@ cl_easy_getinfo (SCM handle, SCM option)
         }
     }
   else
-    scm_error (SCM_BOOL_F,
-               "curl-easy-getinfo",
-               "unimplemented option type",
-               SCM_BOOL_F,
-               SCM_BOOL_F);
+    scm_misc_error ("curl-easy-getinfo",
+                    "unimplemented option type",
+                    SCM_EOL);
   return SCM_BOOL_F;
 }
 
+
+static void
+free_recv_buffer (void *data)
+{
+  struct recv_buffer *buf = data;
+  free (buf->data);
+  buf->data = NULL;
+  buf->len = buf->cap = 0;
+}
+
+/* Received bytes become a string with one character per byte
+   (ISO-8859-1), or a bytevector.  */
+static SCM
+recv_buffer_to_scm (struct recv_buffer *buf, int bytevector)
+{
+  if (bytevector)
+    {
+      SCM bv = scm_c_make_bytevector (buf->len);
+      if (buf->len > 0)
+        memcpy (SCM_BYTEVECTOR_CONTENTS (bv), buf->data, buf->len);
+      return bv;
+    }
+  return scm_from_latin1_stringn (buf->len > 0 ? buf->data : "", buf->len);
+}
 
 SCM DLL_PUBLIC
 cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag)
 {
   handle_post_t *c_handle;
-  SCM data;
   CURLcode status;
-  struct scm_flag body_sf, header_sf;
+  struct recv_buffer body = { NULL, 0, 0 };
+  struct recv_buffer header = { NULL, 0, 0 };
+  SCM result;
 
   SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "%curl-easy-perform");
 
   c_handle = _scm_to_handle (handle);
+  c_handle->pending_exception = SCM_BOOL_F;
 
-  body_sf.flag = scm_is_true (bvflag);
-  if (body_sf.flag)
-    data = scm_c_make_bytevector (0);
-  else
-    data = scm_c_make_string (0, SCM_MAKE_CHAR('\n'));
-  body_sf.scm = data;
-
-  header_sf.flag = 0;
-  if (header_sf.flag)
-    data = scm_c_make_bytevector (0);
-  else
-    data = scm_c_make_string (0, SCM_MAKE_CHAR('\n'));
-  header_sf.scm = data;
+  /* The buffers are freed however this procedure exits.  */
+  scm_dynwind_begin (0);
+  scm_dynwind_unwind_handler (free_recv_buffer, &body, SCM_F_WIND_EXPLICITLY);
+  scm_dynwind_unwind_handler (free_recv_buffer, &header,
+                              SCM_F_WIND_EXPLICITLY);
 
   if (scm_is_true (headerflag))
   {
     curl_easy_setopt (c_handle->handle, CURLOPT_HEADERFUNCTION, write_callback);
-    curl_easy_setopt (c_handle->handle, CURLOPT_HEADERDATA, &header_sf);
-    curl_easy_setopt (c_handle->handle, CURLOPT_ERRORBUFFER, error_string);
+    curl_easy_setopt (c_handle->handle, CURLOPT_HEADERDATA, &header);
+  }
+  else
+  {
+    /* Clear any header callback left over from a previous call, whose
+       HEADERDATA would point into that call's (now dead) stack frame.  */
+    curl_easy_setopt (c_handle->handle, CURLOPT_HEADERFUNCTION, NULL);
+    curl_easy_setopt (c_handle->handle, CURLOPT_HEADERDATA, NULL);
   }
 
   curl_easy_setopt (c_handle->handle, CURLOPT_WRITEFUNCTION, write_callback);
-  curl_easy_setopt (c_handle->handle, CURLOPT_WRITEDATA, &body_sf);
+  curl_easy_setopt (c_handle->handle, CURLOPT_WRITEDATA, &body);
   curl_easy_setopt (c_handle->handle, CURLOPT_ERRORBUFFER, error_string);
 
-  /* Do the transfer, and fill c_str with the result */
   status = curl_easy_perform (c_handle->handle);
+
+  /* ERRORBUFFER points at this thread's error_string.  Clear it, so that
+     curl never writes there from a later call made on another thread
+     (by which time this thread may have exited).  */
+  curl_easy_setopt (c_handle->handle, CURLOPT_ERRORBUFFER, NULL);
+
+  /* Count failed transfers too: getinfo is still meaningful after one
+     (e.g. CURLINFO_OS_ERRNO, CURLINFO_RESPONSE_CODE).  */
+  if (c_handle->transfers < INT_MAX)
+    c_handle->transfers ++;
+
+  /* Rethrow any Scheme error caught inside read_callback, now that curl
+     has returned normally.  */
+  if (scm_is_true (c_handle->pending_exception))
+    {
+      SCM exc = c_handle->pending_exception;
+      c_handle->pending_exception = SCM_BOOL_F;
+      error_code = status;
+      scm_throw (scm_car (exc), scm_cdr (exc));
+    }
+
   if (status != CURLE_OK)
     {
       error_code = status;
-      return (SCM_BOOL_F);
+      result = SCM_BOOL_F;
     }
+  else if (scm_is_true (headerflag))
+    result = scm_list_2 (recv_buffer_to_scm (&header, 0),
+                         recv_buffer_to_scm (&body, scm_is_true (bvflag)));
+  else
+    result = recv_buffer_to_scm (&body, scm_is_true (bvflag));
 
-  if (c_handle->transfers < INT_MAX)
-      c_handle->transfers ++;
-
-  if (scm_is_true (headerflag))
-    return (scm_list_2 (header_sf.scm, body_sf.scm));
-
-  return (body_sf.scm);
+  scm_dynwind_end ();
+  return result;
 }
 
-/* This callback function catches the data passed by libcurl and sends
-   it back as a scheme string */
+/* This callback function collects the data passed by libcurl.  It runs
+   no Scheme code, so it cannot throw.  */
 static size_t
 write_callback (void *ptr, size_t size, size_t nmemb, void *userdata)
 {
-  size_t length1, length2;
-  SCM data1, data2;
-  struct scm_flag *sf;
+  struct recv_buffer *buf = (struct recv_buffer *) userdata;
+  size_t length = size * nmemb;
 
-  sf = (struct scm_flag *) userdata;
-  data1 = sf->scm;
-  if (sf->flag)
-    length1 = scm_c_bytevector_length (data1);
-  else
-    length1 = scm_c_string_length (data1);
-
-  length2 = size * nmemb;
-
-  /* printf ("In write_callback\n"); */
-  if (sf->flag)
+  if (length > SIZE_MAX - buf->len)
+    return 0;                   /* Makes curl abort with CURLE_WRITE_ERROR.  */
+  if (buf->len + length > buf->cap)
     {
-      data2 = scm_c_make_bytevector (length1 + length2);
-      memcpy (SCM_BYTEVECTOR_CONTENTS (data2),
-              SCM_BYTEVECTOR_CONTENTS (data1),
-              length1);
-      memcpy (SCM_BYTEVECTOR_CONTENTS (data2) + length1,
-              ptr,
-              length2);
+      /* Grow geometrically, so the total copying stays linear.  */
+      size_t cap = buf->cap ? buf->cap : 16384;
+      char *data;
+      while (cap < buf->len + length)
+        cap = (cap > SIZE_MAX / 2) ? buf->len + length : cap * 2;
+      data = realloc (buf->data, cap);
+      if (data == NULL)
+        return 0;
+      buf->data = data;
+      buf->cap = cap;
     }
-  else
-    {
-      data2 = scm_c_make_string (length1 + length2, SCM_MAKE_CHAR('\0'));
-      for (size_t i = 0; i < length1; i ++)
-        {
-          scm_c_string_set_x (data2, i, scm_c_string_ref (data1, i));
-        }
-      for (size_t i = 0; i < length2; i ++)
-        {
-          scm_c_string_set_x (data2, i + length1,
-                              SCM_MAKE_CHAR (((char *)ptr)[i]));
-        }
-    }
-  sf->scm = data2;
-
-  return length2;
+  memcpy (buf->data + buf->len, ptr, length);
+  buf->len += length;
+  return length;
 }
 
-/* This callback function sends some data from a port over to curl. */
+struct read_args
+{
+  SCM port;
+  void *ptr;
+  size_t length;
+};
+
+static SCM
+read_callback_body (void *data)
+{
+  struct read_args *args = data;
+  return scm_from_size_t (scm_c_read (args->port, args->ptr, args->length));
+}
+
+/* This callback function sends some data from a port over to curl.  */
 static size_t
 read_callback (void *ptr, size_t size, size_t nmemb, void *userdata)
 {
-  size_t length1;
-  SCM port;
+  handle_post_t *hp = (handle_post_t *) userdata;
+  struct read_args args;
+  SCM ret;
 
-  port = PTR2SCM(userdata);
-  length1 = scm_c_read (port, ptr, size * nmemb);
-  return length1;
+  args.port = hp->readport;
+  args.ptr = ptr;
+  args.length = size * nmemb;
+
+  ret = scm_c_catch (SCM_BOOL_T,
+                     read_callback_body, &args,
+                     store_exception_handler, &hp->pending_exception,
+                     NULL, NULL);
+  if (scm_is_false (ret))
+    return CURL_READFUNC_ABORT;
+  return scm_to_size_t (ret);
 }
 
 
@@ -557,6 +706,9 @@ cl_easy_reset (SCM handle)
   c_handle = _scm_to_handle (handle);
 
   curl_easy_reset (c_handle->handle);
+  set_default_options (c_handle->handle);
+  c_handle->readport = SCM_BOOL_F;
+  c_handle->pending_exception = SCM_BOOL_F;
 
   return SCM_UNSPECIFIED;
 }
@@ -597,8 +749,9 @@ print_slist (struct curl_slist *sl)
 }
 
 static void
-print_mem (char *data, long len)
+print_mem (const void *data, long len)
 {
+  const unsigned char *bytes = data;
   long print_len = len;
   if (print_len > 40)
     print_len = 40;
@@ -609,51 +762,20 @@ print_mem (char *data, long len)
     }
   for (long i = 0; i < print_len; i ++)
     {
-      if (isprint (data[i]))
-        fprintf (stderr, "%c", data[i]);
-      else if (data[i] + 32 < 256)
-        fprintf (stderr, "^%c", data[i] + 32);
+      /* isprint needs an unsigned char value (or EOF).  */
+      unsigned char c = bytes[i];
+      if (isprint (c))
+        fprintf (stderr, "%c", c);
+      else if (c < 32)
+        fprintf (stderr, "^%c", c + 64);   /* Caret notation: 1 is ^A.  */
+      else if (c == 127)
+        fprintf (stderr, "^?");
       else
-        fprintf (stderr, "?");
+        fprintf (stderr, "\\x%02x", c);
     }
   if (print_len != len)
     fprintf (stderr, "...");
 }
-
-static size_t
-xstrlen (const char *s)
-{
-  if (s == NULL)
-    return 0;
-  return strlen (s);
-}
-
-static void
-print_httppost (struct curl_httppost *hp)
-{
-  struct curl_httppost *p = hp;
-  int i = 0;
-  while (p != NULL)
-    {
-      fprintf (stderr, "\t\t%d: name: ", i);
-      print_mem (p->name, p->namelength);
-      fprintf (stderr, "\n\t\t   contents: ");
-      print_mem (p->contents, p->contentslength);
-      fprintf (stderr, "\n\t\t   buffer: ");
-      print_mem (p->buffer, p->bufferlength);
-      fprintf (stderr, "\n\t\t   contenttype: ");
-      print_mem (p->contenttype, xstrlen (p->contenttype));
-      fprintf (stderr, "\n\t\t   contentheader: ");
-      print_slist (p->contentheader);
-      fprintf (stderr, "\n\t\t   showfilename: ");
-      print_mem (p->showfilename, xstrlen (p->showfilename));
-      fprintf (stderr, "\n\t\t   flags: 0x%lx", p->flags);
-      fprintf (stderr, "\n");
-      i++;
-      p = p->next;
-    }
-}
-
 
 SCM DLL_PUBLIC
 cl_dump_handle (SCM handle)
@@ -668,8 +790,8 @@ cl_dump_handle (SCM handle)
   fprintf (stderr, "\t    postfields %p\n", hp->postfields);
   fprintf (stderr, "\t postfieldsize %zu\n", hp->postfieldsize);
   print_mem (hp->postfields, hp->postfieldsize);
-  fprintf (stderr, "\t      httppost %p\n", hp->httppost);
-  print_httppost (hp->httppost);
+  /* A curl_mime form is opaque, so only its address can be shown.  */
+  fprintf (stderr, "\t          mime %p\n", hp->mime);
   fprintf (stderr, "\t    httpheader %p\n", hp->httpheader);
   print_slist (hp->httpheader);
   fprintf (stderr, "\thttp200aliases %p\n", hp->http200aliases);
@@ -686,9 +808,11 @@ cl_dump_handle (SCM handle)
   print_slist (hp->resolve);
   fprintf (stderr, "\t telnetoptions %p\n", hp->telnetoptions);
   print_slist (hp->telnetoptions);
+  fprintf (stderr, "\t    connect_to %p\n", hp->connect_to);
+  print_slist (hp->connect_to);
   fflush (stderr);
 
-  return SCM_UNDEFINED;
+  return SCM_UNSPECIFIED;
 }
 
 void

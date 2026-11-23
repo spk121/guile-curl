@@ -1,3 +1,45 @@
+For Release 1.0.0 - Nov 23, 2026
+
+    - Forms now use libcurl's MIME API (curl_mime_init and related
+      functions) instead of the deprecated curl_formadd API, which has
+      been removed entirely.
+      - The 'httppost option (CURLOPT_HTTPPOST) is replaced by the new
+        'mimepost option (CURLOPT_MIMEPOST).  This is an incompatible
+        change: code using 'httppost must switch to 'mimepost.  The list
+        of fields it takes is unchanged.
+      - The filename of a 4-element field is now sent, so the field is
+        uploaded as a file.  It was previously ignored.
+      - Fields with an empty value are sent instead of being dropped.
+      - A name, MIME type or filename containing NUL raises an error.
+    - guile-curl now uses semantic versioning (MAJOR.MINOR.MICRO).
+      The shared library's libtool version is 3:0:0, so it is now
+      installed as libguile-curl.so.3.
+    - Fix crashes and memory corruption: a stale header callback after
+      requests made with headers, the read port being garbage collected
+      during uploads, Scheme errors unwinding through libcurl
+      callbacks, and handles being freed while the process exits.
+    - Fix memory leaks in list (slist) options, getinfo and printing of
+      handles.
+    - Errors from the C code now raise misc-error with a proper
+      message, and curl-easy-setopt reports libcurl's own error.
+    - curl-error-code and curl-error-string are now per thread.
+    - curl-easy-getinfo works after a failed transfer.
+    - Add support for the connect-to option, the speed-upload-t and
+      earlydata-sent-t getinfo values, and binary data for
+      copypostfields.
+    - Options and getinfo values that depend on the libcurl version
+      were always disabled, because they were tested with #ifdef but
+      libcurl declares them as enums.  Those from libcurl 7.76.0 or
+      earlier, such as doh-url and haproxyprotocol, are now always
+      available, and newer getinfo values, such as conn-id and xfer-id,
+      are available when libcurl is new enough.
+    - Much faster collection of large response bodies.
+    - When libcurl uses a synchronous DNS resolver, new handles set
+      nosignal by default.
+    - libcurl 7.76.0 or later is required, and configure checks for it.
+    - Building from the repository requires gettext, for Guile's
+      guile.m4 macros.
+
 For Release 0.9 - Jan 19, 2021
 
     - Speed up bv->url-encoded-bytevector

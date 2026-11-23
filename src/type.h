@@ -27,7 +27,8 @@ typedef struct handle_post_tag
   uint8_t *postfields;
   size_t postfieldsize;
   // curl_off_t postfieldsize_large;
-  struct curl_httppost *httppost;
+  /* The form given with CURLOPT_MIMEPOST, owned by this handle.  */
+  curl_mime *mime;
   struct curl_slist *httpheader;
   struct curl_slist *http200aliases;
   struct curl_slist *mail_rcpt;
@@ -36,7 +37,15 @@ typedef struct handle_post_tag
   struct curl_slist *prequote;
   struct curl_slist *resolve;
   struct curl_slist *telnetoptions;
+  struct curl_slist *connect_to;
   int transfers;
+  /* The port given with CURLOPT_READDATA.  Curl only holds a raw pointer
+     to it, so it is kept here, where the GC can see it.  */
+  SCM readport;
+  /* An exception thrown by Scheme code inside read_callback, saved as
+     (KEY . ARGS) to be rethrown once curl_easy_perform has returned,
+     or #f.  */
+  SCM pending_exception;
 } handle_post_t;
 
 void DLL_PUBLIC cl_init_type (void);
@@ -45,6 +54,7 @@ int _scm_is_handle (SCM x);
 handle_post_t *_scm_to_handle (SCM x);
 SCM _scm_from_handle (handle_post_t *x);
 size_t gc_free_handle (SCM handle);
+void cl_stop_handle_cleanup (void);
 SCM equalp_handle (SCM x1, SCM x2);
 
 SCM DLL_PUBLIC cl_is_handle_p (SCM x);
@@ -53,7 +63,7 @@ int _scm_can_convert_to_slist (SCM x);
 struct curl_slist *_scm_convert_to_slist (SCM x);
 int _scm_can_convert_to_byte_data (SCM x);
 uint8_t *_scm_convert_to_byte_data (SCM x, size_t *len);
-int _scm_can_convert_to_httppost (SCM x);
-struct curl_httppost *_scm_convert_to_httppost (SCM x);
+int _scm_can_convert_to_mime (SCM x);
+curl_mime *_scm_convert_to_mime (SCM x, CURL *handle);
 
 #endif
