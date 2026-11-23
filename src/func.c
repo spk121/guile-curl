@@ -59,11 +59,9 @@ SCM DLL_PUBLIC cl_easy_init ()
 
   if (handle == NULL)
     {
-      scm_error (SCM_BOOL_F,
-                 "curl-easy-init",
-                 "initialization failure",
-                 SCM_BOOL_F,
-                 SCM_BOOL_F);
+      scm_misc_error ("curl-easy-init",
+                      "initialization failure",
+                      SCM_EOL);
     }
 
   /* Allocated from the GC heap, not with malloc, so that the GC scans
@@ -120,8 +118,9 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
           code = curl_easy_setopt (c_handle->handle, CURLOPT_POSTFIELDS, (char *) m);
         }
       else
-        scm_error (SCM_BOOL_F, "cl-easy-setopt", "CURLOPT_POSTFIELDS requires 8-bit string or bytevector data",
-                   SCM_BOOL_F, SCM_BOOL_F);
+        scm_misc_error ("curl-easy-setopt",
+                        "CURLOPT_POSTFIELDS requires 8-bit string or bytevector data",
+                        SCM_EOL);
     }
   else if (c_option == CURLOPT_HTTPHEADER)
     {
@@ -136,8 +135,9 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
           code = curl_easy_setopt (c_handle->handle, CURLOPT_HTTPHEADER, sl);
         }
       else
-        scm_error (SCM_BOOL_F, "cl-easy-setopt", "CURLOPT_HTTPHEADER requires a list of strings",
-                   SCM_BOOL_F, SCM_BOOL_F);
+        scm_misc_error ("curl-easy-setopt",
+                        "CURLOPT_HTTPHEADER requires a list of strings",
+                        SCM_EOL);
     }
   else if (scm_is_integer (param))
     {
@@ -233,17 +233,13 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
         }
     }
   else
-    scm_error (SCM_BOOL_F,
-               "curl-easy-setopt",
-               "unimplemented option type",
-               SCM_BOOL_F,
-               SCM_BOOL_F);
+    scm_misc_error ("curl-easy-setopt",
+                    "unimplemented option type",
+                    SCM_EOL);
   if (code != CURLE_OK)
-    scm_error (SCM_BOOL_F,
-               "curl-easy-setopt",
-               "bad handle",
-               SCM_BOOL_F,
-               SCM_BOOL_F);
+    scm_misc_error ("curl-easy-setopt",
+                    "bad handle",
+                    SCM_EOL);
 
   return SCM_UNSPECIFIED;
 }
@@ -454,11 +450,9 @@ cl_easy_getinfo (SCM handle, SCM option)
         }
     }
   else
-    scm_error (SCM_BOOL_F,
-               "curl-easy-getinfo",
-               "unimplemented option type",
-               SCM_BOOL_F,
-               SCM_BOOL_F);
+    scm_misc_error ("curl-easy-getinfo",
+                    "unimplemented option type",
+                    SCM_EOL);
   return SCM_BOOL_F;
 }
 

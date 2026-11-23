@@ -179,4 +179,16 @@ Return the server's base URL."
       "GET\n"
       (curl-easy-perform h))))
 
+;;; Errors from the C code were raised with scm_error and a key of #f,
+;;; which made `throw' itself fail with a wrong-type-arg error and lost
+;;; the intended message.
+
+(test-group "errors from C have a proper key and message"
+  (let ((h (make-handle)))
+    (test-equal "invalid postfields raises misc-error with its message"
+      '(misc-error "CURLOPT_POSTFIELDS requires 8-bit string or bytevector data")
+      (catch #t
+        (lambda () (curl-easy-setopt h 'postfields "λ") 'no-error)
+        (lambda (key subr message . rest) (list key message))))))
+
 (test-end "regression")

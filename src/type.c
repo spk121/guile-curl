@@ -298,22 +298,18 @@ _scm_convert_to_slist (SCM x)
           if (new_slist == NULL)
             {
               /* Out of memory. */
-              scm_error (SCM_BOOL_F,
-                         "_scm_convert_to_slist",
-                         "failed to create a Curl list of strings from a Guile list of strings",
-                         SCM_BOOL_F,
-                         SCM_BOOL_F);
+              scm_misc_error ("curl-easy-setopt",
+                              "failed to create a Curl list of strings from a Guile list of strings",
+                              SCM_EOL);
             }
           slist = new_slist;
         }
       else
         {
           /* This should be impossible. */
-          scm_error (SCM_BOOL_F,
-                     "_scm_convert_to_slist",
-                     "failed to create a Curl list of strings from a Guile list that contained non-string data",
-                     SCM_BOOL_F,
-                     SCM_BOOL_F);
+          scm_misc_error ("curl-easy-setopt",
+                          "failed to create a Curl list of strings from a Guile list that contained non-string data",
+                          SCM_EOL);
         }
     }
   scm_dynwind_end ();
