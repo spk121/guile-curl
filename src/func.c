@@ -113,7 +113,8 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
           uint8_t *m = _scm_convert_to_byte_data (param, &len);
           free (c_handle->postfields);
           c_handle->postfields = m;
-          curl_easy_setopt (c_handle->handle, CURLOPT_POSTFIELDSIZE, len);
+          curl_easy_setopt (c_handle->handle, CURLOPT_POSTFIELDSIZE_LARGE,
+                            (curl_off_t) len);
           c_handle->postfieldsize = len;
           code = curl_easy_setopt (c_handle->handle, CURLOPT_POSTFIELDS, (char *) m);
         }
@@ -142,7 +143,8 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
   else if (scm_is_integer (param))
     {
       if (scm_is_true (big))
-        code = curl_easy_setopt (c_handle->handle, c_option, scm_to_int64 (param));
+        code = curl_easy_setopt (c_handle->handle, c_option,
+                                 (curl_off_t) scm_to_int64 (param));
       else
         code = curl_easy_setopt (c_handle->handle, c_option, scm_to_long (param));
     }

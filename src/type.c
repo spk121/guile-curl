@@ -472,24 +472,24 @@ _scm_convert_to_httppost (SCM x)
       if (m == 2)
         rc = curl_formadd (&post, &last,
                            CURLFORM_COPYNAME, name,
-                           CURLFORM_NAMELENGTH, name_len,
+                           CURLFORM_NAMELENGTH, (long) name_len,
                            CURLFORM_COPYCONTENTS, contents_ptr,
-                           CURLFORM_CONTENTSLENGTH, contents_len,
+                           CURLFORM_CONTENTLEN, (curl_off_t) contents_len,
                            CURLFORM_END);
       else if (m == 3)
         rc = curl_formadd (&post, &last,
                            CURLFORM_COPYNAME, name,
-                           CURLFORM_NAMELENGTH, name_len,
+                           CURLFORM_NAMELENGTH, (long) name_len,
                            CURLFORM_COPYCONTENTS, contents_ptr,
-                           CURLFORM_CONTENTSLENGTH, contents_len,
+                           CURLFORM_CONTENTLEN, (curl_off_t) contents_len,
                            CURLFORM_CONTENTTYPE, mime,
                            CURLFORM_END);
       else
         rc = curl_formadd (&post, &last,
                            CURLFORM_COPYNAME, name,
-                           CURLFORM_NAMELENGTH, name_len,
+                           CURLFORM_NAMELENGTH, (long) name_len,
                            CURLFORM_COPYCONTENTS, contents_ptr,
-                           CURLFORM_CONTENTSLENGTH, contents_len,
+                           CURLFORM_CONTENTLEN, (curl_off_t) contents_len,
                            CURLFORM_CONTENTTYPE, mime,
                            CURLFORM_FILENAME, filename,
                            CURLFORM_END);
