@@ -792,7 +792,8 @@ Returns #t on success and #f on failure."
            ((and (eq? type 'input-port)
                  (input-port? arg))
             (%curl-easy-setopt handle option arg #f))
-           ((not (member type '(integer boolean string biginteger slist mimepost bytevector)))
+           ((not (member type '(integer boolean string biginteger slist mimepost bytevector
+                                input-port)))
             (error (format #f "unimplemented type: ~a" type)))
            (else
             (error (format #f "wrong type arg: ~a" arg)))))

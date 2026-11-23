@@ -401,4 +401,16 @@ Return the server's base URL."
         (lambda () (curl-easy-setopt h 'connect-to '()) #t)
         (lambda args #f)))))
 
+;;; A wrong argument for 'readdata reported "unimplemented type:
+;;; input-port" because input-port was missing from the list of
+;;; implemented types.
+
+(test-group "readdata wrong type"
+  (let ((h (make-handle)))
+    (test-equal "a non-port argument is reported as a wrong type"
+      "wrong type arg: not a port"
+      (catch 'misc-error
+        (lambda () (curl-easy-setopt h 'readdata "not a port") #f)
+        (lambda (key subr fmt args . rest) (apply format #f fmt args))))))
+
 (test-end "regression")
