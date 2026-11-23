@@ -125,7 +125,8 @@ TESTS = \
   test/bytevectors.scm \
   test/setopt.scm \
   test/stress.scm \
-  test/getinfo.scm
+  test/getinfo.scm \
+  test/regression.scm
 
 SCM_LOG_DRIVER = \
   $(top_builddir)/libtool $(TESTS_LTDLOPEN) --mode=execute \
