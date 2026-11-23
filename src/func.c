@@ -200,7 +200,7 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
         {
           struct curl_httppost *p;
           p = _scm_convert_to_httppost (param);
-          free (c_handle->httppost);
+          curl_formfree (c_handle->httppost);
           c_handle->httppost = p;
           code = curl_easy_setopt (c_handle->handle, CURLOPT_HTTPPOST, p);
         }
