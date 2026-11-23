@@ -316,11 +316,15 @@ cl_easy_getinfo (SCM handle, SCM option)
       curl_socket_t c_sockfd;
       code = curl_easy_getinfo(c_handle->handle, c_option, &c_sockfd);
       if (code == CURLE_OK && c_sockfd != CURL_SOCKET_BAD)
+        {
 #ifdef _WIN32
-        return scm_from_unsigned_int (c_sockfd);
+          /* SOCKET is a pointer-sized unsigned integer (64 bits on
+             64-bit Windows).  */
+          return scm_from_uintptr_t ((uintptr_t) c_sockfd);
 #else
-      return scm_from_int (c_sockfd);
+          return scm_from_int (c_sockfd);
 #endif
+        }
       else
         {
           error_code = code;
