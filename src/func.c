@@ -708,8 +708,9 @@ print_slist (struct curl_slist *sl)
 }
 
 static void
-print_mem (char *data, long len)
+print_mem (const void *data, long len)
 {
+  const unsigned char *bytes = data;
   long print_len = len;
   if (print_len > 40)
     print_len = 40;
@@ -720,12 +721,16 @@ print_mem (char *data, long len)
     }
   for (long i = 0; i < print_len; i ++)
     {
-      if (isprint (data[i]))
-        fprintf (stderr, "%c", data[i]);
-      else if (data[i] + 32 < 256)
-        fprintf (stderr, "^%c", data[i] + 32);
+      /* isprint needs an unsigned char value (or EOF).  */
+      unsigned char c = bytes[i];
+      if (isprint (c))
+        fprintf (stderr, "%c", c);
+      else if (c < 32)
+        fprintf (stderr, "^%c", c + 64);   /* Caret notation: 1 is ^A.  */
+      else if (c == 127)
+        fprintf (stderr, "^?");
       else
-        fprintf (stderr, "?");
+        fprintf (stderr, "\\x%02x", c);
     }
   if (print_len != len)
     fprintf (stderr, "...");
