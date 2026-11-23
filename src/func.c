@@ -204,7 +204,8 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
         }
       else
         {
-          // Bad slist option
+          // Bad slist option.  Nothing took ownership of SL.
+          curl_slist_free_all (sl);
           ok = 0;
         }
       if (ok)
