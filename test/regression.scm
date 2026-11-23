@@ -413,4 +413,25 @@ Return the server's base URL."
         (lambda () (curl-easy-setopt h 'readdata "not a port") #f)
         (lambda (key subr fmt args . rest) (apply format #f fmt args))))))
 
+;;; Options and getinfo values were guarded with #ifdef, but libcurl
+;;; declares them as enum constants, not macros, so the guards were
+;;; never true and these were always #f.  Options from libcurl 7.76.0 or
+;;; earlier (the minimum supported) must always exist; newer getinfo
+;;; values exist when libcurl is new enough.
+
+(test-group "version-dependent constants"
+  (test-assert "CURLOPT_DOH_URL (7.62.0) is defined"
+    (integer? (@@ (curl) CURLOPT_DOH_URL)))
+  (test-assert "CURLE_RECURSIVE_API_CALL (7.59.0) is defined"
+    (integer? CURLE_RECURSIVE_API_CALL))
+  (let ((h (make-handle)))
+    (test-assert "'doh-url can be set"
+      (catch #t
+        (lambda () (curl-easy-setopt h 'doh-url "") #t)
+        (lambda args #f)))
+    (curl-easy-perform h)
+    (test-assert "getinfo conn-id works when libcurl has it (8.2.0)"
+      (or (not CURLINFO_CONN_ID)
+          (integer? (curl-easy-getinfo h 'conn-id))))))
+
 (test-end "regression")

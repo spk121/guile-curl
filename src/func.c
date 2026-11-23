@@ -364,21 +364,21 @@ cl_easy_getinfo (SCM handle, SCM option)
     }
   else if ((c_option == CURLINFO_APPCONNECT_TIME_T)
            || (c_option == CURLINFO_CONNECT_TIME_T)
-#ifdef CURLINFO_CONN_ID
+#if CURL_AT_LEAST_VERSION(8, 2, 0)
            || (c_option == CURLINFO_CONN_ID)
 #endif
            || (c_option == CURLINFO_CONTENT_LENGTH_DOWNLOAD_T)
            || (c_option == CURLINFO_CONTENT_LENGTH_UPLOAD_T)
-#ifdef CURLINFO_EARLYDATA_SENT_T
+#if CURL_AT_LEAST_VERSION(8, 11, 0)
            || (c_option == CURLINFO_EARLYDATA_SENT_T)
 #endif
            || (c_option == CURLINFO_FILETIME_T)
            || (c_option == CURLINFO_NAMELOOKUP_TIME_T)
-#ifdef CURLINFO_POSTTRANSFER_TIME_T
+#if CURL_AT_LEAST_VERSION(8, 10, 0)
            || (c_option == CURLINFO_POSTTRANSFER_TIME_T)
 #endif
            || (c_option == CURLINFO_PRETRANSFER_TIME_T)
-#ifdef CURLINFO_QUEUE_TIME_T
+#if CURL_AT_LEAST_VERSION(8, 6, 0)
            || (c_option == CURLINFO_QUEUE_TIME_T)
 #endif
            || (c_option == CURLINFO_REDIRECT_TIME_T)
@@ -405,7 +405,7 @@ cl_easy_getinfo (SCM handle, SCM option)
            || (c_option == CURLINFO_FILETIME)
            || (c_option == CURLINFO_HEADER_SIZE)
            || (c_option == CURLINFO_HTTPAUTH_AVAIL)
-#ifdef CURLINFO_HTTPAUTH_USED
+#if CURL_AT_LEAST_VERSION(8, 12, 0)
            || (c_option == CURLINFO_HTTPAUTH_USED)
 #endif
            || (c_option == CURLINFO_HTTP_CONNECTCODE)
@@ -415,7 +415,7 @@ cl_easy_getinfo (SCM handle, SCM option)
            || (c_option == CURLINFO_OS_ERRNO)
            || (c_option == CURLINFO_PRIMARY_PORT)
            || (c_option == CURLINFO_PROXYAUTH_AVAIL)
-#ifdef CURLINFO_PROXYAUTH_USED
+#if CURL_AT_LEAST_VERSION(8, 12, 0)
            || (c_option == CURLINFO_PROXYAUTH_USED)
 #endif
            || (c_option == CURLINFO_PROXY_ERROR)
@@ -427,10 +427,10 @@ cl_easy_getinfo (SCM handle, SCM option)
            || (c_option == CURLINFO_RTSP_CSEQ_RECV)
            || (c_option == CURLINFO_RTSP_SERVER_CSEQ)
            || (c_option == CURLINFO_SSL_VERIFYRESULT)
-#ifdef CURLINFO_USED_PROXY
+#if CURL_AT_LEAST_VERSION(8, 7, 0)
            || (c_option == CURLINFO_USED_PROXY)
 #endif
-#ifdef CURLINFO_XFER_ID
+#if CURL_AT_LEAST_VERSION(8, 2, 0)
            || (c_option == CURLINFO_XFER_ID)
 #endif
            )
@@ -476,10 +476,10 @@ cl_easy_getinfo (SCM handle, SCM option)
         }
     }
   else if (0
-#ifdef CURLINFO_CAINFO
+#if CURL_AT_LEAST_VERSION(7, 84, 0)
 	   || (c_option == CURLINFO_CAINFO)
 #endif
-#ifdef CURLINFO_CAPATH
+#if CURL_AT_LEAST_VERSION(7, 84, 0)
            || (c_option == CURLINFO_CAPATH)
 #endif
            || (c_option == CURLINFO_EFFECTIVE_METHOD)

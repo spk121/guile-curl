@@ -24,6 +24,12 @@ For the next major release (unreleased)
     - Add support for the connect-to option, the speed-upload-t and
       earlydata-sent-t getinfo values, and binary data for
       copypostfields.
+    - Options and getinfo values that depend on the libcurl version
+      were always disabled, because they were tested with #ifdef but
+      libcurl declares them as enums.  Those from libcurl 7.76.0 or
+      earlier, such as doh-url and haproxyprotocol, are now always
+      available, and newer getinfo values, such as conn-id and xfer-id,
+      are available when libcurl is new enough.
     - Much faster collection of large response bodies.
     - When libcurl uses a synchronous DNS resolver, new handles set
       nosignal by default.
