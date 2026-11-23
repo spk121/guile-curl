@@ -799,7 +799,7 @@ cl_dump_handle (SCM handle)
   print_slist (hp->telnetoptions);
   fflush (stderr);
 
-  return SCM_UNDEFINED;
+  return SCM_UNSPECIFIED;
 }
 
 void
