@@ -256,6 +256,15 @@ _scm_can_convert_to_slist (SCM x)
   return 1;
 }
 
+/* Unwind handler: free the partially built slist that *DATA points to.  */
+static void
+free_partial_slist (void *data)
+{
+  struct curl_slist **slist = data;
+  curl_slist_free_all (*slist);
+  *slist = NULL;
+}
+
 struct curl_slist *
 _scm_convert_to_slist (SCM x)
 {
@@ -263,6 +272,7 @@ _scm_convert_to_slist (SCM x)
   SCM elt;
   char *str;
   struct curl_slist *slist = NULL;
+  struct curl_slist *new_slist;
 
   if (!_scm_can_convert_to_slist (x))
     return NULL;
@@ -270,25 +280,31 @@ _scm_convert_to_slist (SCM x)
   n = scm_to_int (scm_length (x));
   if (n == 0)
     return NULL;
+
+  /* scm_to_locale_string can throw (e.g. a character the locale cannot
+     encode), as can the errors below.  Free the partial list if so.  */
+  scm_dynwind_begin (0);
+  scm_dynwind_unwind_handler (free_partial_slist, &slist, 0);
   for (i = 0; i < n; i ++)
     {
       elt = SCM_C_LIST_REF(x, i);
       if (scm_is_string (elt))
         {
           str = scm_to_locale_string (elt);
-          slist = curl_slist_append (slist, str);
+          /* On failure this returns NULL but leaves SLIST intact.  */
+          new_slist = curl_slist_append (slist, str);
           /* curl_slist_append copies the string.  */
           free (str);
-          if (slist == NULL)
+          if (new_slist == NULL)
             {
-              /* This should be impossible. */
+              /* Out of memory. */
               scm_error (SCM_BOOL_F,
                          "_scm_convert_to_slist",
                          "failed to create a Curl list of strings from a Guile list of strings",
                          SCM_BOOL_F,
                          SCM_BOOL_F);
-              break;
             }
+          slist = new_slist;
         }
       else
         {
@@ -298,9 +314,9 @@ _scm_convert_to_slist (SCM x)
                      "failed to create a Curl list of strings from a Guile list that contained non-string data",
                      SCM_BOOL_F,
                      SCM_BOOL_F);
-          break;
         }
     }
+  scm_dynwind_end ();
   return slist;
 }
 
