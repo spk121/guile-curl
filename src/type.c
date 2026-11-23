@@ -17,6 +17,7 @@
 #define _GNU_SOURCE
 #include <config.h>
 #include <assert.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <libguile.h>
 #include <curl/curl.h>
@@ -106,8 +107,38 @@ equalp_handle (SCM x1, SCM x2)
   return ret;
 }
 
+/* Handles are usually freed by Guile's finalizer thread, which can
+   still be running while the process exits.  Freeing a handle then
+   races with the libraries' own exit-time cleanup (e.g. OpenSSL's
+   OPENSSL_cleanup), which corrupts the heap.  So once the process
+   starts exiting, handles are no longer freed: cl_stop_handle_cleanup,
+   run from an atexit handler, sets EXITING after waiting for any
+   cleanup in progress.  */
+static pthread_mutex_t cleanup_lock = PTHREAD_MUTEX_INITIALIZER;
+static int exiting = 0;
+
+void
+cl_stop_handle_cleanup (void)
+{
+  pthread_mutex_lock (&cleanup_lock);
+  exiting = 1;
+  pthread_mutex_unlock (&cleanup_lock);
+}
+
+static void gc_free_handle_unlocked (SCM handle);
+
 size_t
 gc_free_handle (SCM handle)
+{
+  pthread_mutex_lock (&cleanup_lock);
+  if (!exiting)
+    gc_free_handle_unlocked (handle);
+  pthread_mutex_unlock (&cleanup_lock);
+  return 0;
+}
+
+static void
+gc_free_handle_unlocked (SCM handle)
 {
   handle_post_t *x = _scm_to_handle (handle);
 
@@ -193,7 +224,6 @@ gc_free_handle (SCM handle)
       x = NULL;
       SCM_SET_SMOB_DATA(handle, NULL);
     }
-  return 0;
 }
 
 int

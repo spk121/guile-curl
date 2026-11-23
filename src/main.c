@@ -39,6 +39,14 @@ cl_init ()
       cl_init_const ();
       cl_init_func ();
 
-      atexit (curl_global_cleanup);
+      /* Stop freeing handles once the process exits; see
+         cl_stop_handle_cleanup.  atexit handlers run in reverse order,
+         so registering this after curl_global_init (which initialized
+         OpenSSL and its exit handler) makes it run first.
+
+         curl_global_cleanup is deliberately not called at exit: it must
+         not run while other threads may use libcurl, and a Guile
+         process always has other threads.  */
+      atexit (cl_stop_handle_cleanup);
     }
 }

@@ -52,6 +52,7 @@ int _scm_is_handle (SCM x);
 handle_post_t *_scm_to_handle (SCM x);
 SCM _scm_from_handle (handle_post_t *x);
 size_t gc_free_handle (SCM handle);
+void cl_stop_handle_cleanup (void);
 SCM equalp_handle (SCM x1, SCM x2);
 
 SCM DLL_PUBLIC cl_is_handle_p (SCM x);
