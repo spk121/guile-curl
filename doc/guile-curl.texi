@@ -342,6 +342,12 @@ These are the procedures provided by the library.
 Returns a curl handle that you must use as input to other functions.
 This handle represents one connection to a server.  If it fails, it
 will throw an error.
+
+If libcurl was built without an asynchronous DNS resolver, the new
+handle has the @code{nosignal} option set.  Such a libcurl uses
+signals to time out DNS lookups, which is unsafe in a multithreaded
+program, and a Guile process always has several threads.  The option
+can be turned off with @code{(curl-easy-setopt handle 'nosignal #f)}.
 @end deffn
 
 @deffn Procedure curl-easy-handle? x

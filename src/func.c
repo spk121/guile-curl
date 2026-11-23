@@ -54,6 +54,22 @@ store_exception_handler (void *data, SCM key, SCM args)
   return SCM_BOOL_F;
 }
 
+/* Options every new or reset handle starts with.
+
+   With a synchronous DNS resolver, libcurl implements DNS timeouts with
+   SIGALRM and siglongjmp, which is unsafe in a multithreaded program,
+   and a Guile process always has several threads.  libcurl's
+   documentation says such programs must set CURLOPT_NOSIGNAL, so do so
+   by default in that case.  With an asynchronous resolver (threaded or
+   c-ares) libcurl does not use SIGALRM, and the default is left alone.
+   Either way, (curl-easy-setopt h 'nosignal ...) overrides it.  */
+static void
+set_default_options (CURL *handle)
+{
+  if (!(curl_version_info (CURLVERSION_NOW)->features & CURL_VERSION_ASYNCHDNS))
+    curl_easy_setopt (handle, CURLOPT_NOSIGNAL, 1L);
+}
+
 SCM DLL_PUBLIC cl_easy_init ()
 {
   CURL *handle;
@@ -73,6 +89,7 @@ SCM DLL_PUBLIC cl_easy_init ()
   hp = scm_gc_malloc (sizeof (handle_post_t), "curl handle");
   memset (hp, 0, sizeof (handle_post_t));
   hp->handle = handle;
+  set_default_options (handle);
   hp->readport = SCM_BOOL_F;
   hp->pending_exception = SCM_BOOL_F;
 
@@ -678,6 +695,7 @@ cl_easy_reset (SCM handle)
   c_handle = _scm_to_handle (handle);
 
   curl_easy_reset (c_handle->handle);
+  set_default_options (c_handle->handle);
   c_handle->readport = SCM_BOOL_F;
   c_handle->pending_exception = SCM_BOOL_F;
 
