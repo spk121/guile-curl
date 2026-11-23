@@ -19,6 +19,7 @@
 
 #include <curl/curl.h>
 #include <libguile.h>
+#include <stdatomic.h>
 #include "visibility.h"
 
 typedef struct handle_post_tag
@@ -37,6 +38,8 @@ typedef struct handle_post_tag
   struct curl_slist *prequote;
   struct curl_slist *resolve;
   struct curl_slist *telnetoptions;
+  struct curl_slist *proxyheader;
+  struct curl_slist *rtspheader;
   struct curl_slist *connect_to;
   int transfers;
   /* The port given with CURLOPT_READDATA.  Curl only holds a raw pointer
@@ -46,6 +49,17 @@ typedef struct handle_post_tag
      (KEY . ARGS) to be rethrown once curl_easy_perform has returned,
      or #f.  */
   SCM pending_exception;
+  /* Nonzero while curl-easy-perform-to-fd runs the transfer outside
+     Guile mode; read_callback must then re-enter Guile.  */
+  int outside_guile;
+  /* errno of a failed write in curl-easy-perform-to-fd, or 0.  */
+  int write_errno;
+  /* Progress of curl-easy-perform-to-fd, and a request to cancel it.
+     Atomic, since they are read and set from other threads while the
+     transfer runs.  */
+  _Atomic curl_off_t dlnow;
+  _Atomic curl_off_t dltotal;
+  _Atomic int cancel;
 } handle_post_t;
 
 void DLL_PUBLIC cl_init_type (void);
