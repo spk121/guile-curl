@@ -461,6 +461,41 @@ The second is the body of the request, either as a string or as a
 bytevector, as described above.
 @end deffn
 
+@deffn Procedure curl-easy-perform-to-fd handle fd #:optional offset
+Perform the transfer like @code{curl-easy-perform}, but write the
+response body directly to the open file descriptor @var{fd} instead of
+returning it, so that a large download does not have to fit in memory.
+If @var{offset} is omitted or @code{#f}, the data is written at the
+descriptor's current position.  Otherwise @var{offset} must be a
+non-negative integer, and the data is written starting at that byte
+offset with positioned writes, without moving the descriptor's
+position; this lets several transfers, for example of different
+@code{range}s, write into one file at once.  Writing at an offset is
+not available on platforms without @code{pwrite}.
+
+Returns the number of bytes written, or @code{#f} on failure; as with
+@code{curl-easy-perform}, @code{curl-error-code} and
+@code{curl-error-string} then say why.  If a write to @var{fd} fails,
+the error is @code{CURLE_WRITE_ERROR} and the error string gives the
+system error.  The descriptor remains open and is owned by the caller.
+
+While the transfer runs, other Guile threads keep running and may call
+@code{curl-easy-progress} and @code{curl-easy-cancel!} on @var{handle}.
+@end deffn
+
+@deffn Procedure curl-easy-progress handle
+Return a pair of the downloaded and total byte counts most recently
+reported by a @code{curl-easy-perform-to-fd} transfer on @var{handle}.
+The total is zero while the size of the download is not known.  This
+may be called from another thread while the transfer runs.
+@end deffn
+
+@deffn Procedure curl-easy-cancel! handle
+Request that a running @code{curl-easy-perform-to-fd} transfer on
+@var{handle} stop, typically from another thread.  The transfer then
+returns @code{#f}, with the error code @code{CURLE_ABORTED_BY_CALLBACK}.
+@end deffn
+
 @deffn Procedure curl-error-string
 If a call to @code{curl-easy-perform} fails, calling this function
 will return information about the last error as a string.

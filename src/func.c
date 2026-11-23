@@ -20,6 +20,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdint.h>
+#include <errno.h>
+#include <unistd.h>
 #include "type.h"
 #include "func.h"
 
@@ -92,6 +94,9 @@ SCM DLL_PUBLIC cl_easy_init ()
   set_default_options (handle);
   hp->readport = SCM_BOOL_F;
   hp->pending_exception = SCM_BOOL_F;
+  atomic_init (&hp->dlnow, 0);
+  atomic_init (&hp->dltotal, 0);
+  atomic_init (&hp->cancel, 0);
 
   if (0)
     {
@@ -662,37 +667,221 @@ write_callback (void *ptr, size_t size, size_t nmemb, void *userdata)
 
 struct read_args
 {
-  SCM port;
+  handle_post_t *hp;
   void *ptr;
   size_t length;
+  size_t result;                /* Bytes read, or CURL_READFUNC_ABORT.  */
 };
 
 static SCM
 read_callback_body (void *data)
 {
   struct read_args *args = data;
-  return scm_from_size_t (scm_c_read (args->port, args->ptr, args->length));
+  return scm_from_size_t (scm_c_read (args->hp->readport, args->ptr,
+                                      args->length));
+}
+
+/* Read from the port, in Guile mode.  */
+static void *
+read_callback_in_guile (void *data)
+{
+  struct read_args *args = data;
+  SCM ret = scm_c_catch (SCM_BOOL_T,
+                         read_callback_body, args,
+                         store_exception_handler,
+                         &args->hp->pending_exception,
+                         NULL, NULL);
+  args->result = scm_is_false (ret) ? CURL_READFUNC_ABORT : scm_to_size_t (ret);
+  return NULL;
 }
 
 /* This callback function sends some data from a port over to curl.  */
 static size_t
 read_callback (void *ptr, size_t size, size_t nmemb, void *userdata)
 {
-  handle_post_t *hp = (handle_post_t *) userdata;
   struct read_args args;
-  SCM ret;
 
-  args.port = hp->readport;
+  args.hp = (handle_post_t *) userdata;
   args.ptr = ptr;
   args.length = size * nmemb;
 
-  ret = scm_c_catch (SCM_BOOL_T,
-                     read_callback_body, &args,
-                     store_exception_handler, &hp->pending_exception,
-                     NULL, NULL);
-  if (scm_is_false (ret))
-    return CURL_READFUNC_ABORT;
-  return scm_to_size_t (ret);
+  /* curl-easy-perform-to-fd runs the transfer outside Guile mode.  */
+  if (args.hp->outside_guile)
+    scm_with_guile (read_callback_in_guile, &args);
+  else
+    read_callback_in_guile (&args);
+  return args.result;
+}
+
+/* Streaming a response to a file descriptor.  The transfer runs outside
+   Guile mode, so that other threads, and the garbage collector, are not
+   held up by a long download; the callbacks below must not use Guile
+   (read_callback re-enters it when uploading from a port).  */
+
+struct fd_transfer
+{
+  handle_post_t *handle;
+  int fd;
+  int use_offset;
+  off_t offset;
+  curl_off_t written;
+  CURLcode status;
+};
+
+static void *
+perform_fd_transfer (void *userdata)
+{
+  struct fd_transfer *transfer = userdata;
+  transfer->status = curl_easy_perform (transfer->handle->handle);
+  return NULL;
+}
+
+static size_t
+fd_write_callback (void *ptr, size_t size, size_t nmemb, void *userdata)
+{
+  struct fd_transfer *transfer = userdata;
+  size_t length = size * nmemb;
+  size_t done = 0;
+
+  while (done < length)
+    {
+      ssize_t written;
+#ifdef HAVE_PWRITE
+      if (transfer->use_offset)
+        written = pwrite (transfer->fd, (char *) ptr + done, length - done,
+                          transfer->offset + transfer->written);
+      else
+#endif
+        written = write (transfer->fd, (char *) ptr + done, length - done);
+      if (written < 0 && errno == EINTR)
+        continue;
+      if (written <= 0)
+        {
+          transfer->handle->write_errno = (written == 0) ? EIO : errno;
+          return 0;           /* Makes curl abort with CURLE_WRITE_ERROR.  */
+        }
+      done += (size_t) written;
+      transfer->written += written;
+    }
+  return length;
+}
+
+static int
+transfer_progress_callback (void *userdata, curl_off_t dltotal,
+                            curl_off_t dlnow, curl_off_t ultotal,
+                            curl_off_t ulnow)
+{
+  handle_post_t *handle = userdata;
+  (void) ultotal;
+  (void) ulnow;
+  atomic_store (&handle->dlnow, dlnow);
+  atomic_store (&handle->dltotal, dltotal);
+  /* Nonzero makes curl abort with CURLE_ABORTED_BY_CALLBACK.  */
+  return atomic_load (&handle->cancel) != 0;
+}
+
+SCM DLL_PUBLIC
+cl_easy_perform_to_fd (SCM handle, SCM fd, SCM offset)
+{
+  handle_post_t *c_handle;
+  struct fd_transfer transfer = { 0 };
+
+  SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1,
+              "curl-easy-perform-to-fd");
+  SCM_ASSERT (scm_is_integer (fd), fd, SCM_ARG2, "curl-easy-perform-to-fd");
+  SCM_ASSERT (scm_is_false (offset) || scm_is_integer (offset), offset,
+              SCM_ARG3, "curl-easy-perform-to-fd");
+
+  c_handle = _scm_to_handle (handle);
+  transfer.handle = c_handle;
+  transfer.fd = scm_to_int (fd);
+  if (scm_is_true (offset))
+    {
+#ifdef HAVE_PWRITE
+      int64_t value = scm_to_int64 (offset);
+      SCM_ASSERT (value >= 0, offset, SCM_ARG3, "curl-easy-perform-to-fd");
+      transfer.use_offset = 1;
+      transfer.offset = (off_t) value;
+#else
+      scm_misc_error ("curl-easy-perform-to-fd",
+                      "writing at an offset is not supported on this platform",
+                      SCM_EOL);
+#endif
+    }
+
+  c_handle->write_errno = 0;
+  c_handle->pending_exception = SCM_BOOL_F;
+  atomic_store (&c_handle->dlnow, 0);
+  atomic_store (&c_handle->dltotal, 0);
+  atomic_store (&c_handle->cancel, 0);
+  curl_easy_setopt (c_handle->handle, CURLOPT_HEADERFUNCTION, NULL);
+  curl_easy_setopt (c_handle->handle, CURLOPT_HEADERDATA, NULL);
+  curl_easy_setopt (c_handle->handle, CURLOPT_NOPROGRESS, 0L);
+  curl_easy_setopt (c_handle->handle, CURLOPT_XFERINFOFUNCTION,
+                    transfer_progress_callback);
+  curl_easy_setopt (c_handle->handle, CURLOPT_XFERINFODATA, c_handle);
+  curl_easy_setopt (c_handle->handle, CURLOPT_WRITEFUNCTION, fd_write_callback);
+  curl_easy_setopt (c_handle->handle, CURLOPT_WRITEDATA, &transfer);
+  curl_easy_setopt (c_handle->handle, CURLOPT_ERRORBUFFER, error_string);
+
+  c_handle->outside_guile = 1;
+  scm_without_guile (perform_fd_transfer, &transfer);
+  c_handle->outside_guile = 0;
+
+  /* Undo the settings that only this transfer should use: in particular
+     the progress callback, so that a cancel request cannot abort a later
+     curl-easy-perform, and the pointers to TRANSFER and this thread's
+     error buffer.  */
+  curl_easy_setopt (c_handle->handle, CURLOPT_NOPROGRESS, 1L);
+  curl_easy_setopt (c_handle->handle, CURLOPT_XFERINFOFUNCTION, NULL);
+  curl_easy_setopt (c_handle->handle, CURLOPT_XFERINFODATA, NULL);
+  curl_easy_setopt (c_handle->handle, CURLOPT_WRITEFUNCTION, NULL);
+  curl_easy_setopt (c_handle->handle, CURLOPT_WRITEDATA, NULL);
+  curl_easy_setopt (c_handle->handle, CURLOPT_ERRORBUFFER, NULL);
+
+  if (c_handle->transfers < INT_MAX)
+    c_handle->transfers ++;
+
+  /* Rethrow any Scheme error caught inside read_callback.  */
+  if (scm_is_true (c_handle->pending_exception))
+    {
+      SCM exc = c_handle->pending_exception;
+      c_handle->pending_exception = SCM_BOOL_F;
+      error_code = transfer.status;
+      scm_throw (scm_car (exc), scm_cdr (exc));
+    }
+
+  if (transfer.status != CURLE_OK)
+    {
+      error_code = transfer.status;
+      if (c_handle->write_errno)
+        snprintf (error_string, sizeof error_string,
+                  "write failed: %s", strerror (c_handle->write_errno));
+      return SCM_BOOL_F;
+    }
+  return scm_from_int64 ((int64_t) transfer.written);
+}
+
+SCM DLL_PUBLIC
+cl_easy_progress (SCM handle)
+{
+  handle_post_t *c_handle;
+
+  SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "curl-easy-progress");
+  c_handle = _scm_to_handle (handle);
+  return scm_cons (scm_from_int64 ((int64_t) atomic_load (&c_handle->dlnow)),
+                   scm_from_int64 ((int64_t) atomic_load (&c_handle->dltotal)));
+}
+
+SCM DLL_PUBLIC
+cl_easy_cancel (SCM handle)
+{
+  handle_post_t *c_handle;
+
+  SCM_ASSERT (_scm_is_handle (handle), handle, SCM_ARG1, "curl-easy-cancel!");
+  c_handle = _scm_to_handle (handle);
+  atomic_store (&c_handle->cancel, 1);
+  return SCM_UNSPECIFIED;
 }
 
 
@@ -826,6 +1015,10 @@ cl_init_func ()
       scm_c_define_gsubr ("%curl-easy-getinfo", 2, 0, 0, cl_easy_getinfo);
       scm_c_define_gsubr ("%curl-easy-setopt", 4, 0, 0, cl_easy_setopt);
       scm_c_define_gsubr ("%curl-easy-perform", 3, 0, 0, cl_easy_perform);
+      scm_c_define_gsubr ("%curl-easy-perform-to-fd", 3, 0, 0,
+                          cl_easy_perform_to_fd);
+      scm_c_define_gsubr ("%curl-easy-progress", 1, 0, 0, cl_easy_progress);
+      scm_c_define_gsubr ("%curl-easy-cancel!", 1, 0, 0, cl_easy_cancel);
       scm_c_define_gsubr ("%curl-easy-cleanup", 1, 0, 0, cl_easy_cleanup);
       scm_c_define_gsubr ("%curl-easy-reset", 1, 0, 0, cl_easy_reset);
       scm_c_define_gsubr ("%curl-error-string", 0, 0, 0, cl_error_string);

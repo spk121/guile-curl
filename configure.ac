@@ -114,6 +114,7 @@ tmp_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS $CURL_CFLAGS $GUILE_CFLAGS"
 AC_CHECK_HEADER([curl/curl.h], ,
                 [AC_MSG_ERROR([<curl.h> was not found])])
+AC_CHECK_FUNCS([pwrite])
 AC_CHECK_HEADERS([libguile.h], ,
                  [AC_MSG_ERROR([<libguile.h> was not found])])
 CPPFLAGS="$tmp_CPPFLAGS"

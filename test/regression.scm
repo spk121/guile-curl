@@ -434,4 +434,135 @@ Return the server's base URL."
       (or (not CURLINFO_CONN_ID)
           (integer? (curl-easy-getinfo h 'conn-id))))))
 
+;;; curl-easy-perform-to-fd, curl-easy-progress and curl-easy-cancel!
+;;; (from spk121/guile-curl#19 by Nala Ginrut).
+
+(define (temp-file)
+  "Return the name of a new, empty temporary file."
+  (let* ((port (mkstemp! (string-copy "/tmp/guile-curl-test-XXXXXX")))
+         (name (port-filename port)))
+    (close-port port)
+    name))
+
+(define (file-bytes name)
+  (call-with-input-file name get-bytevector-all #:binary #t))
+
+(define (call-with-fd name mode proc)
+  "Call PROC with a file descriptor for NAME opened with MODE."
+  (let* ((port (open-file name mode))
+         (result (proc (fileno port))))
+    (close-port port)
+    result))
+
+(test-group "perform-to-fd"
+  (let ((h (make-handle))
+        (name (temp-file)))
+    (curl-easy-setopt h 'url (string-append base-url "big"))
+    (test-equal "returns the number of bytes written"
+      (bytevector-length big-body)
+      (call-with-fd name "wb" (lambda (fd) (curl-easy-perform-to-fd h fd))))
+    (test-assert "writes the body to the descriptor"
+      (bytevector=? big-body (file-bytes name)))
+    (test-equal "progress reports the final counts"
+      (cons (bytevector-length big-body) (bytevector-length big-body))
+      (curl-easy-progress h))
+    (delete-file name))
+
+  (let ((h (make-handle))
+        (name (temp-file)))
+    (call-with-output-file name (lambda (port) (display "0123456789" port)))
+    (test-equal "writes at an offset without truncating"
+      "0123GET\n89"
+      (begin
+        (call-with-fd name "r+b" (lambda (fd) (curl-easy-perform-to-fd h fd 4)))
+        (utf8->string (file-bytes name))))
+    (delete-file name))
+
+  (let ((h (make-handle))
+        (name (temp-file)))
+    (test-equal "a read-only descriptor fails" #f
+      (call-with-fd name "rb" (lambda (fd) (curl-easy-perform-to-fd h fd))))
+    (test-equal "with CURLE_WRITE_ERROR" CURLE_WRITE_ERROR (curl-error-code))
+    (test-assert "and the system error in the message"
+      (string-prefix? "write failed: " (curl-error-string)))
+    (delete-file name))
+
+  ;; The transfer runs outside Guile mode; reading an upload from a port
+  ;; must re-enter it.
+  (let ((h (make-handle))
+        (name (temp-file)))
+    (curl-easy-setopt h 'readdata (open-input-string "hello"))
+    (curl-easy-setopt h 'upload #t)
+    (curl-easy-setopt h 'infilesize 5)
+    (curl-easy-setopt h 'httpheader '("Expect:"))
+    (test-equal "uploads from a port"
+      "PUT\nhello"
+      (begin
+        (call-with-fd name "wb" (lambda (fd) (curl-easy-perform-to-fd h fd)))
+        (utf8->string (file-bytes name))))
+    (delete-file name))
+
+  (let ((h (make-handle))
+        (name (temp-file)))
+    (curl-easy-setopt h 'readdata
+                      (make-custom-binary-input-port
+                       "failing-port"
+                       (lambda (bv start count) (error "read failed"))
+                       #f #f #f))
+    (curl-easy-setopt h 'upload #t)
+    (curl-easy-setopt h 'infilesize 10)
+    (curl-easy-setopt h 'httpheader '("Expect:"))
+    (test-equal "an error reading the upload is raised"
+      'misc-error
+      (catch #t
+        (lambda ()
+          (call-with-fd name "wb" (lambda (fd) (curl-easy-perform-to-fd h fd)))
+          'no-error)
+        (lambda (key . args) key)))
+    (curl-easy-reset h)
+    (curl-easy-setopt h 'url base-url)
+    (curl-easy-setopt h 'noproxy "*")
+    (test-equal "and the handle can be used again" "GET\n" (curl-easy-perform h))
+    (delete-file name)))
+
+(test-group "cancel"
+  (let ((h (make-handle))
+        (name (temp-file)))
+    (curl-easy-setopt h 'url (string-append base-url "big"))
+    ;; Throttle the download so that it is still running when cancelled.
+    (curl-easy-setopt h 'max-recv-speed-large 65536)
+    (let ((worker
+           (call-with-fd name "wb"
+             (lambda (fd)
+               (let ((thread (begin-thread
+                              ;; The error code is per thread, so read it
+                              ;; here, in the transferring thread.
+                              (let ((result (curl-easy-perform-to-fd h fd)))
+                                (cons result (curl-error-code))))))
+                 ;; Wait until the transfer is under way.
+                 (let wait ((tries 0))
+                   (when (and (zero? (car (curl-easy-progress h)))
+                              (< tries 200))
+                     (usleep 50000)
+                     (wait (1+ tries))))
+                 (let ((start (get-internal-real-time)))
+                   (curl-easy-cancel! h)
+                   (let ((outcome (join-thread thread)))
+                     (list outcome
+                           (/ (- (get-internal-real-time) start)
+                              internal-time-units-per-second)))))))))
+      (let ((result (car (car worker)))
+            (code (cdr (car worker)))
+            (seconds (cadr worker)))
+        (test-equal "a cancelled transfer returns #f" #f result)
+        (test-equal "with CURLE_ABORTED_BY_CALLBACK"
+          CURLE_ABORTED_BY_CALLBACK code)
+        (test-assert "and stops promptly" (< seconds 3))))
+    ;; The cancel request must not affect later transfers on the handle.
+    (curl-easy-setopt h 'max-recv-speed-large 0)
+    (test-assert "a later curl-easy-perform on the handle works"
+      (let ((body (curl-easy-perform h #t)))
+        (and body (bytevector=? body big-body))))
+    (delete-file name)))
+
 (test-end "regression")
