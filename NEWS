@@ -1,3 +1,35 @@
+For the next major release (unreleased)
+
+    - Forms now use libcurl's MIME API (curl_mime_init and related
+      functions) instead of the deprecated curl_formadd API, which has
+      been removed entirely.
+      - The 'httppost option (CURLOPT_HTTPPOST) is replaced by the new
+        'mimepost option (CURLOPT_MIMEPOST).  This is an incompatible
+        change: code using 'httppost must switch to 'mimepost.  The list
+        of fields it takes is unchanged.
+      - The filename of a 4-element field is now sent, so the field is
+        uploaded as a file.  It was previously ignored.
+      - Fields with an empty value are sent instead of being dropped.
+      - A name, MIME type or filename containing NUL raises an error.
+    - Fix crashes and memory corruption: a stale header callback after
+      requests made with headers, the read port being garbage collected
+      during uploads, Scheme errors unwinding through libcurl
+      callbacks, and handles being freed while the process exits.
+    - Fix memory leaks in list (slist) options, getinfo and printing of
+      handles.
+    - Errors from the C code now raise misc-error with a proper
+      message, and curl-easy-setopt reports libcurl's own error.
+    - curl-error-code and curl-error-string are now per thread.
+    - curl-easy-getinfo works after a failed transfer.
+    - Add support for the connect-to option, the speed-upload-t and
+      earlydata-sent-t getinfo values, and binary data for
+      copypostfields.
+    - Much faster collection of large response bodies.
+    - When libcurl uses a synchronous DNS resolver, new handles set
+      nosignal by default.
+    - Building from the repository requires gettext, for Guile's
+      guile.m4 macros.
+
 For Release 0.9 - Jan 19, 2021
 
     - Speed up bv->url-encoded-bytevector

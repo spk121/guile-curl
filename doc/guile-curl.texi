@@ -681,7 +681,7 @@ integer@footnote{@xref{Integer Constants for postredir}.}
 @c @item postfieldsize @tab CURLOPT_POSTFIELDSIZE @tab integer
 @c @item postfieldsize-large @tab CURLOPT_POSTFIELDSIZE_LARGE @tab biginteger
 @c @item copypostfields @tab CURLOPT_COPYPOSTFIELDS @tab bytevector
-@item httppost @tab CURLOPT_HTTPPOST @tab httppost
+@item mimepost @tab CURLOPT_MIMEPOST @tab mimepost
 @item referer @tab CURLOPT_REFERER @tab string
 @item useragent @tab CURLOPT_USERAGENT @tab string
 @item httpheader @tab CURLOPT_HTTPHEADER @tab
@@ -869,30 +869,48 @@ contains the Unicode code points U+0000 through U+00FF.
 A list containing zero or more strings. The scheme string is converted
 to a C string encoded in the current locale.
 
-@item httppost
-A list containing data that will be used for an HTTP Post operation.
-Obviously, this is only for handles for which the @code{url} option is
-set to an HTTP URL that will accept a Post operation.
+@item mimepost
+A list of fields for a @code{multipart/form-data} form, such as an
+HTML form posted over HTTP.  Setting it makes the request a POST that
+sends the form.  It is built with libcurl's MIME API
+(@code{curl_mime_init} and related functions) and passed as
+@code{CURLOPT_MIMEPOST}.
 
-The @var{httppost} data is a list of one or more HTTP Post elements.
-The HTTP Post elements will be passed to the server in the order in
-which they appear in the list.
+The fields are sent in the order in which they appear in the list.
+An empty list clears any form set before.
 
-Each HTTP Post element it itself a list.  The list has two required
-and two optional arguments.
+Each field is itself a list of two required and two optional
+elements:
 
 @enumerate
-@item Name of the element [required @code{string}]
-@item Contents of the element [required @code{bytevector}]
-@item The mime type for this element [optional @code{string}]
-@item The filename of this element [optional @code{string}]
+@item The name of the field [required @code{string}]
+@item The data of the field [required @code{bytevector}]
+@item The MIME type of the data, sent as the field's
+@code{Content-Type} [optional @code{string}]
+@item A filename [optional @code{string}].  The field is then sent as
+a file upload with that filename, with the data as the file's
+contents; no file is read from disk.
 @end enumerate
 
 The @code{string} and @code{bytevector} types are as described above.
+The data may contain any bytes, including NUL; the name, MIME type and
+filename may not contain the NUL character.  libcurl copies all of
+them, so they may be changed after the option is set.
 
-@quotation important
-The format of this data structure will change in the next version
-@end quotation
+For example, this sends a text field and a file named
+@file{notes.txt}:
+
+@example
+(curl-easy-setopt handle 'mimepost
+                  '(("title" "Meeting notes")
+                    ("upload" "First line\nSecond line\n"
+                     "text/plain" "notes.txt")))
+@end example
+
+This option replaces @code{httppost} (@code{CURLOPT_HTTPPOST}), which
+used libcurl's deprecated @code{curl_formadd} API and has been
+removed.  A list of fields that worked with @code{httppost} works
+unchanged with @code{mimepost}.
 
 @end table
 
