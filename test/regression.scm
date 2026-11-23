@@ -329,4 +329,26 @@ Return the server's base URL."
       (test-equal "nor the error string"
         main-string (curl-error-string)))))
 
+;;; 'connect-to was accepted by the Scheme layer but not handled in C,
+;;; so it always raised an error.
+
+(test-group "connect-to"
+  (let* ((h (make-handle))
+         (port (string->number
+                (car (last-pair (string-split
+                                 (string-trim-right base-url #\/) #\:))))))
+    ;; Host names under .invalid never resolve, so the request can only
+    ;; succeed if curl connects where 'connect-to tells it to.
+    (curl-easy-setopt h 'url "http://guile-curl-test.invalid/")
+    (curl-easy-setopt h 'connect-to
+                      (list (format #f "guile-curl-test.invalid:80:127.0.0.1:~a"
+                                    port)))
+    (test-equal "the request reaches the host given by connect-to"
+      "GET\n"
+      (curl-easy-perform h))
+    (test-assert "connect-to can be set again"
+      (catch #t
+        (lambda () (curl-easy-setopt h 'connect-to '()) #t)
+        (lambda args #f)))))
+
 (test-end "regression")

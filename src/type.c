@@ -212,6 +212,11 @@ gc_free_handle_unlocked (SCM handle)
           curl_slist_free_all (x->telnetoptions);
           x->telnetoptions = NULL;
         }
+      if (x->connect_to != NULL)
+        {
+          curl_slist_free_all (x->connect_to);
+          x->connect_to = NULL;
+        }
       x->transfers = 0;
       x->readport = SCM_BOOL_F;
       x->pending_exception = SCM_BOOL_F;

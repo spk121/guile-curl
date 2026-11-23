@@ -266,6 +266,12 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
             curl_slist_free_all (c_handle->telnetoptions);
           c_handle->telnetoptions = sl;
         }
+      else if (c_option == CURLOPT_CONNECT_TO)
+        {
+          if (c_handle->connect_to)
+            curl_slist_free_all (c_handle->connect_to);
+          c_handle->connect_to = sl;
+        }
       else
         {
           // Bad slist option.  Nothing took ownership of SL.
@@ -832,6 +838,8 @@ cl_dump_handle (SCM handle)
   print_slist (hp->resolve);
   fprintf (stderr, "\t telnetoptions %p\n", hp->telnetoptions);
   print_slist (hp->telnetoptions);
+  fprintf (stderr, "\t    connect_to %p\n", hp->connect_to);
+  print_slist (hp->connect_to);
   fflush (stderr);
 
   return SCM_UNSPECIFIED;
