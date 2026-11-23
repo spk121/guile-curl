@@ -465,6 +465,13 @@ cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag)
     curl_easy_setopt (c_handle->handle, CURLOPT_HEADERDATA, &header_sf);
     curl_easy_setopt (c_handle->handle, CURLOPT_ERRORBUFFER, error_string);
   }
+  else
+  {
+    /* Clear any header callback left over from a previous call, whose
+       HEADERDATA would point into that call's (now dead) stack frame.  */
+    curl_easy_setopt (c_handle->handle, CURLOPT_HEADERFUNCTION, NULL);
+    curl_easy_setopt (c_handle->handle, CURLOPT_HEADERDATA, NULL);
+  }
 
   curl_easy_setopt (c_handle->handle, CURLOPT_WRITEFUNCTION, write_callback);
   curl_easy_setopt (c_handle->handle, CURLOPT_WRITEDATA, &body_sf);
