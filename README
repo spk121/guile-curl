@@ -6,6 +6,13 @@ If trying to build this from the repository instead of a tarball,
 you'll need to run 'autoreconf -vi'.  There is a 'bootstrap' script,
 but, it is just a call to 'autoreconf'.
 
+Building from the repository requires gettext to be installed (on some
+systems, the 'autopoint' package is enough).  guile-curl does not use
+gettext itself.  It is needed only because Guile's own Autoconf macros
+in guile.m4 (copied into m4/guile.m4) call AC_LIB_LINKFLAGS_FROM_LIBS,
+which is defined in gettext's lib-link.m4.  Building from a release
+tarball does not require gettext.
+
 This is an autotools build, so usually building is a "./configure &&
 make && make install" sort of thing.
 

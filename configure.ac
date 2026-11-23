@@ -63,6 +63,11 @@ AM_CONDITIONAL([DLL_VERSION_INFO], [test "$dll_version_info" = yes])
 PKG_CHECK_MODULES(CURL, [libcurl])
 GUILE_PKG([3.0 2.2])
 GUILE_PROGS
+dnl Guile's GUILE_FLAGS macro (m4/guile.m4) calls AC_LIB_LINKFLAGS_FROM_LIBS,
+dnl which comes from gettext's lib-link.m4.  guile-curl does not use gettext
+dnl itself, but gettext must be installed to bootstrap from the repository.
+m4_ifndef([AC_LIB_LINKFLAGS_FROM_LIBS],
+  [m4_fatal([AC_LIB_LINKFLAGS_FROM_LIBS is undefined.  Guile's guile.m4 requires gettext's lib-link.m4: install gettext (or autopoint) and rerun ./bootstrap.])])
 GUILE_FLAGS
 GUILE_SITE_DIR
 
