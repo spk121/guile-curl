@@ -266,4 +266,14 @@ Return the server's base URL."
       (string-append "POST\n" (string #\x #\nul #\y))
       (curl-easy-perform h))))
 
+;;; An empty form, '(), was taken for an empty list of strings and
+;;; rejected.
+
+(test-group "empty httppost"
+  (let ((h (make-handle)))
+    (test-assert "an empty form is accepted"
+      (catch #t
+        (lambda () (curl-easy-setopt h 'httppost '()) #t)
+        (lambda args #f)))))
+
 (test-end "regression")

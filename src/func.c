@@ -163,6 +163,24 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
                         "CURLOPT_HTTPHEADER requires a list of strings",
                         SCM_EOL);
     }
+  else if (c_option == CURLOPT_HTTPPOST)
+    {
+      /* Checked by option rather than by argument type, because an
+         empty form, '(), would also pass as a list of strings.  */
+      if (_scm_can_convert_to_httppost (param))
+        {
+          struct curl_httppost *p;
+          p = _scm_convert_to_httppost (param);
+          curl_formfree (c_handle->httppost);
+          c_handle->httppost = p;
+          /* An empty form gives P == NULL, which clears the form.  */
+          code = curl_easy_setopt (c_handle->handle, CURLOPT_HTTPPOST, p);
+        }
+      else
+        scm_misc_error ("curl-easy-setopt",
+                        "CURLOPT_HTTPPOST requires a list of form fields",
+                        SCM_EOL);
+    }
   else if (scm_is_integer (param))
     {
       if (scm_is_true (big))
@@ -238,21 +256,6 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
       else
         scm_misc_error ("curl-easy-setopt",
                         "this option does not accept a list of strings",
-                        SCM_EOL);
-    }
-  else if (_scm_can_convert_to_httppost (param))
-    {
-      if (c_option == CURLOPT_HTTPPOST)
-        {
-          struct curl_httppost *p;
-          p = _scm_convert_to_httppost (param);
-          curl_formfree (c_handle->httppost);
-          c_handle->httppost = p;
-          code = curl_easy_setopt (c_handle->handle, CURLOPT_HTTPPOST, p);
-        }
-      else
-        scm_misc_error ("curl-easy-setopt",
-                        "this option does not accept form data",
                         SCM_EOL);
     }
   else if (scm_is_true (scm_input_port_p (param)))
