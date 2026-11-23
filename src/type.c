@@ -182,12 +182,13 @@ gc_free_handle (SCM handle)
           x->telnetoptions = NULL;
         }
       x->transfers = 0;
+      x->readport = SCM_BOOL_F;
       if (x->handle != NULL)
         {
           curl_easy_cleanup (x->handle);
           x->handle = NULL;
         }
-      free (x);
+      /* X itself is GC-allocated; it is reclaimed once unreachable.  */
       x = NULL;
       SCM_SET_SMOB_DATA(handle, NULL);
     }

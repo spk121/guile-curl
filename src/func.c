@@ -53,9 +53,12 @@ SCM DLL_PUBLIC cl_easy_init ()
                  SCM_BOOL_F);
     }
 
-  hp = scm_malloc (sizeof (handle_post_t));
+  /* Allocated from the GC heap, not with malloc, so that the GC scans
+     its SCM fields (such as readport).  The smob keeps it alive.  */
+  hp = scm_gc_malloc (sizeof (handle_post_t), "curl handle");
   memset (hp, 0, sizeof (handle_post_t));
   hp->handle = handle;
+  hp->readport = SCM_BOOL_F;
 
   if (0)
     {
@@ -209,6 +212,7 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
     {
       if (c_option == CURLOPT_READDATA)
         {
+          c_handle->readport = param;
           curl_easy_setopt (c_handle->handle, CURLOPT_READFUNCTION, read_callback);
           code = curl_easy_setopt (c_handle->handle, CURLOPT_READDATA, SCM2PTR (param));
         }
@@ -564,6 +568,7 @@ cl_easy_reset (SCM handle)
   c_handle = _scm_to_handle (handle);
 
   curl_easy_reset (c_handle->handle);
+  c_handle->readport = SCM_BOOL_F;
 
   return SCM_UNSPECIFIED;
 }

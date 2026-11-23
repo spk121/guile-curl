@@ -37,6 +37,9 @@ typedef struct handle_post_tag
   struct curl_slist *resolve;
   struct curl_slist *telnetoptions;
   int transfers;
+  /* The port given with CURLOPT_READDATA.  Curl only holds a raw pointer
+     to it, so it is kept here, where the GC can see it.  */
+  SCM readport;
 } handle_post_t;
 
 void DLL_PUBLIC cl_init_type (void);
