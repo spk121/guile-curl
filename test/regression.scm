@@ -131,6 +131,24 @@ Return the server's base URL."
       (test-assert "content type is sent"
         (contains? reply "Content-Type: text/plain")))))
 
+;;; curl_formadd errors were ignored: an empty value became a NULL
+;;; pointer, which curl rejected, and the field silently disappeared.
+
+(test-group "httppost errors are not ignored"
+  (let ((h (make-handle)))
+    (curl-easy-setopt h 'httppost '(("empty" "") ("full" "x")))
+    (test-assert "a field with an empty value is sent"
+      (contains? (curl-easy-perform h)
+                 "name=\"empty\"\r\n\r\n\r\n"))
+    (test-equal "a field curl rejects raises an error"
+      'misc-error
+      (catch #t
+        (lambda ()
+          (curl-easy-setopt h 'httppost
+                            (list (list (string #\a #\nul #\b) "x")))
+          'no-error)
+        (lambda (key . args) key)))))
+
 ;;; The CURLOPT_READDATA port was only referenced from curl, so the GC
 ;;; could collect it while curl still used it.
 

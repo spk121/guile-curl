@@ -448,7 +448,9 @@ _scm_convert_to_httppost (SCM x)
     {
       char *name = NULL, *mime = NULL, *filename = NULL;
       uint8_t *contents = NULL;
+      char *contents_ptr;
       size_t name_len, contents_len;
+      CURLFORMcode rc;
 
       SCM elt = SCM_C_LIST_REF (x, j);
       m = SCM_C_LIST_LENGTH (elt);
@@ -460,40 +462,52 @@ _scm_convert_to_httppost (SCM x)
 	mime = scm_to_locale_string (SCM_C_LIST_REF (elt, 2));
       if (m == 4)
 	filename = scm_to_locale_string (SCM_C_LIST_REF (elt, 3));
+      /* An empty string or bytevector converts to NULL, which curl
+         rejects (CURL_FORMADD_NULL), so pass an empty buffer instead.  */
+      if (contents == NULL)
+        contents_ptr = "";
+      else
+        contents_ptr = (char *) contents;
+
       if (m == 2)
-	curl_formadd (&post, &last,
-		      CURLFORM_COPYNAME, name,
-		      CURLFORM_NAMELENGTH, name_len,
-		      CURLFORM_COPYCONTENTS, contents,
-		      CURLFORM_CONTENTSLENGTH, contents_len,
-		      CURLFORM_END);
+        rc = curl_formadd (&post, &last,
+                           CURLFORM_COPYNAME, name,
+                           CURLFORM_NAMELENGTH, name_len,
+                           CURLFORM_COPYCONTENTS, contents_ptr,
+                           CURLFORM_CONTENTSLENGTH, contents_len,
+                           CURLFORM_END);
       else if (m == 3)
-	{
-	  curl_formadd (&post, &last,
-			CURLFORM_COPYNAME, name,
-			CURLFORM_NAMELENGTH, name_len,
-			CURLFORM_COPYCONTENTS, contents,
-			CURLFORM_CONTENTSLENGTH, contents_len,
-			CURLFORM_CONTENTTYPE, mime,
-			CURLFORM_END);
-	  free (mime);
-	}
-      else if (m == 4)
-	{
-	  curl_formadd (&post, &last,
-			CURLFORM_COPYNAME, name,
-			CURLFORM_NAMELENGTH, name_len,
-			CURLFORM_COPYCONTENTS, contents,
-			CURLFORM_CONTENTSLENGTH, contents_len,
-			CURLFORM_CONTENTTYPE, mime,
-			CURLFORM_FILENAME, filename,
-			CURLFORM_END);
-	  free (mime);
-	  free (filename);
-	}
-      /* curl_formadd copied name and contents (COPYNAME/COPYCONTENTS).  */
+        rc = curl_formadd (&post, &last,
+                           CURLFORM_COPYNAME, name,
+                           CURLFORM_NAMELENGTH, name_len,
+                           CURLFORM_COPYCONTENTS, contents_ptr,
+                           CURLFORM_CONTENTSLENGTH, contents_len,
+                           CURLFORM_CONTENTTYPE, mime,
+                           CURLFORM_END);
+      else
+        rc = curl_formadd (&post, &last,
+                           CURLFORM_COPYNAME, name,
+                           CURLFORM_NAMELENGTH, name_len,
+                           CURLFORM_COPYCONTENTS, contents_ptr,
+                           CURLFORM_CONTENTSLENGTH, contents_len,
+                           CURLFORM_CONTENTTYPE, mime,
+                           CURLFORM_FILENAME, filename,
+                           CURLFORM_END);
+
+      /* curl_formadd copies everything it is given.  */
       free (name);
       free (contents);
+      free (mime);
+      free (filename);
+
+      if (rc != CURL_FORMADD_OK)
+        {
+          curl_formfree (post);
+          scm_misc_error ("curl-easy-setopt",
+                          "could not add the form field at index ~A (curl_formadd error ~A)",
+                          scm_list_2 (scm_from_size_t (j),
+                                      scm_from_int ((int) rc)));
+        }
     }
   return post;
 }
