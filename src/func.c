@@ -123,6 +123,29 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
                         "CURLOPT_POSTFIELDS requires 8-bit string or bytevector data",
                         SCM_EOL);
     }
+  else if (c_option == CURLOPT_COPYPOSTFIELDS)
+    {
+      if (_scm_can_convert_to_byte_data (param))
+        {
+          size_t len;
+          uint8_t *m = _scm_convert_to_byte_data (param, &len);
+          /* With the size set first, curl copies exactly LEN bytes, so
+             binary data with NULs works.  */
+          curl_easy_setopt (c_handle->handle, CURLOPT_POSTFIELDSIZE_LARGE,
+                            (curl_off_t) len);
+          code = curl_easy_setopt (c_handle->handle, CURLOPT_COPYPOSTFIELDS,
+                                   m ? (char *) m : "");
+          free (m);
+          /* Curl no longer uses any buffer kept for CURLOPT_POSTFIELDS.  */
+          free (c_handle->postfields);
+          c_handle->postfields = NULL;
+          c_handle->postfieldsize = 0;
+        }
+      else
+        scm_misc_error ("curl-easy-setopt",
+                        "CURLOPT_COPYPOSTFIELDS requires 8-bit string or bytevector data",
+                        SCM_EOL);
+    }
   else if (c_option == CURLOPT_HTTPHEADER)
     {
       if (_scm_can_convert_to_slist (param))

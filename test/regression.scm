@@ -252,4 +252,18 @@ Return the server's base URL."
     (test-assert "os-errno can be retrieved"
       (integer? (curl-easy-getinfo h 'os-errno)))))
 
+;;; copypostfields with a bytevector fell through to "unimplemented
+;;; option type", and strings were cut off at the first NUL.
+
+(test-group "copypostfields"
+  (let ((h (make-handle)))
+    (curl-easy-setopt h 'copypostfields (u8-list->bytevector '(65 0 66)))
+    (test-equal "a bytevector is sent intact"
+      (string-append "POST\n" (string #\A #\nul #\B))
+      (curl-easy-perform h))
+    (curl-easy-setopt h 'copypostfields (string #\x #\nul #\y))
+    (test-equal "a string with a NUL is sent intact"
+      (string-append "POST\n" (string #\x #\nul #\y))
+      (curl-easy-perform h))))
+
 (test-end "regression")
