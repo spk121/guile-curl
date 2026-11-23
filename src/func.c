@@ -28,8 +28,11 @@ static size_t write_callback (void *ptr, size_t size, size_t nmemb,
 static size_t read_callback (void *ptr, size_t size, size_t nmemb,
                              void *port);
 
-CURLcode error_code = CURLE_OK;
-char error_string[CURL_ERROR_SIZE+1] = "";
+/* The error state reported by curl-error-code and curl-error-string.
+   It is per thread, so that one thread's failure does not overwrite
+   the error another thread is about to read.  */
+static SCM_THREAD_LOCAL CURLcode error_code = CURLE_OK;
+static SCM_THREAD_LOCAL char error_string[CURL_ERROR_SIZE+1] = "";
 
 /* Received data (body or headers) is collected here by write_callback
    and converted to a Scheme object once, after the transfer.  */
@@ -565,6 +568,11 @@ cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag)
   curl_easy_setopt (c_handle->handle, CURLOPT_ERRORBUFFER, error_string);
 
   status = curl_easy_perform (c_handle->handle);
+
+  /* ERRORBUFFER points at this thread's error_string.  Clear it, so that
+     curl never writes there from a later call made on another thread
+     (by which time this thread may have exited).  */
+  curl_easy_setopt (c_handle->handle, CURLOPT_ERRORBUFFER, NULL);
 
   /* Count failed transfers too: getinfo is still meaningful after one
      (e.g. CURLINFO_OS_ERRNO, CURLINFO_RESPONSE_CODE).  */

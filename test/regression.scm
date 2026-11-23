@@ -308,4 +308,25 @@ Return the server's base URL."
                            (bytevector-u8-ref big-body i))
                         (loop (1+ i))))))))))
 
+;;; The error code and error string were process-wide, so a failure in
+;;; one thread overwrote the error another thread was about to read.
+
+(test-group "error state is per thread"
+  (let ((h (make-handle)))
+    (curl-easy-setopt h 'url (closed-port-url))
+    (curl-easy-perform h)
+    (let ((main-code (curl-error-code))
+          (main-string (curl-error-string)))
+      (join-thread
+       (begin-thread
+        (let ((h2 (make-handle)))
+          (curl-easy-setopt h2 'url "nosuchprotocol://example/")
+          (curl-easy-perform h2))))
+      (test-equal "the main thread's error code is CURLE_COULDNT_CONNECT"
+        CURLE_COULDNT_CONNECT main-code)
+      (test-equal "another thread's failure does not change it"
+        main-code (curl-error-code))
+      (test-equal "nor the error string"
+        main-string (curl-error-string)))))
+
 (test-end "regression")
