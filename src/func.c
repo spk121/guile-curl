@@ -332,16 +332,11 @@ cl_easy_getinfo (SCM handle, SCM option)
       curl_off_t c_val;
       code = curl_easy_getinfo (c_handle->handle, c_option, &c_val);
       if (code == CURLE_OK)
+        return scm_from_int64 ((int64_t) c_val);
+      else
         {
-          if (sizeof (curl_off_t) == 4)
-            return scm_from_int32 (c_val);
-          else if (sizeof (curl_off_t) == 8)
-            return scm_from_int64 (c_val);
-          else
-            {
-              error_code = code;
-              return SCM_BOOL_F;
-            }
+          error_code = code;
+          return SCM_BOOL_F;
         }
     }
   else if ((c_option == CURLINFO_CONDITION_UNMET)
