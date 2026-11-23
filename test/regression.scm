@@ -112,12 +112,14 @@ Return the server's base URL."
     (test-equal "next request without headers returns only the body"
       "GET\n" second)))
 
-;;; CURLOPT_HTTPPOST was set on the wrong object, so the form was never
-;;; sent and the heap was corrupted.
+;;; Forms (CURLOPT_MIMEPOST).  These began as regression tests for the
+;;; old curl_formadd code (a form set on the wrong object, freed wrongly,
+;;; fields dropped or missing their filename) and now check the same
+;;; behaviour of the curl_mime implementation.
 
-(test-group "httppost"
+(test-group "mimepost"
   (let ((h (make-handle)))
-    (curl-easy-setopt h 'httppost '(("field" "value")))
+    (curl-easy-setopt h 'mimepost '(("field" "value")))
     (let ((reply (curl-easy-perform h)))
       (test-assert "request is a POST" (contains? reply "POST\n"))
       (test-assert "form field name is sent"
@@ -125,13 +127,13 @@ Return the server's base URL."
       (test-assert "form field value is sent"
         (contains? reply "\r\n\r\nvalue\r\n")))))
 
-;;; Setting a form again freed the old one incorrectly; form names and
-;;; contents must be copied by curl, not borrowed.
+;;; Setting a form again must free the old one, and the form's names and
+;;; data must be copied, not borrowed.
 
-(test-group "httppost replaced and copied"
+(test-group "mimepost replaced and copied"
   (let ((h (make-handle)))
-    (curl-easy-setopt h 'httppost '(("old1" "a") ("old2" "b") ("old3" "c")))
-    (curl-easy-setopt h 'httppost
+    (curl-easy-setopt h 'mimepost '(("old1" "a") ("old2" "b") ("old3" "c")))
+    (curl-easy-setopt h 'mimepost
                       (list (list "bin" (u8-list->bytevector '(65 0 66 0 67)))
                             (list "typed" "text" "text/plain")))
     ;; Collect, so that any buffer curl wrongly borrowed could be reused.
@@ -145,34 +147,58 @@ Return the server's base URL."
       (test-assert "content type is sent"
         (contains? reply "Content-Type: text/plain")))))
 
-;;; curl_formadd errors were ignored: an empty value became a NULL
-;;; pointer, which curl rejected, and the field silently disappeared.
+;;; A field with an empty value must be sent, not dropped, and a field
+;;; that cannot be sent as given must raise an error.
 
-(test-group "httppost errors are not ignored"
+(test-group "mimepost empty values and errors"
   (let ((h (make-handle)))
-    (curl-easy-setopt h 'httppost '(("empty" "") ("full" "x")))
+    (curl-easy-setopt h 'mimepost '(("empty" "") ("full" "x")))
     (test-assert "a field with an empty value is sent"
       (contains? (curl-easy-perform h)
                  "name=\"empty\"\r\n\r\n\r\n"))
-    (test-equal "a field curl rejects raises an error"
+    (test-equal "a field name containing NUL raises an error"
       'misc-error
       (catch #t
         (lambda ()
-          (curl-easy-setopt h 'httppost
+          (curl-easy-setopt h 'mimepost
                             (list (list (string #\a #\nul #\b) "x")))
           'no-error)
         (lambda (key . args) key)))))
 
-;;; The filename of a 4-element field was passed as CURLFORM_FILENAME,
-;;; which curl ignores for an ordinary contents part, so it was never
-;;; sent.
+;;; Every string in a field is checked, including the MIME type of a
+;;; 4-element field, and the removed 'httppost option is rejected.
 
-(test-group "httppost filename"
+(define (setopt-error-key h option value)
+  (catch #t
+    (lambda () (curl-easy-setopt h option value) 'no-error)
+    (lambda (key . args) key)))
+
+(test-group "mimepost validation"
   (let ((h (make-handle)))
-    (curl-easy-setopt h 'httppost
+    (test-equal "a MIME type containing NUL raises an error"
+      'misc-error
+      (setopt-error-key h 'mimepost
+                        (list (list "f" "x" (string #\a #\nul) "f.txt"))))
+    (test-equal "a filename containing NUL raises an error"
+      'misc-error
+      (setopt-error-key h 'mimepost
+                        (list (list "f" "x" "text/plain" (string #\a #\nul)))))
+    (test-assert "a non-string MIME type in a 4-element field is rejected"
+      (not (eq? 'no-error
+                (setopt-error-key h 'mimepost '(("f" "x" 42 "f.txt"))))))
+    (test-assert "'httppost is no longer an option"
+      (not (eq? 'no-error
+                (setopt-error-key h 'httppost '(("f" "x"))))))))
+
+;;; The fourth element of a field is a filename, which sends the field as
+;;; a file.
+
+(test-group "mimepost filename"
+  (let ((h (make-handle)))
+    (curl-easy-setopt h 'mimepost
                       (list (list "up" (u8-list->bytevector '(1 0 2))
                                   "application/octet-stream" "data.bin")))
-    ;; The field's data is kept by guile-curl, not copied by curl.
+    ;; Collect, so that any buffer curl wrongly borrowed could be reused.
     (gc)
     (let ((reply (curl-easy-perform h)))
       (test-assert "the filename is sent"
@@ -300,15 +326,19 @@ Return the server's base URL."
       (string-append "POST\n" (string #\x #\nul #\y))
       (curl-easy-perform h))))
 
-;;; An empty form, '(), was taken for an empty list of strings and
-;;; rejected.
+;;; An empty form, '(), must not be taken for an empty list of strings.
 
-(test-group "empty httppost"
+(test-group "empty mimepost"
   (let ((h (make-handle)))
+    (curl-easy-setopt h 'mimepost '(("field" "value")))
     (test-assert "an empty form is accepted"
       (catch #t
-        (lambda () (curl-easy-setopt h 'httppost '()) #t)
-        (lambda args #f)))))
+        (lambda () (curl-easy-setopt h 'mimepost '()) #t)
+        (lambda args #f)))
+    (curl-easy-setopt h 'httpget #t)
+    (test-equal "and clears the form"
+      "GET\n"
+      (curl-easy-perform h))))
 
 ;;; Received data was appended by copying the whole body again for each
 ;;; chunk.  Check that the buffered replacement returns large bodies

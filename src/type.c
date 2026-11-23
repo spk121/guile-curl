@@ -71,7 +71,7 @@ _scm_from_handle (handle_post_t *x)
       fprintf (stderr, "Making <#handle %p>\n", x);
       fprintf (stderr, "\t        handle %p\n", x->handle);
       fprintf (stderr, "\t    postfields %p\n", x->postfields);
-      fprintf (stderr, "\t      httppost %p\n", x->httppost);
+      fprintf (stderr, "\t          mime %p\n", x->mime);
       fprintf (stderr, "\t    httpheader %p\n", x->httpheader);
       fprintf (stderr, "\thttp200aliases %p\n", x->http200aliases);
       fprintf (stderr, "\t     mail_rcpt %p\n", x->mail_rcpt);
@@ -146,7 +146,7 @@ gc_free_handle_unlocked (SCM handle)
     {
       fprintf (stderr, "Freeing <#handle %p>\n", x);
       fprintf (stderr, "\t        handle %p\n", x->handle);
-      fprintf (stderr, "\t      httppost %p\n", x->httppost);
+      fprintf (stderr, "\t          mime %p\n", x->mime);
       fprintf (stderr, "\t    httpheader %p\n", x->httpheader);
       fprintf (stderr, "\thttp200aliases %p\n", x->http200aliases);
       fprintf (stderr, "\t     mail_rcpt %p\n", x->mail_rcpt);
@@ -167,14 +167,12 @@ gc_free_handle_unlocked (SCM handle)
           x->postfields = NULL;
           x->postfieldsize = 0;
         }
-      if (x->httppost != NULL)
+      if (x->mime != NULL)
         {
-          curl_formfree (x->httppost);
-          x->httppost = NULL;
+          /* curl_mime_free detaches the form from the handle first.  */
+          curl_mime_free (x->mime);
+          x->mime = NULL;
         }
-      _free_httppost_buffers (x->httppost_buffers, x->httppost_nbuffers);
-      x->httppost_buffers = NULL;
-      x->httppost_nbuffers = 0;
       if (x->httpheader != NULL)
         {
           curl_slist_free_all (x->httpheader);
@@ -425,14 +423,15 @@ _scm_convert_to_byte_data (SCM x, size_t *len)
 }
 
 
-/* Each entry in an http post is a list of 2 to 4 elements.
+/* A form, as given to CURLOPT_MIMEPOST, is a list of fields.  Each
+   field is a list of 2 to 4 elements:
    1. name - string
-   2. data - byte data
-   3. mime - string, optional
-   4. filename - string, optional
+   2. data - string of 8-bit characters, or bytevector
+   3. MIME type - string, optional
+   4. filename - string, optional; the field is then sent as a file
 */
 static int
-_scm_can_convert_to_httppost_entry (SCM x)
+_scm_can_convert_to_mime_field (SCM x)
 {
   size_t n;
 
@@ -445,7 +444,7 @@ _scm_can_convert_to_httppost_entry (SCM x)
     return 0;
   if (!_scm_can_convert_to_byte_data (SCM_C_LIST_REF(x, 1)))
     return 0;
-  if (n == 3 && !scm_is_string (SCM_C_LIST_REF(x, 2)))
+  if (n >= 3 && !scm_is_string (SCM_C_LIST_REF(x, 2)))
     return 0;
   if (n == 4 && !scm_is_string (SCM_C_LIST_REF(x, 3)))
     return 0;
@@ -454,126 +453,126 @@ _scm_can_convert_to_httppost_entry (SCM x)
 }
 
 int
-_scm_can_convert_to_httppost (SCM x)
+_scm_can_convert_to_mime (SCM x)
 {
-  int i, n;
-  SCM elt;
+  size_t i, n;
 
   if (!SCM_IS_LIST(x))
     return 0;
 
   n = SCM_C_LIST_LENGTH(x);
-  if (n == 0)
-    return 1;			/* Empty post */
   for (i = 0; i < n; i ++)
-    {
-      elt = SCM_C_LIST_REF(x, i);
-      if (!_scm_can_convert_to_httppost_entry (elt))
-	return 0;
-    }
+    if (!_scm_can_convert_to_mime_field (SCM_C_LIST_REF(x, i)))
+      return 0;
   return 1;
 }
 
-void
-_free_httppost_buffers (void **buffers, size_t nbuffers)
+/* Unwind handler: free the partially built form that *DATA points to.  */
+static void
+free_partial_mime (void *data)
 {
-  for (size_t i = 0; i < nbuffers; i ++)
-    free (buffers[i]);
-  free (buffers);
+  curl_mime **mime = data;
+  curl_mime_free (*mime);
+  *mime = NULL;
 }
 
-/* Convert X, a list of form fields, to a curl form.  A field with a
-   filename is sent as a file, which curl only does for a buffer part;
-   curl does not copy a buffer's data, so those data buffers are returned
-   in *BUFFERS (an array of *NBUFFERS pointers, some possibly NULL) and
-   must be freed with _free_httppost_buffers after the form is freed.  */
-struct curl_httppost *
-_scm_convert_to_httppost (SCM x, void ***buffers, size_t *nbuffers)
+/* Convert S, the WHAT of the form field at INDEX, to a C string that is
+   freed when the current dynwind context ends.  curl takes these as C
+   strings, so a NUL character would silently truncate them.  */
+static char *
+mime_field_string (SCM s, size_t index, const char *what)
 {
-  struct curl_httppost *post = NULL;
-  struct curl_httppost *last = NULL;
-  size_t j,m,n;
-  void **bufs;
+  char *str;
+
+  if (scm_is_true (scm_string_index (s, SCM_MAKE_CHAR ('\0'),
+                                     SCM_UNDEFINED, SCM_UNDEFINED)))
+    scm_misc_error ("curl-easy-setopt",
+                    "the ~A of the form field at index ~A contains a NUL character",
+                    scm_list_2 (scm_from_utf8_string (what),
+                                scm_from_size_t (index)));
+  str = scm_to_locale_string (s);
+  scm_dynwind_free (str);
+  return str;
+}
+
+static void
+check_mime_result (CURLcode rc, size_t index)
+{
+  if (rc != CURLE_OK)
+    scm_misc_error ("curl-easy-setopt",
+                    "could not add the form field at index ~A: ~A",
+                    scm_list_2 (scm_from_size_t (index),
+                                scm_from_locale_string (curl_easy_strerror (rc))));
+}
+
+/* Convert X, a list of form fields, to a curl MIME form for the easy
+   handle HANDLE.  curl copies every name, data, type and filename into
+   the form, so nothing here needs to outlive this call.  Returns NULL
+   for an empty list, which clears CURLOPT_MIMEPOST.  The caller owns the
+   result and frees it with curl_mime_free.  */
+curl_mime *
+_scm_convert_to_mime (SCM x, CURL *handle)
+{
+  curl_mime *mime;
+  size_t j, m, n;
 
   n = SCM_C_LIST_LENGTH (x);
-  bufs = (n > 0) ? scm_calloc (n * sizeof (void *)) : NULL;
+  if (n == 0)
+    return NULL;
+
+  mime = curl_mime_init (handle);
+  if (mime == NULL)
+    scm_misc_error ("curl-easy-setopt", "could not create a form", SCM_EOL);
+
+  /* Free the form if any conversion below throws.  */
+  scm_dynwind_begin (0);
+  scm_dynwind_unwind_handler (free_partial_mime, &mime, 0);
   for (j = 0; j < n; j ++)
     {
-      char *name = NULL, *mime = NULL, *filename = NULL;
-      uint8_t *contents = NULL;
-      char *contents_ptr;
-      size_t name_len, contents_len;
-      CURLFORMcode rc;
-
       SCM elt = SCM_C_LIST_REF (x, j);
+      curl_mimepart *part;
+      uint8_t *contents;
+      size_t contents_len;
+
       m = SCM_C_LIST_LENGTH (elt);
 
-      name = scm_to_locale_stringn (SCM_C_LIST_REF (elt, 0), &name_len);
+      /* Strings converted for this field are freed when it is done.  */
+      scm_dynwind_begin (0);
+
+      part = curl_mime_addpart (mime);
+      if (part == NULL)
+        check_mime_result (CURLE_OUT_OF_MEMORY, j);
+
+      check_mime_result (curl_mime_name (part,
+                                         mime_field_string (SCM_C_LIST_REF (elt, 0),
+                                                            j, "name")),
+                         j);
+
       contents = _scm_convert_to_byte_data (SCM_C_LIST_REF (elt, 1),
-					    &contents_len);
+                                            &contents_len);
+      if (contents != NULL)
+        scm_dynwind_free (contents);
+      /* Empty data converts to NULL; give curl an empty buffer.  */
+      check_mime_result (curl_mime_data (part,
+                                         contents ? (char *) contents : "",
+                                         contents_len),
+                         j);
+
       if (m >= 3)
-	mime = scm_to_locale_string (SCM_C_LIST_REF (elt, 2));
+        check_mime_result (curl_mime_type (part,
+                                           mime_field_string (SCM_C_LIST_REF (elt, 2),
+                                                              j, "MIME type")),
+                           j);
       if (m == 4)
-	filename = scm_to_locale_string (SCM_C_LIST_REF (elt, 3));
-      /* An empty string or bytevector converts to NULL, which curl
-         rejects (CURL_FORMADD_NULL), so pass an empty buffer instead.  */
-      if (contents == NULL)
-        contents_ptr = "";
-      else
-        contents_ptr = (char *) contents;
+        check_mime_result (curl_mime_filename (part,
+                                               mime_field_string (SCM_C_LIST_REF (elt, 3),
+                                                                  j, "filename")),
+                           j);
 
-      if (m == 2)
-        rc = curl_formadd (&post, &last,
-                           CURLFORM_COPYNAME, name,
-                           CURLFORM_NAMELENGTH, (long) name_len,
-                           CURLFORM_COPYCONTENTS, contents_ptr,
-                           CURLFORM_CONTENTLEN, (curl_off_t) contents_len,
-                           CURLFORM_END);
-      else if (m == 3)
-        rc = curl_formadd (&post, &last,
-                           CURLFORM_COPYNAME, name,
-                           CURLFORM_NAMELENGTH, (long) name_len,
-                           CURLFORM_COPYCONTENTS, contents_ptr,
-                           CURLFORM_CONTENTLEN, (curl_off_t) contents_len,
-                           CURLFORM_CONTENTTYPE, mime,
-                           CURLFORM_END);
-      else
-        {
-          /* curl ignores CURLFORM_FILENAME for an ordinary contents part,
-             so send the field as a buffer part, which takes the filename
-             with CURLFORM_BUFFER.  curl copies the filename but not the
-             data, so keep the data in BUFS.  */
-          rc = curl_formadd (&post, &last,
-                             CURLFORM_COPYNAME, name,
-                             CURLFORM_NAMELENGTH, (long) name_len,
-                             CURLFORM_BUFFER, filename,
-                             CURLFORM_BUFFERPTR, contents_ptr,
-                             CURLFORM_BUFFERLENGTH, (long) contents_len,
-                             CURLFORM_CONTENTTYPE, mime,
-                             CURLFORM_END);
-          bufs[j] = contents;
-          contents = NULL;
-        }
-
-      /* curl_formadd copies everything else it is given.  */
-      free (name);
-      free (contents);
-      free (mime);
-      free (filename);
-
-      if (rc != CURL_FORMADD_OK)
-        {
-          curl_formfree (post);
-          _free_httppost_buffers (bufs, n);
-          scm_misc_error ("curl-easy-setopt",
-                          "could not add the form field at index ~A (curl_formadd error ~A)",
-                          scm_list_2 (scm_from_size_t (j),
-                                      scm_from_int ((int) rc)));
-        }
+      scm_dynwind_end ();
     }
-  *buffers = bufs;
-  *nbuffers = n;
-  return post;
+  scm_dynwind_end ();
+  return mime;
 }
 
 void DLL_PUBLIC

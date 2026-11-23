@@ -97,7 +97,7 @@ SCM DLL_PUBLIC cl_easy_init ()
     {
       fprintf (stderr, "Allocating <#handle %p>\n", hp);
       fprintf (stderr, "\t        handle %p\n", hp->handle);
-      fprintf (stderr, "\t      httppost %p\n", hp->httppost);
+      fprintf (stderr, "\t          mime %p\n", hp->mime);
       fprintf (stderr, "\t    httpheader %p\n", hp->httpheader);
       fprintf (stderr, "\thttp200aliases %p\n", hp->http200aliases);
       fprintf (stderr, "\t     mail_rcpt %p\n", hp->mail_rcpt);
@@ -184,28 +184,27 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
                         "CURLOPT_HTTPHEADER requires a list of strings",
                         SCM_EOL);
     }
-  else if (c_option == CURLOPT_HTTPPOST)
+  else if (c_option == CURLOPT_MIMEPOST)
     {
       /* Checked by option rather than by argument type, because an
          empty form, '(), would also pass as a list of strings.  */
-      if (_scm_can_convert_to_httppost (param))
+      if (_scm_can_convert_to_mime (param))
         {
-          struct curl_httppost *p;
-          void **buffers;
-          size_t nbuffers;
-          p = _scm_convert_to_httppost (param, &buffers, &nbuffers);
-          curl_formfree (c_handle->httppost);
-          _free_httppost_buffers (c_handle->httppost_buffers,
-                                  c_handle->httppost_nbuffers);
-          c_handle->httppost = p;
-          c_handle->httppost_buffers = buffers;
-          c_handle->httppost_nbuffers = nbuffers;
-          /* An empty form gives P == NULL, which clears the form.  */
-          code = curl_easy_setopt (c_handle->handle, CURLOPT_HTTPPOST, p);
+          /* An empty form gives NULL, which clears the form.  */
+          curl_mime *mime = _scm_convert_to_mime (param, c_handle->handle);
+          code = curl_easy_setopt (c_handle->handle, CURLOPT_MIMEPOST, mime);
+          if (code == CURLE_OK)
+            {
+              /* Setting the new form detached the old one.  */
+              curl_mime_free (c_handle->mime);
+              c_handle->mime = mime;
+            }
+          else
+            curl_mime_free (mime);
         }
       else
         scm_misc_error ("curl-easy-setopt",
-                        "CURLOPT_HTTPPOST requires a list of form fields",
+                        "CURLOPT_MIMEPOST requires a list of form fields",
                         SCM_EOL);
     }
   else if (scm_is_integer (param))
@@ -778,41 +777,6 @@ print_mem (const void *data, long len)
     fprintf (stderr, "...");
 }
 
-static size_t
-xstrlen (const char *s)
-{
-  if (s == NULL)
-    return 0;
-  return strlen (s);
-}
-
-static void
-print_httppost (struct curl_httppost *hp)
-{
-  struct curl_httppost *p = hp;
-  int i = 0;
-  while (p != NULL)
-    {
-      fprintf (stderr, "\t\t%d: name: ", i);
-      print_mem (p->name, p->namelength);
-      fprintf (stderr, "\n\t\t   contents: ");
-      print_mem (p->contents, p->contentslength);
-      fprintf (stderr, "\n\t\t   buffer: ");
-      print_mem (p->buffer, p->bufferlength);
-      fprintf (stderr, "\n\t\t   contenttype: ");
-      print_mem (p->contenttype, xstrlen (p->contenttype));
-      fprintf (stderr, "\n\t\t   contentheader: ");
-      print_slist (p->contentheader);
-      fprintf (stderr, "\n\t\t   showfilename: ");
-      print_mem (p->showfilename, xstrlen (p->showfilename));
-      fprintf (stderr, "\n\t\t   flags: 0x%lx", p->flags);
-      fprintf (stderr, "\n");
-      i++;
-      p = p->next;
-    }
-}
-
-
 SCM DLL_PUBLIC
 cl_dump_handle (SCM handle)
 {
@@ -826,8 +790,8 @@ cl_dump_handle (SCM handle)
   fprintf (stderr, "\t    postfields %p\n", hp->postfields);
   fprintf (stderr, "\t postfieldsize %zu\n", hp->postfieldsize);
   print_mem (hp->postfields, hp->postfieldsize);
-  fprintf (stderr, "\t      httppost %p\n", hp->httppost);
-  print_httppost (hp->httppost);
+  /* A curl_mime form is opaque, so only its address can be shown.  */
+  fprintf (stderr, "\t          mime %p\n", hp->mime);
   fprintf (stderr, "\t    httpheader %p\n", hp->httpheader);
   print_slist (hp->httpheader);
   fprintf (stderr, "\thttp200aliases %p\n", hp->http200aliases);
