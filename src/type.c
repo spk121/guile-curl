@@ -446,17 +446,17 @@ _scm_convert_to_httppost (SCM x)
 	filename = scm_to_locale_string (SCM_C_LIST_REF (elt, 3));
       if (m == 2)
 	curl_formadd (&post, &last,
-		      CURLFORM_PTRNAME, name,
+		      CURLFORM_COPYNAME, name,
 		      CURLFORM_NAMELENGTH, name_len,
-		      CURLFORM_PTRCONTENTS, contents,
+		      CURLFORM_COPYCONTENTS, contents,
 		      CURLFORM_CONTENTSLENGTH, contents_len,
 		      CURLFORM_END);
       else if (m == 3)
 	{
 	  curl_formadd (&post, &last,
-			CURLFORM_PTRNAME, name,
+			CURLFORM_COPYNAME, name,
 			CURLFORM_NAMELENGTH, name_len,
-			CURLFORM_PTRCONTENTS, contents,
+			CURLFORM_COPYCONTENTS, contents,
 			CURLFORM_CONTENTSLENGTH, contents_len,
 			CURLFORM_CONTENTTYPE, mime,
 			CURLFORM_END);
@@ -465,9 +465,9 @@ _scm_convert_to_httppost (SCM x)
       else if (m == 4)
 	{
 	  curl_formadd (&post, &last,
-			CURLFORM_PTRNAME, name,
+			CURLFORM_COPYNAME, name,
 			CURLFORM_NAMELENGTH, name_len,
-			CURLFORM_PTRCONTENTS, contents,
+			CURLFORM_COPYCONTENTS, contents,
 			CURLFORM_CONTENTSLENGTH, contents_len,
 			CURLFORM_CONTENTTYPE, mime,
 			CURLFORM_FILENAME, filename,
@@ -475,6 +475,9 @@ _scm_convert_to_httppost (SCM x)
 	  free (mime);
 	  free (filename);
 	}
+      /* curl_formadd copied name and contents (COPYNAME/COPYCONTENTS).  */
+      free (name);
+      free (contents);
     }
   return post;
 }
