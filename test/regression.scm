@@ -225,4 +225,13 @@ Return the server's base URL."
       CURLE_BAD_FUNCTION_ARGUMENT
       (curl-error-code))))
 
+;;; CURLINFO_SPEED_UPLOAD_T was exported but missing from the C code,
+;;; so asking for it raised an "unimplemented option type" error.
+
+(test-group "getinfo speed-upload-t"
+  (let ((h (make-handle)))
+    (curl-easy-perform h)
+    (test-assert "returns an integer"
+      (integer? (curl-easy-getinfo h 'speed-upload-t)))))
+
 (test-end "regression")

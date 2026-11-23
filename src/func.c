@@ -307,6 +307,9 @@ cl_easy_getinfo (SCM handle, SCM option)
 #endif
            || (c_option == CURLINFO_CONTENT_LENGTH_DOWNLOAD_T)
            || (c_option == CURLINFO_CONTENT_LENGTH_UPLOAD_T)
+#ifdef CURLINFO_EARLYDATA_SENT_T
+           || (c_option == CURLINFO_EARLYDATA_SENT_T)
+#endif
            || (c_option == CURLINFO_FILETIME_T)
            || (c_option == CURLINFO_NAMELOOKUP_TIME_T)
 #ifdef CURLINFO_POSTTRANSFER_TIME_T
@@ -321,6 +324,7 @@ cl_easy_getinfo (SCM handle, SCM option)
            || (c_option == CURLINFO_SIZE_DOWNLOAD_T)
            || (c_option == CURLINFO_SIZE_UPLOAD_T)
            || (c_option == CURLINFO_SPEED_DOWNLOAD_T)
+           || (c_option == CURLINFO_SPEED_UPLOAD_T)
            || (c_option == CURLINFO_STARTTRANSFER_TIME_T)
            || (c_option == CURLINFO_TOTAL_TIME_T)
            )
