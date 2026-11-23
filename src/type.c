@@ -204,7 +204,7 @@ print_handle (SCM x, SCM port, scm_print_state *pstate __attribute__ ((unused)))
 #endif
 {
   handle_post_t *frm = (handle_post_t *) SCM_SMOB_DATA (x);
-  char *str;
+  char str[64];
 
   scm_puts ("#<handle ", port);
 
@@ -214,7 +214,7 @@ print_handle (SCM x, SCM port, scm_print_state *pstate __attribute__ ((unused)))
     }
   else
     {
-      if (asprintf (&str, "%p", frm) < 0)
+      if (snprintf (str, sizeof str, "%p", (void *) frm) < 0)
         scm_puts ("???", port);
       else
         scm_puts (str, port);
