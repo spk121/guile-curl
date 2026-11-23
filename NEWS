@@ -1,4 +1,4 @@
-For the next major release (unreleased)
+For Release 1.0.0 - Nov 23, 2026
 
     - Forms now use libcurl's MIME API (curl_mime_init and related
       functions) instead of the deprecated curl_formadd API, which has
@@ -11,6 +11,9 @@ For the next major release (unreleased)
         uploaded as a file.  It was previously ignored.
       - Fields with an empty value are sent instead of being dropped.
       - A name, MIME type or filename containing NUL raises an error.
+    - guile-curl now uses semantic versioning (MAJOR.MINOR.MICRO).
+      The shared library's libtool version is 3:0:0, so it is now
+      installed as libguile-curl.so.3.
     - Fix crashes and memory corruption: a stale header callback after
       requests made with headers, the read port being garbage collected
       during uploads, Scheme errors unwinding through libcurl

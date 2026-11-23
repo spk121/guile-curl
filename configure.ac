@@ -20,7 +20,7 @@
 ##################
 # Package info
 AC_PREREQ([2.71])
-AC_INIT([guile_curl],[0.10],[spk121@yahoo.com])
+AC_INIT([guile_curl],[1.0.0],[spk121@yahoo.com])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([no-dependencies subdir-objects -Wall foreign])
 PKG_PROG_PKG_CONFIG
@@ -31,8 +31,23 @@ AC_CONFIG_MACRO_DIR([m4])
 
 ##################
 # Set some version constants
-LIBGUILE_CURL_MAJOR=2
-LIBGUILE_CURL_INTERFACE="2:2:0"
+# The package version above (MAJOR.MINOR.MICRO, semantic versioning)
+# and the shared library's libtool version below are independent.
+#
+# LIBGUILE_CURL_INTERFACE is libtool's CURRENT:REVISION:AGE.  Before a
+# release, update it following libtool's rules:
+#  - If the library's source changed at all, increment REVISION.
+#  - If any interface was added, removed or changed, increment CURRENT
+#    and set REVISION to 0.
+#  - If any interface was added, increment AGE.
+#  - If any interface was removed or changed incompatibly, set AGE to 0.
+# LIBGUILE_CURL_MAJOR is CURRENT - AGE, the major number in the library's
+# file name (libguile-curl.so.MAJOR).
+#
+# 1.0.0 is 3:0:0 (was 2:2:0): interfaces were removed (the httppost
+# conversion functions and the CURLOPT_HTTPPOST binding) and added.
+LIBGUILE_CURL_MAJOR=3
+LIBGUILE_CURL_INTERFACE="3:0:0"
 AC_SUBST(LIBGUILE_CURL_MAJOR)
 AC_SUBST(LIBGUILE_CURL_INTERFACE)
 

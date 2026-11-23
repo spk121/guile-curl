@@ -136,6 +136,13 @@ This library has procedures that allow Guile to do client-side URL
 transfers, like requesting documents from http or ftp servers.  It is
 based on the libcurl library.
 
+This manual describes @code{guile-curl} version @value{VERSION}.
+Starting with version 1.0.0, @code{guile-curl} uses semantic
+versioning: a version number has the form
+@var{major}.@var{minor}.@var{micro}, where the major number changes for
+incompatible changes, the minor number for new features, and the micro
+number for bug fixes.  It requires libcurl 7.76.0 or later.
+
 Before using these functions, you must first load the library.  If the
 library built and installed correctly, you should be able to load the
 library in the usual way by using @code{(use-modules (curl))}.
