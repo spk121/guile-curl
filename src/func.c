@@ -522,6 +522,11 @@ cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag)
   /* Do the transfer, and fill c_str with the result */
   status = curl_easy_perform (c_handle->handle);
 
+  /* Count failed transfers too: getinfo is still meaningful after one
+     (e.g. CURLINFO_OS_ERRNO, CURLINFO_RESPONSE_CODE).  */
+  if (c_handle->transfers < INT_MAX)
+    c_handle->transfers ++;
+
   /* Rethrow any Scheme error caught inside a callback, now that curl has
      returned normally.  */
   {
@@ -545,9 +550,6 @@ cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag)
       error_code = status;
       return (SCM_BOOL_F);
     }
-
-  if (c_handle->transfers < INT_MAX)
-      c_handle->transfers ++;
 
   if (scm_is_true (headerflag))
     return (scm_list_2 (header_sf.scm, body_sf.scm));

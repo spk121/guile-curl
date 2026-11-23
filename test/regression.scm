@@ -234,4 +234,22 @@ Return the server's base URL."
     (test-assert "returns an integer"
       (integer? (curl-easy-getinfo h 'speed-upload-t)))))
 
+;;; Only successful transfers were counted, and getinfo refuses to run
+;;; before the first one, so nothing could be asked after a failure.
+
+(define (closed-port-url)
+  "Return a URL for a loopback port with nothing listening on it."
+  (let ((sock (socket PF_INET SOCK_STREAM 0)))
+    (bind sock AF_INET INADDR_LOOPBACK 0)
+    (let ((port (sockaddr:port (getsockname sock))))
+      (close-port sock)
+      (format #f "http://127.0.0.1:~a/" port))))
+
+(test-group "getinfo after a failed transfer"
+  (let ((h (make-handle)))
+    (curl-easy-setopt h 'url (closed-port-url))
+    (test-equal "the transfer fails" #f (curl-easy-perform h))
+    (test-assert "os-errno can be retrieved"
+      (integer? (curl-easy-getinfo h 'os-errno)))))
+
 (test-end "regression")
