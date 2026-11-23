@@ -232,6 +232,41 @@ Use @code{(curl-easy-perform handle #t)} to get a bytevector
 Use @code{(utf8->string (curl-easy-perform handle #t))} to get a UTF-8 string
 @end itemize
 
+@subsubheading When a transfer fails
+
+If the transfer fails, @code{curl-easy-perform} returns @code{#f}
+instead of the resource.  @code{curl-error-code} and
+@code{curl-error-string} then say why:
+
+@lisp
+(let ((page (curl-easy-perform handle)))
+  (if page
+      (display page)
+      (format #t "Transfer failed (~a): ~a~%"
+              (curl-error-code) (curl-error-string))))
+@end lisp
+
+A common case is an @code{https} URL that fails while the same URL
+with @code{http} works, with an error about the server's certificate
+(for example, @code{CURLE_PEER_FAILED_VERIFICATION}).  This usually
+means libcurl cannot find the certificate authority (CA) certificates
+it needs to check the server's certificate.  Tell it where your
+system keeps them, with the @code{cainfo} option for a single bundle
+file or the @code{capath} option for a directory:
+
+@lisp
+(curl-easy-setopt handle 'cainfo "/etc/ssl/certs/ca-certificates.crt")
+@end lisp
+
+After a transfer, @code{(curl-easy-getinfo handle 'cainfo)} and
+@code{(curl-easy-getinfo handle 'capath)} report the locations libcurl
+used by default (with libcurl 7.84.0 or later).
+
+Setting the @code{ssl-verifypeer} option to @code{#f} also makes such
+an error go away, but only because it turns off the check that the
+server is the one it claims to be, which leaves the connection open to
+interception.  Use it only for testing.
+
 That's pretty much all there is to it for a simple fetch.  Beyond
 that, there are dozens of options that can be set by
 @code{curl-easy-setopt} that change how the request is
