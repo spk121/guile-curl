@@ -172,6 +172,9 @@ gc_free_handle_unlocked (SCM handle)
           curl_formfree (x->httppost);
           x->httppost = NULL;
         }
+      _free_httppost_buffers (x->httppost_buffers, x->httppost_nbuffers);
+      x->httppost_buffers = NULL;
+      x->httppost_nbuffers = 0;
       if (x->httpheader != NULL)
         {
           curl_slist_free_all (x->httpheader);
@@ -471,14 +474,29 @@ _scm_can_convert_to_httppost (SCM x)
   return 1;
 }
 
+void
+_free_httppost_buffers (void **buffers, size_t nbuffers)
+{
+  for (size_t i = 0; i < nbuffers; i ++)
+    free (buffers[i]);
+  free (buffers);
+}
+
+/* Convert X, a list of form fields, to a curl form.  A field with a
+   filename is sent as a file, which curl only does for a buffer part;
+   curl does not copy a buffer's data, so those data buffers are returned
+   in *BUFFERS (an array of *NBUFFERS pointers, some possibly NULL) and
+   must be freed with _free_httppost_buffers after the form is freed.  */
 struct curl_httppost *
-_scm_convert_to_httppost (SCM x)
+_scm_convert_to_httppost (SCM x, void ***buffers, size_t *nbuffers)
 {
   struct curl_httppost *post = NULL;
   struct curl_httppost *last = NULL;
   size_t j,m,n;
+  void **bufs;
 
   n = SCM_C_LIST_LENGTH (x);
+  bufs = (n > 0) ? scm_calloc (n * sizeof (void *)) : NULL;
   for (j = 0; j < n; j ++)
     {
       char *name = NULL, *mime = NULL, *filename = NULL;
@@ -520,16 +538,24 @@ _scm_convert_to_httppost (SCM x)
                            CURLFORM_CONTENTTYPE, mime,
                            CURLFORM_END);
       else
-        rc = curl_formadd (&post, &last,
-                           CURLFORM_COPYNAME, name,
-                           CURLFORM_NAMELENGTH, (long) name_len,
-                           CURLFORM_COPYCONTENTS, contents_ptr,
-                           CURLFORM_CONTENTLEN, (curl_off_t) contents_len,
-                           CURLFORM_CONTENTTYPE, mime,
-                           CURLFORM_FILENAME, filename,
-                           CURLFORM_END);
+        {
+          /* curl ignores CURLFORM_FILENAME for an ordinary contents part,
+             so send the field as a buffer part, which takes the filename
+             with CURLFORM_BUFFER.  curl copies the filename but not the
+             data, so keep the data in BUFS.  */
+          rc = curl_formadd (&post, &last,
+                             CURLFORM_COPYNAME, name,
+                             CURLFORM_NAMELENGTH, (long) name_len,
+                             CURLFORM_BUFFER, filename,
+                             CURLFORM_BUFFERPTR, contents_ptr,
+                             CURLFORM_BUFFERLENGTH, (long) contents_len,
+                             CURLFORM_CONTENTTYPE, mime,
+                             CURLFORM_END);
+          bufs[j] = contents;
+          contents = NULL;
+        }
 
-      /* curl_formadd copies everything it is given.  */
+      /* curl_formadd copies everything else it is given.  */
       free (name);
       free (contents);
       free (mime);
@@ -538,12 +564,15 @@ _scm_convert_to_httppost (SCM x)
       if (rc != CURL_FORMADD_OK)
         {
           curl_formfree (post);
+          _free_httppost_buffers (bufs, n);
           scm_misc_error ("curl-easy-setopt",
                           "could not add the form field at index ~A (curl_formadd error ~A)",
                           scm_list_2 (scm_from_size_t (j),
                                       scm_from_int ((int) rc)));
         }
     }
+  *buffers = bufs;
+  *nbuffers = n;
   return post;
 }
 

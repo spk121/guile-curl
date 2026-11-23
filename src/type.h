@@ -28,6 +28,11 @@ typedef struct handle_post_tag
   size_t postfieldsize;
   // curl_off_t postfieldsize_large;
   struct curl_httppost *httppost;
+  /* Data buffers that HTTPPOST uses without copying (fields sent as
+     files, via CURLFORM_BUFFERPTR).  They must live as long as the form.
+     An array of HTTPPOST_NBUFFERS pointers, some possibly NULL.  */
+  void **httppost_buffers;
+  size_t httppost_nbuffers;
   struct curl_slist *httpheader;
   struct curl_slist *http200aliases;
   struct curl_slist *mail_rcpt;
@@ -63,6 +68,8 @@ struct curl_slist *_scm_convert_to_slist (SCM x);
 int _scm_can_convert_to_byte_data (SCM x);
 uint8_t *_scm_convert_to_byte_data (SCM x, size_t *len);
 int _scm_can_convert_to_httppost (SCM x);
-struct curl_httppost *_scm_convert_to_httppost (SCM x);
+struct curl_httppost *_scm_convert_to_httppost (SCM x, void ***buffers,
+                                                size_t *nbuffers);
+void _free_httppost_buffers (void **buffers, size_t nbuffers);
 
 #endif

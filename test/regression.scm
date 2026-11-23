@@ -163,6 +163,26 @@ Return the server's base URL."
           'no-error)
         (lambda (key . args) key)))))
 
+;;; The filename of a 4-element field was passed as CURLFORM_FILENAME,
+;;; which curl ignores for an ordinary contents part, so it was never
+;;; sent.
+
+(test-group "httppost filename"
+  (let ((h (make-handle)))
+    (curl-easy-setopt h 'httppost
+                      (list (list "up" (u8-list->bytevector '(1 0 2))
+                                  "application/octet-stream" "data.bin")))
+    ;; The field's data is kept by guile-curl, not copied by curl.
+    (gc)
+    (let ((reply (curl-easy-perform h)))
+      (test-assert "the filename is sent"
+        (contains? reply "name=\"up\"; filename=\"data.bin\""))
+      (test-assert "the data is sent intact"
+        (contains? reply (string-append "\r\n\r\n"
+                                        (string (integer->char 1) #\nul
+                                                (integer->char 2))
+                                        "\r\n"))))))
+
 ;;; The CURLOPT_READDATA port was only referenced from curl, so the GC
 ;;; could collect it while curl still used it.
 

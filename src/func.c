@@ -191,9 +191,15 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
       if (_scm_can_convert_to_httppost (param))
         {
           struct curl_httppost *p;
-          p = _scm_convert_to_httppost (param);
+          void **buffers;
+          size_t nbuffers;
+          p = _scm_convert_to_httppost (param, &buffers, &nbuffers);
           curl_formfree (c_handle->httppost);
+          _free_httppost_buffers (c_handle->httppost_buffers,
+                                  c_handle->httppost_nbuffers);
           c_handle->httppost = p;
+          c_handle->httppost_buffers = buffers;
+          c_handle->httppost_nbuffers = nbuffers;
           /* An empty form gives P == NULL, which clears the form.  */
           code = curl_easy_setopt (c_handle->handle, CURLOPT_HTTPPOST, p);
         }
