@@ -183,6 +183,7 @@ gc_free_handle (SCM handle)
         }
       x->transfers = 0;
       x->readport = SCM_BOOL_F;
+      x->pending_exception = SCM_BOOL_F;
       if (x->handle != NULL)
         {
           curl_easy_cleanup (x->handle);

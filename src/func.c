@@ -35,7 +35,20 @@ struct scm_flag
 {
   SCM scm;
   int flag;
+  /* An exception thrown inside write_callback, as (KEY . ARGS), or #f.  */
+  SCM exception;
 };
+
+/* Errors must not unwind through libcurl's stack frames: curl forbids
+   longjmp out of its callbacks, and doing so leaves the easy handle in
+   the middle of a transfer.  So the callbacks run their Scheme code under
+   a catch, store any exception here, and tell curl to abort.  */
+static SCM
+store_exception_handler (void *data, SCM key, SCM args)
+{
+  *(SCM *) data = scm_cons (key, args);
+  return SCM_BOOL_F;
+}
 
 SCM DLL_PUBLIC cl_easy_init ()
 {
@@ -59,6 +72,7 @@ SCM DLL_PUBLIC cl_easy_init ()
   memset (hp, 0, sizeof (handle_post_t));
   hp->handle = handle;
   hp->readport = SCM_BOOL_F;
+  hp->pending_exception = SCM_BOOL_F;
 
   if (0)
     {
@@ -214,7 +228,7 @@ cl_easy_setopt (SCM handle, SCM option, SCM param, SCM big)
         {
           c_handle->readport = param;
           curl_easy_setopt (c_handle->handle, CURLOPT_READFUNCTION, read_callback);
-          code = curl_easy_setopt (c_handle->handle, CURLOPT_READDATA, SCM2PTR (param));
+          code = curl_easy_setopt (c_handle->handle, CURLOPT_READDATA, c_handle);
         }
     }
   else
@@ -455,6 +469,7 @@ cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag)
   else
     data = scm_c_make_string (0, SCM_MAKE_CHAR('\n'));
   body_sf.scm = data;
+  body_sf.exception = SCM_BOOL_F;
 
   header_sf.flag = 0;
   if (header_sf.flag)
@@ -462,6 +477,8 @@ cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag)
   else
     data = scm_c_make_string (0, SCM_MAKE_CHAR('\n'));
   header_sf.scm = data;
+  header_sf.exception = SCM_BOOL_F;
+  c_handle->pending_exception = SCM_BOOL_F;
 
   if (scm_is_true (headerflag))
   {
@@ -483,6 +500,25 @@ cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag)
 
   /* Do the transfer, and fill c_str with the result */
   status = curl_easy_perform (c_handle->handle);
+
+  /* Rethrow any Scheme error caught inside a callback, now that curl has
+     returned normally.  */
+  {
+    SCM exc = SCM_BOOL_F;
+    if (scm_is_true (c_handle->pending_exception))
+      exc = c_handle->pending_exception;
+    else if (scm_is_true (header_sf.exception))
+      exc = header_sf.exception;
+    else if (scm_is_true (body_sf.exception))
+      exc = body_sf.exception;
+    c_handle->pending_exception = SCM_BOOL_F;
+    if (scm_is_true (exc))
+      {
+        error_code = status;
+        scm_throw (scm_car (exc), scm_cdr (exc));
+      }
+  }
+
   if (status != CURLE_OK)
     {
       error_code = status;
@@ -498,25 +534,32 @@ cl_easy_perform (SCM handle, SCM bvflag, SCM headerflag)
   return (body_sf.scm);
 }
 
-/* This callback function catches the data passed by libcurl and sends
-   it back as a scheme string */
-static size_t
-write_callback (void *ptr, size_t size, size_t nmemb, void *userdata)
+struct write_args
 {
+  char *ptr;
+  size_t length;
+  struct scm_flag *sf;
+};
+
+/* Append the data passed by libcurl to the Scheme string or bytevector
+   in SF.  Runs under a catch; see write_callback.  */
+static SCM
+write_callback_body (void *data)
+{
+  struct write_args *args = data;
+  void *ptr = args->ptr;
   size_t length1, length2;
   SCM data1, data2;
-  struct scm_flag *sf;
+  struct scm_flag *sf = args->sf;
 
-  sf = (struct scm_flag *) userdata;
   data1 = sf->scm;
   if (sf->flag)
     length1 = scm_c_bytevector_length (data1);
   else
     length1 = scm_c_string_length (data1);
 
-  length2 = size * nmemb;
+  length2 = args->length;
 
-  /* printf ("In write_callback\n"); */
   if (sf->flag)
     {
       data2 = scm_c_make_bytevector (length1 + length2);
@@ -542,19 +585,63 @@ write_callback (void *ptr, size_t size, size_t nmemb, void *userdata)
     }
   sf->scm = data2;
 
-  return length2;
+  return SCM_BOOL_T;
 }
 
-/* This callback function sends some data from a port over to curl. */
+/* This callback function catches the data passed by libcurl and sends
+   it back as a scheme string or bytevector.  */
+static size_t
+write_callback (void *ptr, size_t size, size_t nmemb, void *userdata)
+{
+  struct write_args args;
+  SCM ret;
+
+  args.ptr = ptr;
+  args.length = size * nmemb;
+  args.sf = (struct scm_flag *) userdata;
+
+  ret = scm_c_catch (SCM_BOOL_T,
+                     write_callback_body, &args,
+                     store_exception_handler, &args.sf->exception,
+                     NULL, NULL);
+  if (scm_is_false (ret))
+    return 0;                   /* Makes curl abort with CURLE_WRITE_ERROR.  */
+  return args.length;
+}
+
+struct read_args
+{
+  SCM port;
+  void *ptr;
+  size_t length;
+};
+
+static SCM
+read_callback_body (void *data)
+{
+  struct read_args *args = data;
+  return scm_from_size_t (scm_c_read (args->port, args->ptr, args->length));
+}
+
+/* This callback function sends some data from a port over to curl.  */
 static size_t
 read_callback (void *ptr, size_t size, size_t nmemb, void *userdata)
 {
-  size_t length1;
-  SCM port;
+  handle_post_t *hp = (handle_post_t *) userdata;
+  struct read_args args;
+  SCM ret;
 
-  port = PTR2SCM(userdata);
-  length1 = scm_c_read (port, ptr, size * nmemb);
-  return length1;
+  args.port = hp->readport;
+  args.ptr = ptr;
+  args.length = size * nmemb;
+
+  ret = scm_c_catch (SCM_BOOL_T,
+                     read_callback_body, &args,
+                     store_exception_handler, &hp->pending_exception,
+                     NULL, NULL);
+  if (scm_is_false (ret))
+    return CURL_READFUNC_ABORT;
+  return scm_to_size_t (ret);
 }
 
 
@@ -569,6 +656,7 @@ cl_easy_reset (SCM handle)
 
   curl_easy_reset (c_handle->handle);
   c_handle->readport = SCM_BOOL_F;
+  c_handle->pending_exception = SCM_BOOL_F;
 
   return SCM_UNSPECIFIED;
 }

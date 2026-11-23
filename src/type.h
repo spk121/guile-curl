@@ -40,6 +40,10 @@ typedef struct handle_post_tag
   /* The port given with CURLOPT_READDATA.  Curl only holds a raw pointer
      to it, so it is kept here, where the GC can see it.  */
   SCM readport;
+  /* An exception thrown by Scheme code inside read_callback, saved as
+     (KEY . ARGS) to be rethrown once curl_easy_perform has returned,
+     or #f.  */
+  SCM pending_exception;
 } handle_post_t;
 
 void DLL_PUBLIC cl_init_type (void);
