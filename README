@@ -2,7 +2,7 @@ guile-curl is a project that has procedures that allow Guile to do
 client-side URL transfers, like requesting documents from http or ftp
 servers.  It is based on the libcurl library.
 
-This is guile-curl version 1.0.0.  Starting with 1.0.0, guile-curl
+This is guile-curl version 1.0.1.  Starting with 1.0.0, guile-curl
 uses semantic versioning (MAJOR.MINOR.MICRO): the major number changes
 for incompatible changes, the minor number for new features, and the
 micro number for bug fixes.  See NEWS for the changes in each release.

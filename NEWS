@@ -1,3 +1,14 @@
+For Release 1.0.1 - Nov 25, 2026
+
+    - The httppost option, removed in 1.0.0, is back, for programs
+      written for earlier versions.  It is now another name for the
+      mimepost option: it takes the same list of fields and sends exactly
+      the same request, built with libcurl's MIME API, so the deprecated
+      curl_formadd API stays removed.  New code should use mimepost.
+    - Note for users of 0.10 and earlier: in those versions a form given
+      with httppost was never actually sent, because of a bug.  It is now
+      sent as a multipart/form-data POST, as intended.
+
 For Release 1.0.0 - Nov 23, 2026
 
     - Forms now use libcurl's MIME API (curl_mime_init and related

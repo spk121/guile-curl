@@ -20,7 +20,7 @@
 ##################
 # Package info
 AC_PREREQ([2.71])
-AC_INIT([guile_curl],[1.0.0],[spk121@yahoo.com])
+AC_INIT([guile_curl],[1.0.1],[spk121@yahoo.com])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([no-dependencies subdir-objects -Wall foreign])
 PKG_PROG_PKG_CONFIG
@@ -46,6 +46,8 @@ AC_CONFIG_MACRO_DIR([m4])
 #
 # 1.0.0 is 3:0:0 (was 2:2:0): interfaces were removed (the httppost
 # conversion functions and the CURLOPT_HTTPPOST binding) and added.
+# 1.0.1 is still 3:0:0: the library's source (src/) did not change; the
+# restored httppost option is defined in the Scheme module.
 LIBGUILE_CURL_MAJOR=3
 LIBGUILE_CURL_INTERFACE="3:0:0"
 AC_SUBST(LIBGUILE_CURL_MAJOR)
