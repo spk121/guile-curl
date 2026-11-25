@@ -634,6 +634,10 @@ cache, the cookies or the shared."
     (postfieldsize-large ,CURLOPT_POSTFIELDSIZE_LARGE biginteger)
     (copypostfields ,CURLOPT_COPYPOSTFIELDS bytevector)
     (mimepost ,CURLOPT_MIMEPOST mimepost)
+    ;; The name used before 1.0.0, kept for compatibility.  It builds the
+    ;; same curl_mime form as mimepost; CURLOPT_HTTPPOST and the deprecated
+    ;; curl_formadd API are not used.
+    (httppost ,CURLOPT_MIMEPOST mimepost)
     (referer ,CURLOPT_REFERER string)
     (useragent ,CURLOPT_USERAGENT string)
     (httpheader ,CURLOPT_HTTPHEADER slist)

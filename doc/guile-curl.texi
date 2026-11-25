@@ -797,6 +797,7 @@ integer@footnote{@xref{Integer Constants for postredir}.}
 @c @item postfieldsize-large @tab CURLOPT_POSTFIELDSIZE_LARGE @tab biginteger
 @c @item copypostfields @tab CURLOPT_COPYPOSTFIELDS @tab bytevector
 @item mimepost @tab CURLOPT_MIMEPOST @tab mimepost
+@item httppost @tab CURLOPT_MIMEPOST @tab mimepost@footnote{Another name for @code{mimepost}, kept for programs written for versions before 1.0.0.}
 @item referer @tab CURLOPT_REFERER @tab string
 @item useragent @tab CURLOPT_USERAGENT @tab string
 @item httpheader @tab CURLOPT_HTTPHEADER @tab
@@ -1087,10 +1088,16 @@ For example, this sends a text field and a file named
                      "text/plain" "notes.txt")))
 @end example
 
-This option replaces @code{httppost} (@code{CURLOPT_HTTPPOST}), which
-used libcurl's deprecated @code{curl_formadd} API and has been
-removed.  A list of fields that worked with @code{httppost} works
-unchanged with @code{mimepost}.
+Before version 1.0.0 this option was called @code{httppost} and was
+passed as @code{CURLOPT_HTTPPOST}, using libcurl's deprecated
+@code{curl_formadd} API.  @code{httppost} is still accepted as another
+name for @code{mimepost}: it takes the same list of fields and sends
+exactly the same request, built with the MIME API.  New code should use
+@code{mimepost}.
+
+In guile-curl 0.10 and earlier, a form given with @code{httppost} was
+never actually sent, because of a bug.  Programs that set it relying on
+that will now send their form as a @code{multipart/form-data} POST.
 
 @end table
 

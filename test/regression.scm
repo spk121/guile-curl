@@ -172,7 +172,7 @@ Return the server's base URL."
         (lambda (key . args) key)))))
 
 ;;; Every string in a field is checked, including the MIME type of a
-;;; 4-element field, and the removed 'httppost option is rejected.
+;;; 4-element field.
 
 (define (setopt-error-key h option value)
   (catch #t
@@ -191,10 +191,51 @@ Return the server's base URL."
                         (list (list "f" "x" "text/plain" (string #\a #\nul)))))
     (test-assert "a non-string MIME type in a 4-element field is rejected"
       (not (eq? 'no-error
-                (setopt-error-key h 'mimepost '(("f" "x" 42 "f.txt"))))))
-    (test-assert "'httppost is no longer an option"
-      (not (eq? 'no-error
-                (setopt-error-key h 'httppost '(("f" "x"))))))))
+                (setopt-error-key h 'mimepost '(("f" "x" 42 "f.txt"))))))))
+
+;;; 'httppost, removed in 1.0.0, is back in 1.0.1 as another name for
+;;; 'mimepost, for programs written for earlier versions.  It must send
+;;; exactly the same request.
+
+(define (without-boundaries text)
+  "Replace the random multipart boundary in TEXT, a reply from the echo
+server, with a fixed string.  (Guile's regular expressions cannot be used,
+since the text may contain NUL characters.)"
+  (let* ((start (string-index text #\-))
+         (boundary (substring text start (string-contains text "\r\n" start))))
+    (let loop ((from 0) (parts '()))
+      (let ((at (string-contains text boundary from)))
+        (if at
+            (loop (+ at (string-length boundary))
+                  (cons* "--BOUNDARY" (substring text from at) parts))
+            (string-concatenate-reverse (cons (substring text from) parts)))))))
+
+(define (form-request option fields)
+  "Send FIELDS with OPTION, and return what the server received, without
+the boundaries."
+  (let ((h (make-handle)))
+    (curl-easy-setopt h option fields)
+    (without-boundaries (curl-easy-perform h))))
+
+(test-group "httppost"
+  (let ((fields (list '("a" "1")
+                      '("typed" "text" "text/plain")
+                      '("empty" "")
+                      (list "bin" (u8-list->bytevector '(0 1 255 0)))
+                      '("upload" "data" "text/plain" "notes.txt"))))
+    (test-assert "the request is a multipart POST"
+      (string-prefix? "POST\n--BOUNDARY" (form-request 'httppost fields)))
+    (test-equal "it sends exactly what mimepost sends"
+      (form-request 'mimepost fields)
+      (form-request 'httppost fields)))
+  (let ((h (make-handle)))
+    (curl-easy-setopt h 'httppost '(("a" "1")))
+    (curl-easy-setopt h 'httppost '())
+    (curl-easy-setopt h 'httpget #t)
+    (test-equal "an empty form clears the form" "GET\n" (curl-easy-perform h)))
+  (test-equal "invalid fields are rejected as for mimepost"
+    (setopt-error-key (make-handle) 'mimepost '(("f" "x" 42 "f.txt")))
+    (setopt-error-key (make-handle) 'httppost '(("f" "x" 42 "f.txt")))))
 
 ;;; The fourth element of a field is a filename, which sends the field as
 ;;; a file.
